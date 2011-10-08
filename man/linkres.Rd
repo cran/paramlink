@@ -17,7 +17,7 @@ Functions for printing, summarizing and plotting the results of a linkage analys
 }
 \arguments{
   \item{x, object}{
-a \code{linkres} object (normally produced by \code{\link{lod}} or \code{\link{linkage.power}}.
+a \code{linkres} object (normally produced by \code{\link{lod}} or \code{\link{linkage.power}}).
 }
 	\item{threshold}{
 a positive real number, or NULL. If non-null, the summary will include the percentage of simulated markers whose LOD score exceeds \code{threshold}.
@@ -35,7 +35,7 @@ Magnus Dehli Vigeland
 }
 
 \seealso{
-\code{\link{lod}},\code{\link{linkage.power}}
+\code{\link{lod}}, \code{\link{linkage.power}}
 }
 \examples{
 data(toyped)

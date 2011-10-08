@@ -21,9 +21,9 @@ setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, na
 
 	if (is.null(chrom)) chrom = ifelse(hasmodel, model$chrom, "AUTOSOMAL") else chrom <- match.arg(toupper(chrom), c("AUTOSOMAL","X"))
 	if (is.null(dfreq)) dfreq = ifelse(hasmodel, model$dfreq, 1e-5)
-	if (is.null(nallel)) nallel = ifelse(hasmodel, model$nallel, 2)
+	if (is.null(nallel)) nallel = ifelse(!is.null(afreq), length(afreq), ifelse(hasmodel, model$nallel, 2))
 	if (is.null(afreq)) if (hasmodel) afreq = model$afreq else afreq = rep(1,nallel)/nallel
-	if (is.null(names(afreq))) names(afreq) <- paste("afreq",1:nallel,sep="")
+	if (is.null(names(afreq))) names(afreq) <- paste("afreq", 1:nallel, sep="")
 
 	if (is.null(penetrances)) if (hasmodel) penetrances = model$penetrances else stop("No penetrance values given.")
 	else {	switch(chrom,
@@ -50,7 +50,11 @@ setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, na
 	x$model <- newmodel
 	
 	if(nallel<2) stop("Number of marker alleles ('nallel') must be at least 2.")
-	if(nallel>2) return(invisible(x))
+	if(nallel>2) {
+		warning("Likelihood calculations are not implemented for markers with more than 2 alleles.")
+		x$initial_probs <- NULL
+		return(invisible(x))
+	}
 
 	#If and only if nallel==2 the following is carried out to give x an additional entry (x$initial_probs), containing initial likelihoods of each individual.
 	a=afreq[1]; b=afreq[2]; d=dfreq

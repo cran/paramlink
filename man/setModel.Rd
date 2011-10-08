@@ -43,7 +43,7 @@ If \code{chrom=='X'}: a list of length two containing the penetrances for each s
 the population frequency of the disease allele.
 }
   \item{nallel}{
-the number of alleles at the marker loci. At the moment different numbers for different loci are not supported.
+the number of alleles at the marker loci. At the moment only diallelic SNPs are allowed in likelihood calculations.
 }
   \item{afreq}{
 a numeric of length \code{nallel} - the population allele frequencies at the marker loci. 
@@ -52,7 +52,7 @@ a numeric of length \code{nallel} - the population allele frequencies at the mar
 }
 
 \value{
-a \code{linkdat} object, equal to \code{x} except that its \code{model} entry is set according to the given parameters. 
+a \code{linkdat} object equal to \code{x}, except that its \code{model} entry is set according to the given parameters. 
 }
 
 \author{
@@ -63,10 +63,10 @@ Magnus Dehli Vigeland
 }
 \examples{
 data(toyped)
-x=linkdat(toyped)
-x=setModel(x, model=1)
+x = linkdat(toyped)
+x = setModel(x, model=1)
 summary(x)
-y=setModel(x, model=4, dfreq=0.1)
+y = setModel(x, model=4, dfreq=0.1)
 summary(y)
 }
 \keyword{ math }

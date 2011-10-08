@@ -68,7 +68,7 @@ function(x, marker=NULL, t=NULL, logbase=NULL, TR.MATR=NULL, singleNum.geno=NULL
 	if (is.null(TR.MATR)) TR.MATR=.TRmatr(t, chr)
 	
 	switch(chr, AUTOSOMAL = {		
-		haps <- list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10)[singleNum.geno + 1]  #+1 because coding starts at 0 (which is convenient in simulSNP a.s.o.)
+		haps <- list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10)[singleNum.geno + 1]  #+1 because coding starts at 0 (which is convenient in SNPsim a.s.o.)
 		prob_list <- lapply(seq_len(nInd), function(i) x[['initial_probs']][, i][haps[[i]]])
 	}, X = {	
 		haplo.poss_X <- list(list('?'=1:4, 'A'=1:2, 'B'=3:4, NULL, NULL, NULL), list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10))

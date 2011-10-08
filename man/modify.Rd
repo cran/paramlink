@@ -1,45 +1,53 @@
 \name{modifyPedigree}
 \alias{modifyPedigree}
-\alias{addChildren}
+\alias{swapSex}
+\alias{swapAff}
+\alias{addOffspring}
+\alias{addParents}
 \alias{removeIndiv}
-\title{Modify 'linkdat' objects}
+\alias{relabel}
+\title{Modify the pedigree of 'linkdat' objects}
 \description{
-Functions to modify the pedigree data of a 'linkdat' object.
+Functions to modify the pedigree of a 'linkdat' object.
 }
 \usage{
-modifyPedigree(x, id, attrib, newval=NULL)
+swapSex(x, ids)
 
-addChildren(x, father, mother, children=1, sex=1, aff=1) 
+swapAff(x, ids, newval=NULL)
 
-removeIndiv(x, id)
+addOffspring(x, father, mother, noffs, ids, sex=1, aff=1) 
 
+addParents(x, id, father, mother)
+
+removeIndiv(x, ids)
+
+relabel(x, new.labels)
 }
 \arguments{
   \item{x}{
 a \code{\link{linkdat}} object
 }
-  \item{id}{
-an integer vector, indicating the individual(s) to be modified.
-}
-  \item{attrib}{
-the attribute to be changed, either "AFF" or "SEX" (lower case letters are allowed).
+  \item{id, ids}{
+the individual(s) to be modified. In \code{addOffspring} the (optional) \code{ids} argument is used to specify ID labels for the offspring to be created.
 }
   \item{newval}{
-the new values of the parameter/attribute. In \code{modifyParameter}, a numeric of length 1. 
-In \code{modifyPedigree} either a numeric of length \code{length(id)}, or NULL (which results in switching 1 <-> 2 the values of \code{attrib}).
+a numeric, indicating affection status values for the \code{ids} individuals: 1=unaffected, 2=affected, 0=unknown. If NULL, the affection statuses are swapped 1 <-> 2, hence the main use of the \code{newval} argument is to assign 0's.
 }
   \item{father, mother}{
-integers indicating the ID's of parents. One of these (but not both) can be 0, in which case a new founder individual is created. 
+integers indicating the IDs of parents. If missing, a new founder individual is created (whose ID will be 1+the largest ID already in the pedigree).
 }
-   \item{children}{
-an integer indicating the number of offspring to be created.
+ \item{noffs}{
+a single integer indicating the number of offspring to be created.
 }
    \item{sex, aff}{
-integer vectors indicating the gender and affection statuses of the offspring to be created (recycled if not of length \code{children}).
+integer vectors indicating the gender and affection statuses of the offspring to be created (recycled if less than \code{noffs} elements).
+}
+  \item{new.labels}{
+a numeric (of length \code{x$nInd}) containing new labels for the pedigree members.
 }
 }
 \details{
-When removing an individual, all descendents are also removed as well as all founders remaining without offspring.
+When removing an individual, all descendants are also removed as well as founders remaining without offspring.
 }
 \value{
 The modified \code{linkdat} object.
@@ -49,33 +57,21 @@ Magnus Dehli Vigeland
 }
 
 \seealso{
-\code{\link{linkdat}}
+\code{\link{linkdat}}, \code{\link{nuclearPed}}, \code{\link{cousinPed}}, \code{\link{halfCousinPed}}
 }
 \examples{
 data(toyped)
-x=linkdat(toyped, model=1)
-summary(x)
+x = linkdat(toyped)
 
-#switching sex of both offspring:
-x=modifyPedigree(x, id=c(3,4), attrib='SEX')
+#to see the effect of each command, use \code{plot(x)} in between
+x = addParents(x, id=2, father=5, mother=6)
 
-#adding two children (non-affected males) to individual 4
-x=addChildren(x, father=0, mother=4, children=2)
-x
+x = swapSex(x, c(1,5))
+x = swapSex(x, c(2,6))
 
-#and removing one of them again 
-x=removeIndiv(x, 7)
-x
-
-#adding an affected half-sib
-x=addChildren(x, father=1, mother=0, sex=2, aff=2)
-x
-
-#the affected half-sib has genotype AB:
-x=modifyMarker(x, 8, c(1,2))
-x
-plot(x,1)
-
-lod(x)
+x = addOffspring(x, mother=6, noffs=2, id=c(7,10))
+x = removeIndiv(x, 3)
+x = swapAff(x, c(4,10))
+stopifnot(setequal(x$orig.ids, c(1,2,4,5,6,7,10,11)))
 }
 \keyword{ manip }

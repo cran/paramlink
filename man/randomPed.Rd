@@ -7,8 +7,7 @@ Random pedigree
 Creates a random medical pedigree with specified number of generations. 
 }
 \usage{
-randomPed(gen, lambda = 2, penetrances = c(0, 1, 1), 
-          naff = "last.gen", founder.mut = 1)
+randomPed(gen, lambda=2, penetrances=c(0, 1, 1), naff="last.gen", founder.mut=1)
 }
 
 \arguments{
@@ -16,7 +15,7 @@ randomPed(gen, lambda = 2, penetrances = c(0, 1, 1),
 an integer in the interval \code{[2,5]} indicating the number of generations.
 }
   \item{lambda}{
-a positive numeric. For each descendent of the first generation, the number of offspring is sampled from a Poisson distribution with parameter \code{lambda}.
+a positive numeric. For each descendant of the first generation, the number of offspring is sampled from a Poisson distribution with parameter \code{lambda}.
 }
   \item{penetrances}{
 a numeric of length 3, where for \code{i=1,2,3}, \code{penetrances[i] = Prob(affected | i-1 disease alleles)}.

@@ -1,81 +1,75 @@
 \name{linkdat.utils}
 \alias{spouses}
 \alias{offspring}
-\alias{descendents}
-\alias{ped.dist.matrix}
-\alias{getpaths}
+\alias{descendants}
+\alias{pedigreeLoops}
+\alias{uninformative}
 \title{
 linkdat utilities
 }
 \description{
-Utility functions for linkdat objects
+Utility functions for 'linkdat' objects
 }
 \usage{
-spouses(x, i)
+spouses(x, id, original.id)
 
-offspring(x, i)
+offspring(x, id, original.id)
 
-descendents(x, i)
+descendants(x, id, original.id)
 
-ped.dist.matrix(x)
+pedigreeLoops(x)
 
-getpaths(obj, i,j)
+uninformative(x, return.reduced.ped=FALSE)
 }
 \arguments{
   \item{x}{
 a \code{linkdat} object
 }
-  \item{i, j}{
+  \item{id}{
 an integer, the ID of an individual.
 }
-  \item{obj}{
-a matrix of pairwise path distances, or a \code{linkdat} object.
+ \item{original.id}{
+A logical indicating whether 'id' refers to the original ID label or the internal labeling.
+}
+ \item{return.reduced.ped}{
+A logical indicating whether the uninformative individuals should be removed, and the remaining pedigree returned as a new \code{linkdat} object)
 }
 }
 \value{
-For \code{spouses(x,i)}, an integer vector contining the ID's of all pedigree members sharing offspring with \code{i}. 
+For \code{spouses(x, id)}, an integer vector containing the ID's of all pedigree members sharing offspring with \code{id}. 
 
-For \code{offspring(x,i)}, a vector containing the ID's of the offspring (i.e. children) of individual i. 
+For \code{offspring(x,id)}, a vector containing the ID's of the offspring (i.e. children) of individual \code{id}. 
 
-For \code{descendents(x,i)}, a vector containing the ID's of all descendents (i.e. children, grandchildren, a.s.o.) of individual i. 
+For \code{descendants(x,id)}, a vector containing the ID's of all descendants (i.e. children, grandchildren, a.s.o.) of individual \code{id}. 
 
-For \code{ped.dist.matrix(x)}, a symmetrix integer matrix (d_ij), where d_ij is the pedigree distance (i.e., the length of the shortest pedigree path) between i and j. For example, pedigree members with the relations below would have the indicated pedigree distances:
-parent/offspring	1,
-siblings			2
-parents				2
-uncle/niece			3
-first cousins		4
+For \code{pedigreeLoops}, a list containing all loops found in the pedigree. Each loop is represented as a list with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a path from top to bottom) and 'pathB' (creating a different path from top to bottom, with no individuals in common with pathA). 
 
-For \code{getpaths(x,i,j)}, a data.frame with \code{ped.dist.matrix(x)[i,j]+1} columns. Each row is a shortest pedigree path (endpoints included) from \code{i} to \code{j}. 
+For \code{uninformative}, either a numeric vector (if \code{return.reduced.ped=FALSE}) containing the ID labels of the uninformative individuals, or (if \code{return.reduced.ped=TRUE}) a \code{linkdat} object where the uninformative individuals have been removed.
 } 
 \author{
 Magnus Dehli Vigeland
 }
 
-\seealso{
-\code{\link{subset.linkdat}}
-}
 \examples{
-p=cbind(ID=1:6, FID=c(0,0,1,0,3,3), MID=c(0,0,2,0,4,4), 
-        SEX=c(1,2,1,2,1,2), AFF=c(2,1,2,1,2,1))
-x=linkdat(p, model=1)
+p=cbind(ID=2:9, FID=c(0,0,2,0,4,4,0,2), MID=c(0,0,3,0,5,5,0,8), 
+        SEX=c(1,2,1,2,1,2,2,2), AFF=c(2,1,2,1,2,1,1,2))
+x=linkdat(p)
 
-#all descendents of the grandfather:
-descendents(x,1)
+desc = descendants(x, 2)
+spous = spouses(x, 2)
+offs = offspring(x, 2)
+stopifnot(setequal(spous, c(3,8)), setequal(offs, c(4,9)), setequal(desc, c(4,6,7,9)))
 
-#extracting the nuclear family where individual 3 is the father:
-nucl=c(3, spouses(x,3), offspring(x,3))
-y=subset(x, subset=nucl)
-y
-summary(y)
+#Creating a loop and detecting it with 'pedigreeLoops' 
+#(note that we get two loops, one for each inbred child):
+loopx = addOffspring(x, father=4, mother=9, noffs=2)
+lps = pedigreeLoops(loopx)
+stopifnot(lps[[1]]$top==2, setequal(sapply(lps, '[[', 'bottom'), 10:11))
 
-d=ped.dist.matrix(x)
-d
-#There should be 2 paths of length 3 from individual 1 to individual 4:
-paths=getpaths(d,1,4)
-stopifnot(dim(paths)==c(2,4))
-
+#an example with uninformative individuals
+data(dominant)
+x = linkdat(dominant)
+un = uninformative(x)
+stopifnot(setequal(un, c(21,23)))
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{ math }

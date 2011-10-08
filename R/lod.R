@@ -1,8 +1,12 @@
 lod <-
-function(x, markers=1:x$nMark, t=c(0, .1, .2, .5), tol=0.01, max.only=FALSE, silent=max.only) {
-
-	if (is.null(x$model)) 
-		stop("No model set.")
+function(x, markers=seq_len(x$nMark), t=c(0, .1, .2, .5), tol=0.01, max.only=FALSE, silent=max.only) {
+	stopifnot(class(x)=="linkdat")
+	if (is.null(x$model)) 	stop("No model set.")
+	if (x$nMark==0) 		stop("No marker data indicated.")
+	if (x$model$nallel>2 || any(unlist(lapply(attr(x$markerdata, "alleles")[markers], length)) > 2)) 
+							stop("Sorry - only diallelic markers allowed.")
+	if (min(markers)<1 || max(markers)>x$nMark)
+							stop("Nonexistent marker indicated.")
 	
 	ilink <- function(x, marker) {
 		log_denom <- stopl <- likelihood(x, marker, logbase=10, TR.MATR=.TRhalf)
@@ -18,7 +22,6 @@ function(x, markers=1:x$nMark, t=c(0, .1, .2, .5), tol=0.01, max.only=FALSE, sil
 		c(log_numer - log_denom, theta_max)
 	}
 	
-	stopifnot(class(x)=="linkdat", min(markers)>=1, max(markers)<=x$nMark)
 	.TRzero <- .TRmatr(0, x$model$chrom); .TRhalf <- .TRmatr(0.5, x$model$chrom)
 
 	if (is.numeric(t)) {
@@ -27,9 +30,9 @@ function(x, markers=1:x$nMark, t=c(0, .1, .2, .5), tol=0.01, max.only=FALSE, sil
 			cat("Computing singlepoint LOD scores at each marker\nfor the following recombination ", ifelse(length(t)==1, "value:\n", "values:\n"),
 				paste("  t =",t,collapse="\n"), "\n", sep="")
 		trm_list = lapply(t, .TRmatr, chrom=x$model$chrom)
-		denoms = sapply(markers, likelihood, x=x, t=NULL, logbase=10, TR.MATR=.TRhalf)
-		numers = vapply(markers, function(m) sapply(trm_list, likelihood, x=x, m=m, t=NULL, logbase=10), FUN.VALUE=numeric(length(t)))
-		res = numers - rep(denoms,each=length(t))
+		denoms = unlist(lapply(markers, likelihood, x=x, t=NULL, logbase=10, TR.MATR=.TRhalf))
+		numers = vapply(markers, function(m) unlist(lapply(trm_list, likelihood, x=x, m=m, t=NULL, logbase=10)), FUN.VALUE=numeric(length(t)))
+		res = numers - rep(denoms, each=length(t))
 		res = structure(res, dim=c(length(t), length(markers)), dimnames = list(t, paste("M", markers, sep="")), analysis="mlink", class="linkres")
 	} 
 	else if (identical(t,"max")) {

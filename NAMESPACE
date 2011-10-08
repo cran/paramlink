@@ -4,7 +4,6 @@ exportPattern("^[[:alpha:]]+")
 S3method(print, linkdat)
 S3method(summary, linkdat)
 S3method(as.data.frame, linkdat)
-S3method(subset, linkdat)
 S3method(summary, linkres)
 S3method(plot, linkres)
 

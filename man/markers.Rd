@@ -1,4 +1,5 @@
 \name{markers}
+\alias{markers}
 \alias{setMarkers}
 \alias{getMarkers}
 \alias{modifyMarker}
@@ -26,23 +27,20 @@ a matrix with one row per pedigree member and two columns per marker, containing
   \item{missing}{
 a numeric - or character - of length 1, indicating the code for missing alleles.
 }
-  \item{markers}{
-an integer vector containing marker IDs.
+  \item{marker, markers}{
+a numeric indicating which marker(s) to use/modify.
 }
   \item{id}{
-an integer vector, indicating the individual(s) to be modified.
+a numeric indicating individual(s) to be modified.
 }
   \item{alleles}{
 a vector of length 2 (if \code{id} is a single integer), or a matrix with \code{length(id)} rows and 2 columns.
-}
-  \item{marker}{
-an integer indicating which marker to modify.
 }
 }
 \value{
 For \code{setMarkers} and \code{modifyMarkers}, a \code{linkdat} object is returned, whose \code{markerdata} element has been set/modified. 
 The \code{markerdata} contains the marker allele matrix (numerically coded) and has the following two attributes: 
-\item{alleles}{The allele names. At the moment the notation for these must be common for all markers.}
+\item{alleles}{A list with allele labels.}
 \item{missing}{The code for missing data.}
 
 For \code{getMarkers}, a matrix with \code{x$nInd} rows and \code{2*length(markers)} columns.
@@ -56,9 +54,9 @@ Magnus Dehli Vigeland}
 }
 \examples{
 data(Xped)
-x=linkdat(Xped, model=4)
+x = linkdat(Xped, model=4)
 #setting 2 markers, both homozygous for all individuals 
-x=setMarkers(x, m=matrix(rep(1:2, each=30), nrow=15))
+x = setMarkers(x, m=matrix(rep(1:2, each=30), nrow=15))
 x
 
 #introducing a some mendelian errors:

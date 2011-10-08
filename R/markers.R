@@ -1,8 +1,19 @@
-setMarkers <- function(x, m, missing=0) {
-	n = ncol(m)
-	if (n%%2 != 0) stop("Uneven number of marker columns")
-	m=as.matrix(m)
-	alleles = sort(setdiff(unique(as.vector(m)), missing))
+
+setMarkers <- function(x, m, missing=0) { #sikkert håpløst treig, kun førsteutkast.
+  m <- as.matrix(m)
+  n <- ncol(m)
+  if (n==0) {x$nMark=0; return(x)}
+  is.merged <- is.character(m[1,1]) && ("/" %in% strsplit(m[1,1],"")[[1]]); # print(is.merged)
+  if (!is.merged && n%%2 != 0) stop("Uneven number of marker allele columns")
+  nMark <- ifelse(is.merged, n, n/2)
+
+  allele_matrix = matrix(ncol=0, nrow=x$nInd)
+  alleles_string = list()
+  for (i in 1:nMark) {
+	if (is.merged) mi = t(sapply(m[,i], function(markeri) strsplit(markeri,"/",fixed=T)[[1]]))
+	else mi = m[, c(2*i-1, 2*i)]
+	present_alleles = setdiff(.Internal(unique(as.vector(mi), incomparables=FALSE, fromLast=FALSE)), missing)
+	alleles = present_alleles[.Internal(order(T, F, present_alleles))]
 	if (length(alleles)==0) alleles <- c("1","2") 
 	else if (length(alleles)==1) {
 		if (alleles %in% c("1","2")) alleles <- c("1","2") 
@@ -11,19 +22,23 @@ setMarkers <- function(x, m, missing=0) {
 		else if (alleles %in% c("x","y")) alleles <- c("x","y")
 		else if (alleles %in% c("X","Y")) alleles <- c("X","Y")
 	}
-	mnum = match(m,alleles)
-	dim(mnum) = dim(m)
-	mnum[is.na(mnum)] = 0
-	class(mnum) = "markerdata"
-	attr(mnum,"alleles") <- alleles
-	attr(mnum,"missing") <- missing
-	x$markerdata = mnum; x$nMark = n/2
-	x
+	mi_num = match(mi,alleles)
+	dim(mi_num) = dim(mi)
+	mi_num[is.na(mi_num)] = 0
+	allele_matrix = cbind(allele_matrix, mi_num)
+	alleles_string = c(alleles_string, list(alleles))
+	#print(allele_matrix); print(alleles_string)
+	}
+  class(allele_matrix) = "markerdata"
+  attr(allele_matrix, "alleles") <- alleles_string
+  attr(allele_matrix, "missing") <- missing
+  x$markerdata = allele_matrix; x$nMark = nMark
+  x
 }
 
 getMarkers <- function(x, markers) {
-	m = x[['markerdata']]
-	.prettyMarkers(m[, sort.int(c(2*markers-1, 2*markers))], alleles=attr(m, "alleles"), missing=attr(m, "missing"), singleCol=FALSE)
+	m = x$markerdata
+	.prettyMarkers(m[, sort.int(c(2*markers-1, 2*markers))], alleles=attr(m, "alleles")[markers], missing=attr(m, "missing"), singleCol=FALSE)
 }
 
 .prettyMarkers = function(m, alleles=NULL, sep="", missing=NULL, mNames=NULL, singleCol=FALSE, chrom, sex) {
@@ -32,8 +47,8 @@ getMarkers <- function(x, markers) {
 	if (is.null(alleles)) alleles=attr(m,"alleles")
 	if (is.null(missing)) missing=attr(m,"missing")
 	if (is.null(mNames)) mNames = paste('M', seq_len(n), sep="")
-
-	orig.markers = c(missing, alleles)[m+1]
+	
+	orig.markers = do.call(cbind, lapply(1:n, function(i)  c(missing, alleles[[i]])[m[, c(2*i-1,2*i)]+1]))
 	dim(orig.markers) = dim(m)
 
 	if (singleCol) {
@@ -60,11 +75,14 @@ getMarkers <- function(x, markers) {
 }
 
 modifyMarker <- function(x, id, alleles, marker=1) {
-	m = x[['markerdata']]
+	if (x$nMark==0) stop("Linkdat object does not have marker data.")
 	if (!is.numeric(marker) || length(marker) != 1) stop("Argument 'marker' must be a single integer.")
-	if (is.null(m) || marker > x[['nMark']]) stop("Indicated marker does not exist.")
+	if (is.null(m <- x$markerdata) || marker > x$nMark) stop("Indicated marker does not exist.")
 	if (length(alleles)>2) stop("Argument 'alleles' must have length at most 2.")
 	mis = attr(m, "missing")
+	
+	id = .internalID(x, id)
+	
 	#if (!all(alleles %in% c(mis, attr(m, "alleles")))) stop("Valid alleles are", c(mis, attr(m, "alleles")))
 	pm <- .prettyMarkers(m)
 	for (i in id) pm[i, c(2*marker-1, 2*marker)] <- alleles
@@ -113,7 +131,7 @@ mendelianCheck <- function(x) {
 		al.mo = getAlleles(m, nuc[3], i)
 		for (of in nuc[-c(1:3)])
 			if (!autosCheck(al.fa, al.mo, getAlleles(m, of, i))) {
-			  cat("Individual ", of, ", marker ",i, ": Alleles not compatible with parents.\n", sep="")
+			  cat("Individual ", x$orig.ids[of], ", marker ", i, ": Alleles not compatible with parents.\n", sep="")
 			  error = union(error, i)
 			}
 	}
@@ -127,16 +145,16 @@ mendelianCheck <- function(x) {
 			al.of = getAlleles(m, of, i)
 			switch(sex[of], {
 				if (!maleXHomoz(al.of)) {
-					cat("Individual ", of, ", marker ",i, ": Male heterozygosity not compatible with X-linked model.\n", sep="")
+					cat("Individual ", x$orig.ids[of], ", marker ", i, ": Male heterozygosity not compatible with X-linked model.\n", sep="")
 					error = union(error, i)
 				}
 				if (!maleXCheck(al.mo, al.of)) {
-					cat("Individual ", of, ", marker ",i, ": Allele not compatible with mother.\n", sep="")
+					cat("Individual ", x$orig.ids[of], ", marker ", i, ": Allele not compatible with mother.\n", sep="")
 					error = union(error, i)
 				}
 			}, {
 			  if (!autosCheck(al.fa, al.mo, getAlleles(m, of, i))) {
-			    cat("Individual ", of, ", marker ",i, ": Alleles not compatible with parents.\n", sep="")
+			    cat("Individual ", x$orig.ids[of], ", marker ", i, ": Alleles not compatible with parents.\n", sep="")
 			    error = union(error, i)
 			  }
 			})

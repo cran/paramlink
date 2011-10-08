@@ -1,14 +1,16 @@
-simulSNP <- function(x, N=1, init=NULL, unique=FALSE, seed=NULL) {
+SNPsim <- function(x, N=1, unique=FALSE, seed=NULL) {
 	if (is.null(x$model)) stop("No model set.")
+	if (x$model$nallel>2)
+		stop("Sorry - only diallelic markers allowed.")
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
 	
-	nInd <- x$nInd; chr <- x$model$chrom
+	nInd = x$nInd; chr = x$model$chrom
 	if (is.null(x$sim)) sim=rep(2,nInd) else sim=x$sim
 	if (!is.null(seed)) set.seed(seed)
 	
-	#simulate only indivs who have sim-status=2 or have descendents with sim-status=2.
+	#simulate only indivs who have sim-status=2 or have descendants with sim-status=2.
 	#simulation order: founders first (speeds up the likelihoods).
-	sim_indivs <- seq_len(nInd)[sapply(seq_len(nInd), function(i) sim[i]==2 || any(sim[descendents(x,i)]==2))]
+	sim_indivs <- seq_len(nInd)[sapply(seq_len(nInd), function(i) sim[i]==2 || any(sim[descendants(x, i, original.id=F)]==2))]
 	zgeno <- rep.int(0, nInd)
 	.TRzero <- .TRmatr(0, chr); .TRhalf <- .TRmatr(0.5, chr)
 
@@ -23,8 +25,8 @@ simulSNP <- function(x, N=1, init=NULL, unique=FALSE, seed=NULL) {
 	switch(chr,	
 	AUTOSOMAL = {
 		sim_order <- sim_indivs[order( sim_indivs %in% x$nonfounders)]  #founders first.
-		if (is.null(init)) 
-			init = which.min(3^seq_along(sim_indivs) + 3*N*(length(sim_indivs)-seq_along(sim_indivs))) #gives the least number of times likelihood() calls.
+		
+		init = which.min(3^seq_along(sim_indivs) + 3*N*(length(sim_indivs)-seq_along(sim_indivs))) #gives the least number of times likelihood() calls.
 
 		#pre-calculate probabilities for the first 'init' individuals
 		initg <- t(expand.grid( rep(list(1:3), init ) ))
@@ -44,12 +46,10 @@ simulSNP <- function(x, N=1, init=NULL, unique=FALSE, seed=NULL) {
 		males = males[order(males %in% x$nonfounders)]; females = females[order(females %in% x$nonfounders)]  #quicker with this?
 		n_males=length(males); n_females=length(females)
 		
-		if(is.numeric(init) && length(init)==2) {
-			init_m=min(n_males, init[1]); init_f=min(n_females, init[2])
-		} else {
-			calls = outer(0:n_males, 0:n_females, function(m, f) 2^m * 3^f + 2*(n_males-m)*N + 3*(n_females-f)*N) # = number of times likelihood() is called.
-			calls.min = arrayInd(which.min(calls), dim(calls)); init_m = calls.min[1]-1; init_f = calls.min[2]-1
-		}
+		#find optimal 'init' values for males/females
+		calls = outer(0:n_males, 0:n_females, function(m, f) 2^m * 3^f + 2*(n_males-m)*N + 3*(n_females-f)*N) # = number of times likelihood() is called.
+		calls.min = arrayInd(which.min(calls), dim(calls)) 
+		init_m = calls.min[1]-1; init_f = calls.min[2]-1
 		init_indivs = c(males[seq_len(init_m)], females[seq_len(init_f)])
 		#pre-calculate probabilities for the first 'init' individuals
 		initg <- t(expand.grid( list(1:2, 1:3)[rep(1:2, c(init_m, init_f))] ))

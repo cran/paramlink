@@ -7,7 +7,7 @@ Two-point LOD score
 Calculates the two-point LOD scores of a pedigree for the specified markers. The recombination ratio between the disease and marker loci can be either fixed at specific values, or optimized. 
 }
 \usage{
-lod(x, markers=1:x$nMark, t=c(0, 0.1, 0.2, 0.5), tol=0.01, 
+lod(x, markers=seq_len(x$nMark), t=c(0, 0.1, 0.2, 0.5), tol=0.01, 
     max.only=FALSE, silent=max.only)
 }
 \arguments{
@@ -17,7 +17,7 @@ lod(x, markers=1:x$nMark, t=c(0, 0.1, 0.2, 0.5), tol=0.01,
 an integer vector denoting which markers to use.
 }
   \item{t}{
-either a numeric containing specific recombination ratio(s) to use in the calculation, or the word "max", indicating that the recombination ratio should be optimized by the program.
+either a numeric containing specific recombination ratio(s), or the word "max", indicating that the recombination ratio should be optimized by the program.
 }
 	\item{tol}{
 a numeric passed on to \code{\link{optimize}} as its tolerance parameter.
@@ -49,15 +49,17 @@ Magnus Dehli Vigeland
 }
 \examples{
 data(toyped)
-x=linkdat(toyped, model=1)
-lod(x, t=0)
+x = linkdat(toyped, model=1)
+res_max = lod(x, max.only=TRUE)
+res_def = lod(x)[1,1]
+res_opt = lod(x, t="max")[1,1]
 
-data(largefam)
-y=linkdat(largefam)
-y=setModel(y, model=1, penetrances=c(.001, .9, .99))
+stopifnot(all(0.3 == round(c(res_max, res_def, res_opt), 1)))
+
+data(dominant)
+y = linkdat(dominant)
+y = setModel(y, model=1, penetrances=c(.001, .9, .99))
 lod(y, markers=305:310)
 lod(y, markers=305:310, t="max")
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{ math }

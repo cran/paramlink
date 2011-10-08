@@ -39,27 +39,26 @@ a numeric vector containing values for the varying parameter.
 }
 }
 \value{
-If \code{max.only=FALSE}, a \code{linkres} object. A summary is printed before the \code{linkres} object is returned invisibly.
-If \code{max.only=TRUE} only the maximal simulated LOD score is returned (and nothing is printed).
+A \code{linkres} object, which is returned invisibly after a summary is printed
 
 The \code{power.varyPar} function creates a plot of the results and returns the maximum LOD score for each element of \code{values}.
 }
 \references{
-The marker simulation takes place in \code{\link{simulSNP}}, which implements the algorithm used by SLINK: \url{http://linkage.rockefeller.edu/ott/SLINK.htm}
+The marker simulation takes place in \code{\link{SNPsim}}, which implements the algorithm used by SLINK: \url{http://linkage.rockefeller.edu/ott/SLINK.htm}
 }
 \author{
 Magnus Dehli Vigeland
 }
 
 \seealso{
-\code{\link{simulSNP}}, \code{\link{summary.linkres}}
+\code{\link{SNPsim}}, \code{\link{summary.linkres}}
 }
 \examples{
 data(toyped)
 x=linkdat(toyped, model=1)
 linkage.power(x, N=5)
 
-power.varyPar(x,N=20, varyPar="f1", values=seq(0,1,length=11))
+power.varyPar(x, N=20, varyPar="f1", values=seq(0,1,length=11))
 
 #X-linked example - increase N to make interesting:
 data(Xped)

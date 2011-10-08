@@ -1,4 +1,4 @@
-subset.linkdat <- function(x, subset=1:x$nInd, ..., markers=seq_len(x$nMark)) {
+.subset.linkdat <- function(x, subset=1:x$nInd, ..., markers=seq_len(x$nMark)) {
 	#a few checks:
 	for (i in subset) {
 		offs=offspring(x,i)
