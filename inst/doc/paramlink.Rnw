@@ -1,0 +1,341 @@
+%
+\documentclass[a4paper]{article}
+\usepackage[a4paper,text={16cm,24.5cm},twoside,bindingoffset=1cm]{geometry}
+\usepackage{amsmath,amsthm,amssymb,enumerate,subfig,graphicx,hyperref}
+
+\title{paramlink: Parametric linkage analysis in R}
+\author{Magnus Dehli Vigeland}
+%\VignetteIndexEntry{Parametric linkage analysis}
+\include{Sweave}
+\begin{document}
+\maketitle
+This document gives an introduction to the R package \verb@paramlink@, which provides various functions for likelihood based pedigree analysis, 
+including parametric LOD scores, power analysis for linkage, genotype probability distributions, and many utility functions for manipulating pedigrees and markers. Likelihoods are calculated using the Elston-Stewart algorithm.
+
+\section{Introduction}
+To get started, install the \verb@paramlink@ package (if it isn't already installed) and load it.
+<<echo=F>>=
+require(paramlink)
+@
+<<eval=F>>=
+install.packages("paramlink")
+require(paramlink)
+@
+
+In \verb@paramlink@, pedigrees and associated marker data are stored as \verb@linkdat@ objects. An object of class \verb@linkdat@ is basically a list with elements like "pedigree", "markerdata", "model", a.s.o. 
+
+There are 3 basic ways of creating a \verb@linkdat@ object:
+\begin{enumerate}
+\item Building it from scratch in \verb@paramlink@.
+\item Reading a ped file in standard LINKAGE format, possibly accompanied by map, dat and freq files (MERLIN style).
+\item Creating the pedigree first as a data frame or matrix in R and then converting this to a \verb@linkdat@ object.
+\end{enumerate}
+
+The first method is usually the quickest if you don't already have a ped file describing your pedigree. In linkage projects with many markers, method 2 is the most natural. In the next subsections we will briefly demonstrate each method. Along the way we will also see how to plot, summarize and modify pedigrees and markers.
+
+\subsection{Creating, manipulating and displaying pedigrees and markers}
+As an example, suppose we want to create the pedigree in Figure 1, including the genotypes. With a little practice, paramlink's utility functions provide an efficient alternative to writing ped files. Below are two possible ways of building the pedigree in Figure 1. The main difference between the two lies in the labeling of individuals: In the first, correct assignments of sex/affection status/ID label are postponed until the end. This makes the commands nice and short, but usually requires plotting the pedigree after each operation to figure out who's who so far. The second alternative assigns everything correctly from the start, making the commands slightly longer but with the advantage that the whole thing can be written without visual aid from intermediate plots.
+
+\noindent
+Alternative 1:
+<<results=hide>>=
+x = cousinPed(degree=1)
+x = addOffspring(x, father=7, mother=8, noffs=3)
+x = addParents(x, 6)
+x = swapSex(x, c(3, 7, 9, 11))
+x = swapAff(x, 8:10, c(0,2,2))
+x = relabel(x, new=c(11:14,21:24,31:32,41:43), old=c(1,2,12,13,5,3,4,6,7:11))
+@
+
+\noindent
+Alternative 2:
+<<results=hide>>=
+x2 = nuclearPed(noffs=2, sex=2:1)
+x2 = relabel(x2, c(11,12,22,23))
+x2 = addOffspring(x2, father=21, mother=22, noffs=1, id=31, sex=2)
+x2 = addOffspring(x2, father=23, mother=24, noffs=1, id=32, aff=0)
+x2 = addParents(x2, id=24, father=13, mother=14)
+x2 = addOffspring(x2, father=32, mother=31, noffs=3, ids=41:43, sex=c(2,1,2), aff=c(2,2,1))
+@
+
+We can check that the two objects are in fact describing the same pedigree by using the all.equal method for \verb@linkdat@ objects provided by paramlink:
+<<>>=
+all.equal(x, x2)
+@
+
+To add the genotypes, we first create a \verb@marker@ object and then add it to x:
+<<>>=
+m = marker(x, 14, c('A', 0), 41:42, c('A','A'), 43, c('A','B'))
+x = addMarker(x, m)
+@
+Note the syntax of the \verb@marker@ function: The first argument provides a pedigree (in form of a \verb@linkdat@ object), while the arguments following it alternate between pedigree member ID's and their genotypes. In other words, the above command states that individual 14 has genotype $A/-$ (0 is the default symbol for missing alleles), 41 and 42 have $A/A$, 43 has $A/B$, while the rest is missing.
+ 
+To inspect what we have made, we use the \verb@print@, \verb@summary@ and \verb@plot@ methods written for \verb@linkdat@ objects:
+<<fig=F>>=
+x
+summary(x)
+plot(x, marker=1)
+@
+\begin{figure}[ht]
+\begin{minipage}[b]{0.5\linewidth}
+\centering
+<<label=xalt1, fig=TRUE, echo=FALSE, include=FALSE>>=
+plot(x, marker=1, margins=c(0,0,4,0), cex=1.3)
+@
+\includegraphics{paramlink-xalt1}
+\caption{}
+\end{minipage}
+\hspace{0.5cm}\hfill
+\begin{minipage}[b]{0.5\linewidth}
+\centering
+<<label=xalt2, fig=TRUE, echo=FALSE, include=FALSE>>=
+plot(x, marker=1, alleles=c('mut', 'wt'), missing="0", sep=" | ", id.labels="", title="", deceased=11:12, margins=c(0,0,4,0.7), cex=1.3)
+@
+\includegraphics{paramlink-xalt2}
+\caption{}
+\end{minipage}
+\end{figure}
+
+The plot is shown in Figure 1. The \verb@plot@ function has many optional arguments. For example, in Figure 2 we see the same pedigree and marker, but without id labels and title, with genotypes displayed differently, and some individuals marked as deceased. The plot is produced by the command:
+<<eval=F>>=
+plot(x, marker=1, alleles=c('mut', 'wt'), missing="0", sep=" | ", id.labels="",
+     title="", deceased=11:12)
+@
+See \verb@?plot.linkdat@ for other options and more details.
+
+To prepare for the next section, we modify our marker so that it includes information about allele frequencies and map information.
+<<>>=
+x = modifyMarker(x, marker=1, afreq=c(0.1, 0.9), chr=1, pos=10, name="SNP1")
+@
+
+\subsection{Writing and reading input files}
+In linkage analysis projects, the pedigree and markers are usually describing in a set of files generated by the genotyping software. While various formats exist, \verb@paramlink@ reads and writes files in the same format as MERLIN, one of the most popular programs for linkage analysis. If you are unfamiliar with these formats, please consult the web tutorial for MERLIN at \url{http://www.sph.umich.edu/csg/abecasis/Merlin/tour/}.
+
+Writing all the information contained in our \verb@linkdat@ object \verb@x@ to a collection of files, is done by the following command.
+<<>>=
+write.linkdat(x, prefix="ex")
+@
+The 4 files created by default are "ex.ped", "ex.dat", "ex.map" and "ex.freq". If we had set a model for \verb@x@ (see next section), a file "ex.model" would also have been made. If only a subset of these files are needed, say the .map and .dat files, this could be achieved by calling \verb@write.linkdat(x, prefix="ex", what=c("map", "dat"))@.
+
+To build a \verb@linkdat@ object based on the files created above, we use the \verb@linkdat@ function:
+<<>>=
+y = linkdat("ex.ped", dat="ex.dat", map="ex.map", freq="ex.freq")
+all.equal(y,x)
+@
+
+The default symbol for missing alleles in the ped file is "0". If your file uses something else, say "x", simply add \verb@missing="x"@ as an argument in the \verb@linkdat@ command.
+
+If the frequency file is not included, all markers will be taken as equifrequent. In particular, markers with zero or one non-missing alleles present in the ped file will be interpreted as monoallelic.
+
+If map/dat files are not included, the markers present in the ped file will have missing name, chromosome number and position. In certain analysis where these are required (e.g. in MERLIN runs), a dummy map is then created, placing the markers on chromosome one, 1 cM apart, and with names "M1", "M2", a.s.o.
+
+In general, the first argument of the \verb@linkdat@ function can be either the (path and) name of a pedigree file (as above), or a \verb@matrix@ or \verb@data.frame@ in LINKAGE format. The latter can be useful in cases where the pedigree file has a non-standard format. One can then load it into R with \verb@read.table@, do the necessary tweaking, and then feed it to \verb@linkdat@.
+
+\section{Parametric linkage analysis}
+\subsection{Setting the disease model}
+Before linkage analysis can be performed, parameters describing a disease model must be specified.
+The parameters include whether the disease is autosomal or X-linked, penetrance values, phenocopy rate and allele frequencies at the disease locus. All of these are controlled by the \verb@setModel@ function. For the simplest cases, there is a shortcut: Setting \verb@model=i@ for an integer \verb@i@ in the range 1-4, is interpreted as follows:
+\begin{enumerate}[1 =]
+\item Autosomal dominant
+\item Autosomal recessive
+\item X-linked dominant
+\item X-linked recessive
+\end{enumerate}
+If nothing else is indicated, the other parameters are given default values: Full penetrance, no phenocopies, disease allele frequency=0.00001.
+
+For our example pedigree in Figure 1 we want an autosomal recessive model:
+<<>>=
+x = setModel(x, model=2)
+x$model
+@
+The shortcut \verb@model=2@ above is equivalent to the following command, where the parameters are specified individually: 
+<<eval=F>>=
+x = setModel(x, chrom="autosomal", penetrances=c(0, 0, 1), dfreq=0.00001)
+@
+Note in particular the penetrance parameters, given as a vector of length 3 of the form $\text{penetrances}=(f_0, f_1, f_2)$ using the conventional notation for penetrance values: $$f_i = P(\text{affected}\; |\; \text{$i$ copies of the disease allele}).$$
+
+If the input \verb@linkdat@ object to \verb@setModel@ already has a model, \verb@setModel@ uses the existing model values for any missing arguments. This makes it easy to change one parameter while keeping everything else as before. For example, the command 
+\verb@x = setModel(x, penetrances=c(0.01, 0.01, 0.9))@ alters the penetrance values (to indicate 1\% phenocopy rate and 90\% penetrance) keeping everything else as before.
+
+\subsection{Singlepoint LOD scores}
+The function \verb@lod@ computes singlepoint LOD scores for all the markers of any \verb@linkdat@ object. There is no automatic loop breaking implemented at the moment, so loop breakers must be specified manually: 
+<<>>=
+lod(x, loop_breaker=32)
+@
+By default, the recombination fraction between the disease locus and the marker is set to $\theta =0$, but this can be changed using the \verb@theta@ argument:
+<<>>=
+lod(x, theta=c(0, 0.1, 0.2), loop_breaker=32)
+@
+
+For a more interesting example, let us load the \verb@dominant@ dataset: A data frame describing a pedigree with 23 members and genotypes at 650 SNP markers.
+<<>>=
+data(dominant)
+y = linkdat(dominant)
+@
+As usual we plot the pedigree before doing any analysis. Note the \verb@available=T@ option, which displays the genotyped individuals in red. Running \verb@summary(y)@ (not done here) is also a good idea to get an overview of the data.
+\begin{center}
+<<eval=F>>=
+plot(y, available=T)
+@
+<<fig=T, height=3.6, echo=F>>=
+plot(y, available=T, title="", margins=c(0,0,0,0), cex=.9)
+@
+\end{center}
+The pedigree suggests an autosomal dominant mode of inheritance, so we set this using the shortcut \verb@model=1@ explained in the previous section. 
+<<>>=
+y = setModel(y, 1)
+y$model
+@
+Now we compute the LOD scores, and plot the results. Since we haven't provided map info for the 650 markers, a dummy map will be used in the plot, placing all markers on chromosome 1.
+\begin{center}
+<<fig=T, height=3.3>>=
+lods = lod(y)
+summary(lods)
+plot(lods)
+@
+\end{center}
+There is a peak near position 300, but it is far from the standard significance threshold of LOD = 3.3.
+
+\subsection{Multipoint analysis: Running MERLIN from paramlink}
+If MERLIN is installed, and properly pointed to in the PATH variable on your computer, \verb@paramlink@ offers a convenient wrapper function, simply called \verb@merlin@. Its default action is to generate (and afterwards remove) files named "merlin.ped", "merlin.dat", 
+"merlin.map", "merlin.freq" and "merlin.model" and run the following command via \verb@system@:
+\begin{quote}
+merlin -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq --model merlin.model
+\end{quote}
+
+For example, let us check MERLIN's evaluation of the marker in Figure 1:
+<<eval=F>>=
+merlin(x)
+@
+<<echo=F>>=
+if(nzchar(Sys.which("merlin"))) merlin(x)
+@
+Comparing this with the result $LOD=1.19$ that we found in the previous section, we see that MERLIN gives a different score than \verb@paramlink@ for this marker. This is because of the partial genotype $A/0$ of individual 14. While \verb@paramlink@ handles partial genotypes, MERLIN treats them simply as missing. To check that this in fact the reason, we recalculate the LOD score in \verb@paramlink@ after setting the genotype of individual 14 to be missing:
+<<>>=
+x = modifyMarker(x, marker=1, id=14, genotype=c(0,0))
+lod(x, loop_breaker=32)
+@
+This agrees with the MERLIN result.
+
+Turning to the \verb@dominant@ dataset, the complete family is too big for MERLIN to cope with directly. (Running \verb@summary(y)@ shows that the bit size is 28, which is larger than MERLIN's default limit of 24.) However, we can trim the pedigree and do an "affected only" analysis. The trimming is done by the \verb@trim@ function, whose second argument decides if one should keep all {\em affected} or all {\em available} individuals:
+<<>>=
+y_aff = trim(y, keep="affected")
+@
+The resulting pedigree is small enough for MERLIN ({\it \verb@summary(y_aff)@} tells us the bit size is down to 16). Multipoint LOD scores can then be obtained by calling the wrapper function \verb@merlin@:
+<<eval=F>>=
+mlods = merlin(y_aff)
+@
+<<echo=F>>=
+if(nzchar(Sys.which("merlin"))) mlods = merlin(y_aff) else mlods=lods
+@
+We plot the results together with the singlepoint scores (dashed red line) that we computed in the last section for the complete family:
+\begin{center}
+<<fig=T, height=4>>=
+plot(mlods)
+par(new=T); plot(lods, lty=3, col="red")
+@
+\end{center}
+
+The \verb@merlin@ command has several optional arguments, described in detail in the help page \verb@?merlin@. For instance, use \verb@outputfile@ to write the MERLIN output to a file; \verb@markers@ if only a subset of the markers should be considered; and \verb@options@ if additional parameters should be passed on to MERLIN. (The contents of \verb@options@ (which must be a single character string) is simply pasted onto the command, so it must include dashes and spaces. See example below.) In some cases you might not want the "--model merlin.model" part of the command: this is removed by setting \verb@model=FALSE@. For example, the MERLIN syntax for computing the likelihood of all the marker data, is 
+\begin{quote}
+merlin -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq --lik
+\end{quote}
+The corresponding command in \verb@paramlink@ would be:
+<<eval=F>>=
+merlin(y_aff, model=F, options="--lik")
+@
+Note: When \verb@model=F@, no parsing is done of the results; the whole MERLIN output is returned as a character vector.
+
+\section{Genotype probability distributions}
+The \verb@paramlink@ package provides two functions for calculating genotype distributions of specific family members, conditional on the known alleles at the involved markers: \verb@oneMarkerDistribution@ and \verb@twoMarkerDistribution@.
+
+The first works on a single marker and finds the joint genotype distribution for any number of individuals. If the pedigree is affected with a monogenic disease for which a model has been set, the distribution can be computed conditional on a given recombination fraction between the marker and the disease locus. 
+
+The second function, \verb@twoMarkerDistribution@, takes a single individual as input, and computes the joint distribution of his/her genotypes at two markers, separated by a given recombination fraction.
+
+For a simple illustration on the use of these functions, we create a nuclear family with three offspring, and a SNP marker for which some alleles are known.
+<<fig=F>>=
+z = nuclearPed(3)
+marker1 = marker(z, 3, c('A','B'), 4, c('A', 0))
+z = addMarker(z, marker1)
+plot(z, 1) 
+@
+\begin{figure}[tb]
+\begin{minipage}[b]{0.5\linewidth}
+\centering
+<<label=z1, fig=TRUE, echo=FALSE, height=3.3, include=FALSE>>=
+plot(z, marker=1, title="", margins=c(0.1,0.1,0.1,0.1), cex=1.7)
+@
+\includegraphics{paramlink-z1}
+\caption{}\label{fig3}
+\end{minipage}
+\hspace{0.5cm}\hfill
+\begin{minipage}[b]{0.5\linewidth}
+\centering
+<<label=z2, fig=TRUE, height=3.3, echo=FALSE, include=FALSE>>=
+plot(swapAff(z, 3:5), marker=1, title="", margins=c(0.1,0.1,0.1,0.1), cex=1.7)
+@
+\includegraphics{paramlink-z2}
+\caption{}\label{fig4}
+\end{minipage}
+\end{figure}
+The plot is shown in Figure \ref{fig3}. To begin with, let us find the genotype distribution of individual 5:
+<<>>=
+dist1 = oneMarkerDistribution(z, id=5, partialmarker=1)
+@
+Written as integer fractions, the conditional probabilities are $P(AA)=11/52$, $P(BB)=7/52$, $P(AB)=34/52$. At first glance these numbers appear somewhat more complicated than we might have expected. The reason is of course that the missing allele of individual 4 leaves open many possibilities for the genotypes of the parents. In fact, their joint distribution is as follows (this time we add \verb@verbose=F@ to reduce the output on the screen):
+<<>>=
+parents = oneMarkerDistribution(z, id=1:2, partialmarker=1, verbose=F)
+@
+The rows of the result matrix correspond to the genotypes of the father (individual 1), and the columns to those of the mother. After a little trial and error, we find an integral representation with 13 as the common denominator:
+<<>>=
+parents * 13
+@
+Given the distribution of the parents it is easy to compute the probabilities for individual 5, checking the results above. For example, if $G$ denotes the genotype of individual 5, we have 
+\begin{align*}
+Pr(G = AA) =& Pr(G = AA\:|\: \text{father $AA$, mother $AB$})\cdot Pr(\text{father $AA$, mother $AB$}) \\
++& Pr(G = AA\:|\: \text{father $AB$, mother $AA$})\cdot Pr(\text{father $AB$, mother $AA$}) \\
++& Pr(G = AA\:|\: \text{both parents $AB$})\cdot Pr(\text{both parents $AB$})\\
+=& \frac12\cdot\frac2{13}+\frac12\cdot\frac2{13}+\frac14\cdot\frac3{13} = \frac{11}{52}
+\end{align*}
+which is the same as we found above.
+
+Next, suppose the three offspring are affected with a recessive disorder, and that the marker is completely linked to the causal gene.
+<<>>=
+z2 = swapAff(z, 3:5)
+z2 = setModel(z2, model=2)
+plot(z2, 1)
+@
+The plot is shown in Figure \ref{fig4}. How does this affect the distribution of individual 5?
+<<>>=
+oneMarkerDistribution(z2, id=5, partialmarker=1, theta=0, verbose=F)
+@
+We see that the genotype of individual 5 is now forced to be $AB$. This was to be expected: Since we assume no recombination between the marker and disease loci, all the affected offspring must carry the same haplotypes. Since individual 3 has genotype $AB$, so must 4 and 5. 
+
+Finally we turn to \verb@twoMarkerDistribution@. Suppose there is another SNP for which the available genotype data is similar to that of \verb@marker1@. For clarity we let the allele names of the new marker be $C$ and $D$.
+<<fig=F>>=
+marker2 = modifyMarker(z, marker1, alleles=c('C', 'D'))
+z = addMarker(z, marker2)
+plot(z, marker=1:2)
+@
+\begin{center}
+<<label=fig5, fig=TRUE, height=3.9, echo=FALSE, include=FALSE>>=
+plot(z, marker=1:2, margins=c(0.1,0.1,0.2,0.1), title="", cex=1.5)
+@
+\includegraphics[width=.5\linewidth]{paramlink-fig5}
+\end{center}
+Suppose first that the two markers segregate independently of each other, i.e. that their recombination fraction is $\theta=0.5$. The joint distribution of the genotypes of individual 5 is then:
+<<>>=
+twoMarkerDistribution(z, id=5, partialmarker1=1, partialmarker2=2, theta=0.5)
+@
+Since the two markers are assumed to be independent, an alternative way of finding their joint distribution would be to take the (tensor) square of the vector \verb@dist1@ obtained above: 
+<<>>=
+dist1 %o% dist1
+@
+However, if the two markers were completely linked, the distribution would be different:
+<<>>=
+twoMarkerDistribution(z, id=5, partialmarker1=1, partialmarker2=2, theta=0, verbose=F)
+@
+Although not impossible, calculating these probabilities by hand is not a pleasant task even in this simple example.
+\end{document}
+

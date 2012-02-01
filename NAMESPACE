@@ -1,4 +1,4 @@
-importFrom(kinship, pedigree, plot.pedigree)
+importFrom(kinship2, pedigree, plot.pedigree)
 exportPattern("^[[:alpha:]]+")
 
 S3method(print, linkdat)

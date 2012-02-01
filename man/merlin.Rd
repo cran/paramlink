@@ -1,0 +1,83 @@
+\name{merlin}
+\alias{merlin}
+\title{
+MERLIN wrapper function
+}
+\description{
+This function requires MERLIN to be installed and correctly pointed to in the PATH environment variable. 
+The required input files are automatically created (in the working directory) and deleted afterwards. The MERLIN command is executed via a call to system().  
+}
+\usage{
+merlin(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, 
+       options="", verbose=FALSE, generate.files=TRUE, 
+       cleanup=generate.files, outputfile="")
+}
+
+\arguments{
+  \item{x}{
+a \code{linkdat} object
+}
+  \item{markers}{
+an integer vector indicating which markers to use (default: all).
+} 
+ \item{model}{
+a logical: If TRUE (and x$model is not NULL), the file "merlin.model" is created and "--model merlin.model" is included to the MERLIN command.
+}
+  \item{theta}{
+a numeric with values between 0 and 0.5: The recombination value(s) for which the LOD score is computed. 
+The values of \code{theta} are converted to centiMorgan positions using the Haldande map function and included in the MERLIN command using the \code{--position} parameter. Works only for single markers (i.e. \code{markers} must consist of a single integer).
+}
+  \item{options}{
+a character with additional options to the MERLIN command. See details.
+}
+  \item{verbose}{
+a logical: Show MERLIN output and other information, or not.
+}
+  \item{generate.files}{
+a logical. If TRUE, the files "merlin.ped", "merlin.dat", "merlin.map", "merlin.freq" and (if \code{model=TRUE}) "merlin.model" are created in the working directory.
+}
+  \item{cleanup}{
+a logcical: Should the files be deleted automatically after the MERLIN run?
+}
+  \item{outputfile}{
+a character. If this is given, the MERLIN output will be written to a file with this name.
+}
+}
+\details{
+For this function to work, MERLIN must be installed and the path to merlin.exe included in the PATH variable. The function is first and foremost a wrapper to the parametric linkage functionality of MERLIN. By default the following MERLIN command is run (via a call to \code{\link{system}}) after creating appropriate files in the current working directory:
+
+\code{merlin -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq --model merlin.model}
+
+The resulting multipoint LOD scores are extracted from the output and returned in R as a \code{\link{linkres}} object. 
+
+Additional command parameters can be passed on using the \code{options} argument (this is simply pasted onto the MERLIN command, so dashes must be included). For example, to obtain singlepoint LOD scores instead of multipoint, set \code{options="--singlepoint"}. (The singlepoint scores should agree with the results of \code{lod(x)}, except in cases where some individuals have partial genotypes (see Examples).)
+
+If \code{model=FALSE} the \code{--model merlin.model} part is removed from the MERLIN command above. This is necessary for some calculations, e.g. likelihoods (see Examples).
+}
+\value{
+If \code{model=TRUE}, a \code{\link{linkres}} object. Otherwise a character containing the complete MERLIN output.
+}
+\references{
+\url{http://www.sph.umich.edu/csg/abecasis/Merlin/}
+}
+\author{
+Magnus Dehli Vigeland
+}
+\examples{
+\dontrun{
+data(toyped)
+x = linkdat(toyped, model=1)
+x
+
+# MERLIN treats partial genotypes (i.e. one known and one unknown allele) as missing:
+lod_merlin = merlin(x)
+lod_partial = lod(x)
+x = modifyMarker(x, marker=1, ids=1, genotype=0)
+lod_missing = lod(x)
+stopifnot(lod_merlin == round(lod_missing, 3))
+
+# Likelihood computation by MERLIN:
+merlin(x, model=F, options="--lik")
+}
+}
+\keyword{ manip }

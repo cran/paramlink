@@ -1,5 +1,5 @@
 likelihood <-
-function(x, marker=NULL, t=NULL, logbase=NULL, TR.MATR=NULL, singleNum.geno=NULL) {
+function(x, marker, theta=NULL, afreq=NULL, logbase=NULL, TR.MATR=NULL, singleNum.geno=NULL) {
 
 	.peel <- function(dat, sub, sexes, chrom, TR.MATR) { #dat = list(probs, haps)
 		probs=dat[['probs']]; haps=dat[['haps']]
@@ -54,42 +54,70 @@ function(x, marker=NULL, t=NULL, logbase=NULL, TR.MATR=NULL, singleNum.geno=NULL
 		})
 	}
 	
-	nInd=x[['nInd']]; ped=x[['pedigree']]; chr=x[['model']][['chrom']]
+	if(x$hasLoops) stop("Unbroken loops in pedigree.")
+	nInd=x$nInd; ped=x$pedigree; chr=x$model$chrom
 	
 	if (is.null(singleNum.geno)) {
-      if (is.null(marker)) marker = matrix(0, ncol=2, nrow=nInd)
-	  else if (length(marker) == 1) marker = x[['markerdata']][, c(2*marker-1, 2*marker)]
-	  else if (!identical(all.equal(dim(marker), c(nInd, 2)), TRUE)) stop("Wrong dimensions of 'marker' matrix.")
-	  if (max(marker) > 2) stop("Likelihood calculations are implemented for diallelic markers only at the moment.")
-
-	  #Coding genotypes as single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5.
-	  singleNum.geno = .diallel2geno(marker)
+      if (length(marker) == 1) marker = x$markerdata[[marker]]
+		if (max(marker) > 2) stop("Marker has more than two alleles. You should use 'likelihood_multiallele' instead.")
+		if (is.null(afreq)) afreq = attr(marker, 'afreq')
+		singleNum.geno = .diallel2geno(marker)  #Coding genotypes as single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5.
 	}
-	if (is.null(TR.MATR)) TR.MATR=.TRmatr(t, chr)
+	if (is.null(afreq)) stop("Allele frequencies missing.")
+	if (length(afreq)==1) afreq = c(afreq, 1- afreq)
+	if (is.null(TR.MATR)) TR.MATR=.TRmatr(theta, chr)
 	
 	switch(chr, AUTOSOMAL = {		
-		haps <- list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10)[singleNum.geno + 1]  #+1 because coding starts at 0 (which is convenient in SNPsim a.s.o.)
-		prob_list <- lapply(seq_len(nInd), function(i) x[['initial_probs']][, i][haps[[i]]])
+		hap_list <- list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10)[singleNum.geno + 1]  #+1 because coding starts at 0 (which is convenient in SNPsim a.s.o.)
+		a=afreq[1]; b=afreq[2];
+		init_p = x$initial_probs; 
+		init_p[, x$founders] = init_p[, x$founders] * rep(c(a^2, 2*a*b, b^2), c(3, 4, 3))
+		prob_list <- lapply(seq_len(nInd), function(i) init_p[, i][hap_list[[i]]])
 	}, X = {	
 		haplo.poss_X <- list(list('?'=1:4, 'A'=1:2, 'B'=3:4, NULL, NULL, NULL), list('??'=1:10, 'AA'=1:3, 'BB'=8:10, 'AB'=4:7, 'A?'=1:7, 'B?'=4:10))
-		haps <- lapply(seq_len(nInd), function(i) haplo.poss_X[[ ped[i,'SEX'] ]][[singleNum.geno[i] + 1]])
-		prob_list <- lapply(seq_len(nInd), function(i) 	x[['initial_probs']][[i]][ haps[[i]] ])  #could use shorter mapply construction, but this is faster
+		hap_list <- lapply(seq_len(nInd), function(i) haplo.poss_X[[ ped[i,'SEX'] ]][[singleNum.geno[i] + 1]])
+		a=afreq[1]; b=afreq[2] 
+		AfreqX <- list(male=c(a, a, b, b), female=rep(c(a^2, 2*a*b, b^2), c(3, 4, 3)))
+		init_p_list = x$initial_probs
+		for (i in x$founders) 	init_p_list[[i]] <- init_p_list[[i]] * AfreqX[[ ped[i,'SEX'] ]]
+		prob_list <- lapply(seq_len(nInd), function(i) 	init_p_list[[i]][ hap_list[[i]] ])  #could use shorter mapply construction, but this is faster
 	})
-	haps <- lapply(seq_len(nInd), function(i) haps[[i]][prob_list[[i]]!=0])
+	hap_list <- lapply(seq_len(nInd), function(i) hap_list[[i]][prob_list[[i]]!=0])
 	prob_list <- lapply(prob_list, function(v) v[v!=0])
-		
-	dat = list(probs=prob_list, haps=haps)
-	for (sub in x[['subnucs']]) 		
-		dat = .peel(dat, sub, sexes=ped[, 'SEX'], chrom=chr, TR.MATR)
-	if (is.numeric(logbase)) log(dat, logbase) else dat
+
+	if(is.null(dups <- x$loop_breakers)) {
+		dat = list(probs=prob_list, haps=hap_list)
+		for (sub in x[['subnucs']]) 		
+			dat = .peel(dat, sub, sexes=ped[, 'SEX'], chrom=chr, TR.MATR)
+		likelihood = dat
+	}
+	else {
+		origs = match(dups[, 1], x$orig.ids); copies = match(dups[, 2], x$orig.ids)
+		sumover = .my.grid(lapply(seq_along(origs), function(i) intersect(hap_list[[origs[i]]], hap_list[[copies[i]]])))
+		sumoverlist = lapply(seq_len(nrow(sumover)), function(ri) sumover[ri,])
+		likelihood = 0
+		for(r in sumoverlist) { 
+			probs = prob_list; haps = hap_list
+			for(i in seq_along(origs)) {
+				haps[[origs[i]]] <- haps[[copies[i]]] <- r[i]
+				probs[[origs[i]]] = probs[[origs[i]]][ r[i] == hap_list[[origs[i]]] ] #RIKTIG?? hap_list i stedet?
+				probs[copies[i]] = list(1)
+			}
+			dat = list(probs=probs, haps=haps)
+			for (sub in x[['subnucs']]) 	
+				dat = .peel(dat, sub, sexes=ped[, 'SEX'], chrom=chr, TR.MATR)
+			likelihood = likelihood + dat
+		}
+	}
+	if (is.numeric(logbase)) log(likelihood, logbase) else likelihood
 }
 
-.TRmatr=function(t, chrom) {
-	if (is.null(t)) stop("Argument 't' cannot be NULL.")
+.TRmatr=function(theta, chrom) {
+	if (is.null(theta)) stop("Argument 'theta' cannot be NULL.")
 	haplo.single <- c('AD','AN','BD','BN')
 	haplo.allpairs <- c('AADD','AADN','AANN','ABDD','ABDN','ABND','ABNN','BBDD','BBDN','BBNN')
-	h <- c( c(1,.5,0,.5,.5*(1-t),.5*t,0,0,0,0), c(0,.5,1,0,.5*t,.5*(1-t),.5,0,0,0), c(0,0,0,.5,.5*t,.5*(1-t),0,1,.5,0), 
-			c(0,0,0,0,.5*(1-t),.5*t,.5,0,.5,1) )
+	h <- c( c(1,.5,0,.5,.5*(1-theta),.5*theta,0,0,0,0), c(0,.5,1,0,.5*theta,.5*(1-theta),.5,0,0,0), c(0,0,0,.5,.5*theta,.5*(1-theta),0,1,.5,0), 
+			c(0,0,0,0,.5*(1-theta),.5*theta,.5,0,.5,1) )
 	dim(h) <- c(10,4); dimnames(h) <- list(haplo.allpairs, haplo.single)
 	switch(chrom, 
 	AUTOSOMAL = {
@@ -113,4 +141,24 @@ function(x, marker=NULL, t=NULL, logbase=NULL, TR.MATR=NULL, singleNum.geno=NULL
 		TR_f['BN', , c('ABDN','ABNN','BBDN','BBNN')] <- h
 		return(list(h, TR_f))
 	})
+}
+
+.my.grid = function (argslist, as.list=FALSE) {
+	nargs <- length(argslist) 
+    if (nargs == 0L) return(matrix(ncol=0, nrow=0))
+    
+    rep.fac <- 1L
+    orep <- nr <- prod(unlist(lapply(argslist, length)))
+	if(nr==0) return(matrix(ncol=nargs, nrow=0))
+	
+	res <- NULL
+	for (x in argslist) {
+		nx <- length(x)
+		orep <- orep/nx
+		res <- c(res, x[rep.int(rep.int(seq_len(nx), rep.int(rep.fac, nx)), orep)]) #this is res[, i]
+		rep.fac <- rep.fac * nx
+	}
+	dim(res) <- c(nr, nargs)
+	if(as.list) res = lapply(seq_len(nr), function(r) res[r,])
+	res
 }

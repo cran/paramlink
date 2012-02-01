@@ -22,8 +22,8 @@ setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, na
 	if (is.null(chrom)) chrom = ifelse(hasmodel, model$chrom, "AUTOSOMAL") else chrom <- match.arg(toupper(chrom), c("AUTOSOMAL","X"))
 	if (is.null(dfreq)) dfreq = ifelse(hasmodel, model$dfreq, 1e-5)
 	if (is.null(nallel)) nallel = ifelse(!is.null(afreq), length(afreq), ifelse(hasmodel, model$nallel, 2))
-	if (is.null(afreq)) if (hasmodel) afreq = model$afreq else afreq = rep(1,nallel)/nallel
-	if (is.null(names(afreq))) names(afreq) <- paste("afreq", 1:nallel, sep="")
+	if (is.null(afreq)) if (hasmodel && model$nallel == nallel) afreq = model$afreq else afreq = rep.int(1, nallel)/nallel
+	#if (is.null(names(afreq))) names(afreq) <- paste("afreq", 1:nallel, sep="")
 
 	if (is.null(penetrances)) if (hasmodel) penetrances = model$penetrances else stop("No penetrance values given.")
 	else {	switch(chrom,
@@ -51,22 +51,23 @@ setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, na
 	
 	if(nallel<2) stop("Number of marker alleles ('nallel') must be at least 2.")
 	if(nallel>2) {
-		warning("Likelihood calculations are not implemented for markers with more than 2 alleles.")
 		x$initial_probs <- NULL
 		return(invisible(x))
 	}
 
 	#If and only if nallel==2 the following is carried out to give x an additional entry (x$initial_probs), containing initial likelihoods of each individual.
-	a=afreq[1]; b=afreq[2]; d=dfreq
+	d=dfreq
 	switch(chrom,
 	AUTOSOMAL = {
 		p <- penetrances[c(3,2,1,3,2,2,1,3,2,1)]  # P(aff | geno). Note that P(non-aff | geno) = 1-p
 		Pen <- matrix( c( rep.int(1,10), 1-p, p), ncol = 3, dimnames = list(c('AADD','AADN','AANN','ABDD','ABDN','ABND','ABNN','BBDD','BBDN','BBNN'), 1:3))
 		DisFreq <- c(d^2, 2*d*(1-d), (1-d)^2, d^2, d*(1-d), d*(1-d), (1-d)^2, d^2, 2*d*(1-d), (1-d)^2)
-		Afreq <- rep(c(a^2, 2*a*b, b^2), c(3, 4, 3))
+		
 
 		penlist <- Pen[, x$pedigree[, 'AFF']+1]
-		penlist[, x$founders] <- penlist[, x$founders] * DisFreq * Afreq
+		penlist[, x$founders] <- penlist[, x$founders] * DisFreq 
+		#a=afreq[1]; b=afreq[2]; Afreq <- rep(c(a^2, 2*a*b, b^2), c(3, 4, 3))
+		#penlist[, x$founders] <- penlist[, x$founders] * Afreq
 	}, 
 	X = {
 		pM <- penetrances$male[c(2,1,2,1)] #P(aff | geno) for males
@@ -77,11 +78,12 @@ setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, na
 		
 		PenX <- list(male=Pen_M, female=Pen_F)
 		DisFreqX <- list(male=c(d, 1-d, d, 1-d), female=c(d^2, 2*d*(1-d), (1-d)^2, d^2, d*(1-d), d*(1-d), (1-d)^2, d^2, 2*d*(1-d), (1-d)^2))
-		AfreqX <- list(male=c(a, a, b, b), female=rep(c(a^2, 2*a*b, b^2), c(3, 4, 3)))
-
+		
 		ped=x$pedigree; sex=ped[, 'SEX']
 		penlist <- lapply(1:x$nInd, function(i) PenX[[ sex[i] ]][ , ped[i, 'AFF']+1])
-		for (i in x$founders) 	penlist[[i]] <- penlist[[i]] * DisFreqX[[ sex[i] ]] * AfreqX[[ sex[i] ]]
+		for (i in x$founders) 	penlist[[i]] <- penlist[[i]] * DisFreqX[[ sex[i] ]] 
+		#a=afreq[1]; b=afreq[2]; AfreqX <- list(male=c(a, a, b, b), female=rep(c(a^2, 2*a*b, b^2), c(3, 4, 3)))
+		#for (i in x$founders) 	penlist[[i]] <- penlist[[i]] * AfreqX[[ sex[i] ]]
 	} )
 	x$initial_probs <- penlist
 	invisible(x)

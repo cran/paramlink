@@ -1,12 +1,15 @@
 linkdat <-
-function(x, model=NULL, verbose=TRUE, missing=0) {  
+function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, verbose=TRUE, missing=0, ...) {  
 
 	subnucs <- function(ped) {  	# output: peeling order of nuclear subfamilies. Format for each nuc: c(pivot,father,mother,offsp1,..), where pivot=0 for the last nuc.
 		parents <- unique(ped[, 2:3]); parents = parents[ -match(0, parents[,1]), , drop=FALSE]
-		list1 <- lapply(nrow(parents):1, function(i) { par=parents[i,]; c(fa = par[[1]], mo = par[[2]], offs = as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) } )  #listing all nucs
+		list1 <- lapply(nrow(parents):1, function(i) { 
+			par=parents[i,]; 
+			c(fa = par[[1]], mo = par[[2]], offs = as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) } )  #listing all nucs
 		res=list(); i=1; k = 1
 		while(length(list1) > 1)	{
-			if (i > length(list1)) {cat("Loop(s) detected!\n"); return(NULL)} 
+			if (i > length(list1)) 
+				return(FALSE)
 			link = ( (sub <- list1[[i]]) %in% unlist(list1[-i]))
 			if (sum(link)==1) 	{
 				res[[k]] <- c(pivot=sub[[which(link)]], sub)
@@ -17,47 +20,62 @@ function(x, model=NULL, verbose=TRUE, missing=0) {
 		res[[k]] <- c(pivot=0, list1[[1]]) #final nuclear
 		res
 	}
-  
-	if (!class(x) %in% c("linkdat", "matrix", "data.frame")) 
-		stop("Input must be either a matrix, a data.frame or a 'linkdat' object.")
-	if (class(x)=="linkdat") 
-		return(x) #x = as.data.frame(x, famid=T) 
 	
-	if(nrow(x) < 3) stop("The pedigree must have at least 3 individuals.")
-	if(x[1,1]==x[2,1]) {famid = x[1,1]; x=x[,-1]; if (verbose) cat("Interpreting first column as family identifier\n")} 
+	if (class(ped)=="linkdat") 
+		return(ped)	
+	if(is.character(ped) && length(ped)==1)
+		ped = read.table(ped, as.is=TRUE, ...)
+	if(nrow(ped) < 3) stop("The pedigree must have at least 3 individuals.")
+	
+	if(length(famids <- unique(ped[, 1])) < nrow(ped)) {
+		if(length(famids) > 1) 
+			return(lapply(famids, function(fam)  linkdat(ped[ ped[,1]==fam, ], model=model, map=map, dat=dat, freq=freq, verbose=verbose, missing=missing)))
+		else {
+			famid = as.vector(ped[1,1])
+			ped=ped[,-1]
+		}
+	}
 	else famid=1
-	if(ncol(x) < 5) stop("Too few columns: ID, FID, MID, SEX and AFF are mandatory.")
+	if (verbose) cat("Family name: ", famid, ".\n", sep="")
+	if(ncol(ped) < 5) stop("Too few columns: ID, FID, MID, SEX and AFF are mandatory.")
 	
-	pedigree = as.matrix(x[, 1:5], rownames.force=FALSE)
+	pedigree = as.matrix(ped[, 1:5], rownames.force=FALSE)
 	colnames(pedigree) = c('ID', 'FID', 'MID', 'SEX', 'AFF')
 	.checkped(pedigree)
 	
-	orig.ids = x[,1]
+	orig.ids = ped[,1]
 	nInd = nrow(pedigree)
-	pedigree = relabel(pedigree, new.labels=1:nInd)
-	if (verbose) cat("Pedigree read,", nInd, "individuals\n")
+	pedigree = relabel(pedigree, new=1:nInd)
+	if (verbose) cat("Pedigree read,", nInd, "individuals.\n")
 	
-	founders = as.integer(which(pedigree[,'FID'] == 0));	nonfounders = as.integer(which(pedigree[,'FID'] > 0))
+	founders = as.integer(which(pedigree[,'FID'] == 0))
+	nonfounders = as.integer(which(pedigree[,'FID'] > 0))
 	
 	#---peeling order of nuclear subfamilies---
 	subnucs = subnucs(pedigree)
-	if (verbose && !is.null(subnucs)) cat(ant<-length(subnucs), "maximal nuclear", ifelse(ant==1,"subfamily.\n", "subfamilies. Peeling order set.\n"))
+	hasLoops = is.logical(subnucs) && !subnucs
+	if(verbose) 
+		if(hasLoops) cat("Loop(s) detected.\n")  
+		else if(is.list(subnucs)) cat(ant<-length(subnucs), "maximal nuclear", ifelse(ant==1,"subfamily.\n", "subfamilies. Peeling order set.\n"))
 	
 	#---creation of linkdat object---
 	obj = structure(list(pedigree=pedigree, famid=famid, orig.ids=orig.ids, nInd=nInd, founders=founders, 
-			nonfounders=nonfounders, subnucs=subnucs), class="linkdat")
+			nonfounders=nonfounders, hasLoops=hasLoops, subnucs=subnucs), class="linkdat")
 
 	#---adding markers---
-	markercols = seq_len(ncol(x)-5)+5
-   	obj = setMarkers(obj, as.matrix(x[, markercols], rownames.force=FALSE), missing=missing)
-    if (verbose) cat(obj$nMark, "markers read.\n")
-	
-	#---if marker data exists, set simulation vector (those that are genotyped with at least one marker, are set as TRUE)
-	if (obj$nMark > 0) obj = setSim(obj, rowSums(obj$markerdata) > 0)
-	
+	markercols = seq_len(ncol(ped)-5)+5
+	obj = setMarkers(obj, as.matrix(ped[, markercols], rownames.force=FALSE), map=map, dat=dat, freq=freq, missing=missing)
+	if (verbose) if(obj$nMark==1) cat("1 marker read.\n") else cat(obj$nMark, "markers read.\n")
+
+	#---adding availability vector---
+		#this is now done inside setMarkers()
+
 	#----adding model----
  	if (!is.null(model)) obj = setModel(obj, model=model)
-	
+
+	#----adding map----
+ 	#if (!is.null(map)) obj = setMap(obj, map, dat, verbose=verbose)
+
 	invisible(obj)
 }
 
@@ -87,72 +105,4 @@ function(x, model=NULL, verbose=TRUE, missing=0) {
 	  }
 	  stop("Pedigree errors detected.")
 	}
-}
-
-.linkdat_new <-
-function(file, pedigree, model=NULL, markerdata=NULL, map=NULL, sim=NULL, verbose=TRUE, missing=0) {  
-
-	subnucs <- function(ped) {  	# output: peeling order of nuclear subfamilies. Format for each nuc: c(pivot,father,mother,offsp1,..), where pivot=0 for the last nuc.
-		parents <- unique(ped[, 2:3]); parents = parents[ -match(0, parents[,1]), , drop=FALSE]
-		list1 <- lapply(nrow(parents):1, function(i) { par=parents[i,]; c(fa = par[[1]], mo = par[[2]], offs = as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) } )  #listing all nucs
-		res=list(); i=1; k = 1
-		while(length(list1) > 1)	{
-			if (i > length(list1)) {warning("Loop detected, likelihood calculations will not work."); return(NULL)} 
-			link = ( (sub <- list1[[i]]) %in% unlist(list1[-i]))
-			if (sum(link)==1) 	{
-				res[[k]] <- c(pivot=sub[[which(link)]], sub)
-				list1 <- list1[-i]
-				k <- k+1;	i <- 1
-			} else i <- i+1
-		}	
-		res[[k]] <- c(pivot=0, list1[[1]]) #final nuclear
-		res
-	}
-  
-	if (!class(x) %in% c("linkdat", "matrix", "data.frame")) 
-		stop("Input must be either a matrix, a data.frame or a 'linkdat' object.")
-	if (class(x)=="linkdat") 
-		return(x) #x = as.data.frame(x, famid=T) 
-	
-	if(x[1,1]==x[2,1]) {famid = x[1,1]; x=x[,-1]; if (verbose) cat("Interpreting first column as family identifier\n")} 
-	else famid=1
-
-	pedigree = as.matrix(x[, 1:5], rownames.force=FALSE)
-	colnames(pedigree) = c('ID', 'FID', 'MID', 'SEX', 'AFF')
-	.checkped(pedigree)
-	
-	orig.ids = x[,1]
-	nInd <- nrow(pedigree)
-	pedigree <- relabel(pedigree, new.labels=1:nInd)
-	if (verbose) cat("Pedigree read,", nInd, "individuals\n")
-	
-	founders <- as.integer(which(pedigree[,'FID'] == 0));	nonfounders <- as.integer(which(pedigree[,'FID'] > 0))
-
-	# #---simulation column---
-	# simcol <- match('SIM', colnames(x))
-	# if (!is.na(simcol)) {
-		# sim <- as.integer(x[, simcol])
-		# if (verbose) cat("Simulation column read\n")
-	# } else {
-		# sim=NULL 
-		# if (verbose) cat("No simulation column found\n")
-	# }
-	
-	#---peeling order of nuclear subfamilies---
-	subnucs = subnucs(pedigree)
-	if (verbose) cat("Peeling order set,", ant<-length(subnucs), "maximal nuclear", ifelse(ant==1,"subfamily.","subfamilies."),"\n")
-	
-	#---creation of linkdat object--
-	obj <- structure(list(pedigree=pedigree, famid=famid, orig.ids=orig.ids, nInd=nInd, founders=founders, 
-			nonfounders=nonfounders, subnucs=subnucs), class="linkdat")
-
-	#---adding markers
-	markercols <- seq_len(ncol(x)-5)+5
-   	obj = setMarkers(obj, as.matrix(x[, markercols], rownames.force=FALSE), missing=missing)
-    if (verbose) cat(obj$nMark, "markers read.\n")
-	
-	#----adding model
- 	if (!is.null(model)) obj <- setModel(obj, model=model)
-	
-	invisible(obj)
 }

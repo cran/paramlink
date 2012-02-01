@@ -11,6 +11,7 @@ A complex pedigree consistent with an X-linked recessive disease.
 \format{
   A data frame with one row for each individual, and the following columns:
   \describe{
+    \item{\code{FAMID}}{family id}
     \item{\code{ID}}{individual id}
     \item{\code{FID}}{father id (0 if founder)}
     \item{\code{MID}}{mother id (0 if founder)}
@@ -19,7 +20,7 @@ A complex pedigree consistent with an X-linked recessive disease.
   }
 }
 \details{
-The format is standard LINKAGE (pre-makeped) format, except there is no column for Family ID.
+The format is standard LINKAGE (pre-makeped) format.
 }
 
 \examples{
@@ -28,7 +29,7 @@ Xped
 
 # Convert to a \code{linkdat} object and set a recessive X-linked model 
 # with default parameters:
-x=linkdat(Xped, model=4)
+x = linkdat(Xped, model=4)
 summary(x)
 }
 \keyword{datasets}

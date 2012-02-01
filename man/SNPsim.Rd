@@ -7,7 +7,8 @@ Simulate SNP markers
 Simulates SNP markers conditional on the pedigree structure, affection statuses and disease model.
 }
 \usage{
-SNPsim(x, N=1, unique=FALSE, seed=NULL)
+SNPsim(x, N=1, partialmarker=NULL, available=x$available, loop_breakers=NULL, 
+       unique=FALSE, seed=NULL)
 }
 \arguments{
   \item{x}{
@@ -15,6 +16,15 @@ a \code{linkdat} object
 }
   \item{N}{
 a positive integer: the number of SNPs to be simulated
+}
+  \item{partialmarker}{
+Either NULL (indicating no given marker data), or a matrix with two columns giving alleles for each individual (0 = unkwown). 
+}
+ \item{available}{
+a vector containing IDs of the available individuals, i.e. those whose genotypes should be simulated.
+}
+ \item{loop_breakers}{
+a numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.
 }
   \item{unique}{
 a logical indicating if duplicates among the simulated markers should be removed. 
@@ -43,8 +53,16 @@ PNAS 81(1984), pp. 3443-3446.
 \examples{
 data(toyped)
 x = linkdat(toyped, model=1)
-y = SNPsim(x, N=5)
+y = SNPsim(x, N=3)
 plot(y, marker=1)
+
+z = addOffspring(cousinPed(1), father=7, mother=8, noffs=1, aff=2)
+z = setModel(z, 2)
+SNPsim(z, N=1, loop_breakers=7)
+
+m = marker(z, 9, c(2,2), alleles=1:2)
+SNPsim(z, N=1, partialmarker=m, loop_breakers=7)
+
 }
 \keyword{ datagen }
 

@@ -1,9 +1,12 @@
 \name{linkdat.utils}
+\alias{linkdat.utils}
 \alias{spouses}
 \alias{offspring}
 \alias{descendants}
 \alias{pedigreeLoops}
-\alias{uninformative}
+\alias{breakLoops}
+\alias{tieLoops}
+\alias{all.equal.linkdat}
 \title{
 linkdat utilities
 }
@@ -19,7 +22,11 @@ descendants(x, id, original.id)
 
 pedigreeLoops(x)
 
-uninformative(x, return.reduced.ped=FALSE)
+breakLoops(x, loop_breakers)
+
+tieLoops(x)
+
+\method{all.equal}{linkdat}(target, current, ...)
 }
 \arguments{
   \item{x}{
@@ -31,8 +38,14 @@ an integer, the ID of an individual.
  \item{original.id}{
 A logical indicating whether 'id' refers to the original ID label or the internal labeling.
 }
- \item{return.reduced.ped}{
-A logical indicating whether the uninformative individuals should be removed, and the remaining pedigree returned as a new \code{linkdat} object)
+ \item{loop_breakers}{
+A vector with IDs of the loop breaker individuals.
+}
+ \item{target, current}{
+Two \code{linkdat} objects to be compared.
+}
+ \item{...}{
+Not used.
 }
 }
 \value{
@@ -44,32 +57,37 @@ For \code{descendants(x,id)}, a vector containing the ID's of all descendants (i
 
 For \code{pedigreeLoops}, a list containing all loops found in the pedigree. Each loop is represented as a list with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a path from top to bottom) and 'pathB' (creating a different path from top to bottom, with no individuals in common with pathA). 
 
-For \code{uninformative}, either a numeric vector (if \code{return.reduced.ped=FALSE}) containing the ID labels of the uninformative individuals, or (if \code{return.reduced.ped=TRUE}) a \code{linkdat} object where the uninformative individuals have been removed.
+For \code{breakLoops}, a \code{linkdat} object in which the indicated loop breakers are duplicated. The returned object will also have a non-null \code{loop_breakers} entry, namely a matrix with the IDs of the original loop breakers in the first column and the duplicates in the second.
+
+For \code{tieLoops}, a \code{linkdat} object in which any duplicated individuals (as given in the \code{x$loop_breakers} entry) are merged. Ideally, \code{tieLoops(breakLoops(x, loop_breakers))} should return \code{x} for any linkdat object \code{x}.
 } 
 \author{
 Magnus Dehli Vigeland
 }
 
 \examples{
-p=cbind(ID=2:9, FID=c(0,0,2,0,4,4,0,2), MID=c(0,0,3,0,5,5,0,8), 
+p = cbind(ID=2:9, FID=c(0,0,2,0,4,4,0,2), MID=c(0,0,3,0,5,5,0,8), 
         SEX=c(1,2,1,2,1,2,2,2), AFF=c(2,1,2,1,2,1,1,2))
-x=linkdat(p)
+x = linkdat(p)
 
 desc = descendants(x, 2)
 spous = spouses(x, 2)
 offs = offspring(x, 2)
 stopifnot(setequal(spous, c(3,8)), setequal(offs, c(4,9)), setequal(desc, c(4,6,7,9)))
 
-#Creating a loop and detecting it with 'pedigreeLoops' 
+# Creating a loop and detecting it with 'pedigreeLoops' 
 #(note that we get two loops, one for each inbred child):
 loopx = addOffspring(x, father=4, mother=9, noffs=2)
 lps = pedigreeLoops(loopx)
-stopifnot(lps[[1]]$top==2, setequal(sapply(lps, '[[', 'bottom'), 10:11))
+stopifnot(lps[[1]]$top == 2, setequal(sapply(lps, '[[', 'bottom'), 10:11))
 
-#an example with uninformative individuals
-data(dominant)
-x = linkdat(dominant)
-un = uninformative(x)
-stopifnot(setequal(un, c(21,23)))
+# We add genotypes for a single SNP marker and compute the LOD score under a dominant model. We break the loop by duplicating individual 9:
+loopx = setMarkers(loopx, cbind(1,c(2,1,2,1,2,1,1,2,1,1)))
+loopx = setModel(loopx, 1)
+loopfree = breakLoops(loopx, 9)
+stopifnot(all.equal(loopx, tieLoops(loopfree)))
+score = lod(loopfree, theta=0.1)
+stopifnot(round(score, 3) == 1.746)
+
 }
 \keyword{ math }

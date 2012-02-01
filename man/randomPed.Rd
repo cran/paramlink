@@ -43,7 +43,7 @@ Magnus Dehli Vigeland
 \examples{
 plot(randomPed(3))
 
-#gives error message: Not enough founder mutations
+# gives error message: Not enough founder mutations
 \dontrun{
 randomPed(gen=4, penetrances=c(0,0,1), naff=2, founder.mut=1)
 }

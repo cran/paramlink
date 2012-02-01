@@ -11,6 +11,7 @@ Toy pedigree with 4 individuals typed at 1 SNP marker. Individual 1 is missing o
 \format{
   A data frame with one row for each individual, and the following columns:
   \describe{
+    \item{\code{FAMID}}{family id}
     \item{\code{ID}}{individual id}
     \item{\code{FID}}{father id (0 if founder)}
     \item{\code{MID}}{mother id (0 if founder)}
@@ -21,7 +22,7 @@ Toy pedigree with 4 individuals typed at 1 SNP marker. Individual 1 is missing o
   }
 }
 \details{
-The format is standard LINKAGE (pre-makeped) format, except there is no column for Family ID.
+The format is standard LINKAGE (pre-makeped) format.
 }
 
 \examples{

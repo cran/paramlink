@@ -1,31 +1,25 @@
-relabel <- function(x, new.labels) {
-	if(islinkdat <- (class(x)=="linkdat")) ped = as.data.frame(x, famid=T) else ped = x
-	stopifnot(is.numeric(new.labels), length(new.labels)==nrow(ped), !0 %in% new.labels)
+relabel <- function(x, new, old) {
+	if(islinkdat <- (class(x)=="linkdat")) ped = .as.annotated.matrix(x) else ped = x
 	orig.ids = ped[, 'ID']
-	ped[, 'ID'] = new.labels
-	nonzero_par = ped[, c('FID','MID')] > 0
-	ped[, c('FID','MID')][nonzero_par] <- new.labels[match(ped[, c('FID','MID')][nonzero_par], orig.ids)] #relabeling parents
-	if(islinkdat) {
-		mis = ifelse(is.null(x$markerdata), 0, attr(x$markerdata, "missing"))
-		ped = linkdat(ped, model=x$model, verbose=FALSE, missing=mis)
-		ped = setSim(ped, x$sim)
-	}
-	ped
+	if(missing(old)) old = orig.ids
+	stopifnot(is.numeric(old), is.numeric(new), length(old)==length(new), !0 %in% new, all(old %in% ped[, 'ID']))
+	ped[match(old, orig.ids), 'ID'] = new
+	
+	parents = ped[, c('FID','MID')]
+	ped[, c('FID','MID')][parents %in% old] <- new[match(parents, old, nomatch=0)] #relabeling parents
+	
+	if(islinkdat) return(.restore.linkdat(ped))
+	else return(ped)
 }
 
-setSim = function(x, simstatus) {
-	if (is.null(simstatus)) {x$sim = NULL; return(x)}
-	if(length(simstatus)==1) simstatus = rep(simstatus, x$nInd) else stopifnot(length(simstatus) == x$nInd)    
-	if(is.logical(simstatus)) {sim = rep.int(0, x$nInd); sim[simstatus] = 2}	else sim = simstatus
-	if(!all(sim %in% c(0,2)))  stop("The argument 'simstatus' must be either a logical vector, or a numeric consisting of 0's and 2's.")
-	x$sim = sim
+setAvailable = function(x, available) {
+	x$available = available
 	x
 }
 
-swapSim = function(x, ids) {
-	if(is.null(x$sim)) stop("Simulation vector not set. Use 'setSim()' first.")
-	ids = .internalID(x, ids)
-	x$sim[ids] = 2 - x$sim[ids]
+swapAvailable = function(x, ids) {
+	ava = x$available
+	x$available = sort(c(ava[!ava %in% ids], ids[!ids %in% ava]))
 	x
 }
 	
@@ -36,31 +30,26 @@ swapSex <- function(x, ids) {
 		cat("Changing sex of the following spouses as well:", paste(x$orig.ids[setdiff(ids.spouses, ids)], collapse=", "), "\n")
 		return(swapSex(x, x$orig.ids[union(ids, ids.spouses)]))
 	}	
-	df=as.data.frame(x, famid=T)
-	df[ids, 'SEX'] <- (3 - df[ids, 'SEX'])
+	pedm = .as.annotated.matrix(x)
+	pedm[ids, 'SEX'] <- (3 - pedm[ids, 'SEX'])
 	offs = x$pedigree[,"FID"] %in% ids
-	df[offs, c('FID', 'MID')] <- df[offs, c('MID', 'FID')]
+	pedm[offs, c('FID', 'MID')] <- pedm[offs, c('MID', 'FID')]
 	
-	mis = ifelse(is.null(x$markerdata), 0, attr(x$markerdata, "missing"))
-	newx = linkdat(df, model=x$model, verbose=FALSE, missing=mis)
-	setSim(newx, x$sim)
+	.restore.linkdat(pedm)
 }
 
 swapAff <- function(x, ids, newval=NULL) {
-	df = as.data.frame(x, famid=T)
+	pedm = .as.annotated.matrix(x)
 	ids = .internalID(x, ids)
-	if (is.null(newval))  newval <- (3 - df[ids, 'AFF'])
+	if (is.null(newval))  newval <- (3 - pedm[ids, 'AFF'])
 	
-	df[ids, 'AFF'] <- newval
-	
-	mis = ifelse(is.null(x$markerdata), 0, attr(x$markerdata, "missing"))
-	newx = linkdat(df, model=x$model, verbose=FALSE, missing=mis)
-	setSim(newx, x$sim)
+	pedm[ids, 'AFF'] <- newval
+	.restore.linkdat(pedm)
 }
 
 
 addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1) {
-	p = relabel(x$pedigree, x$orig.ids)
+	p = .as.annotated.matrix(x); attrs = attributes(p); nm = x$nMark
 	taken <- oldids <- p[,'ID']
 	if(!missing(father)) taken = c(taken, father)
 	if(!missing(mother)) taken = c(taken, mother)
@@ -80,67 +69,85 @@ addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1) {
 	if (length(ids)!=noffs) stop("Length of 'id' vector must equal number of offspring.")
 	if (any(ids %in% oldids))	stop(paste("Individual(s)", ids[ids %in% oldids], "already exist(s)."))
 
-	if(!father %in% oldids) 	p = rbind(p, c(father, 0, 0, 1, 1))
-	if(!mother %in% oldids) 	p = rbind(p, c(mother, 0, 0, 2, 1))
-	
-	p = rbind(p, cbind(ids, father, mother, sex, aff))
-	new_x = linkdat(p, model=x$model, verbose=FALSE)
-	
-	if (!is.null(m <- x$markerdata)) {
-		mis = attr(m, "missing")
-		new_m = rbind(.prettyMarkers(m), matrix(mis, nrow=new_x$nInd-x$nInd, ncol=ncol(m)))
-		new_x = setMarkers(new_x, new_m, missing=mis)
+	if(!father %in% oldids) {
+		cat("Father: Creating new individual with ID", father, "\n")
+		p = rbind(p, c(x$famid, father, 0, 0, 1, 1, rep.int(0, nm*2)))
 	}
-	new_x
+	if(!mother %in% oldids) {
+		cat("Mother: Creating new individual with ID", mother, "\n")
+		p = rbind(p, c(x$famid, mother, 0, 0, 2, 1, rep.int(0, nm*2)))
+	}
+	p = rbind(p, cbind(x$famid, ids, father, mother, sex, aff, matrix(0, ncol=nm*2, nrow=length(ids))))
+
+	.restore.linkdat(p, attrs=attrs)
 }
 
 addParents <- function(x, id, father, mother) {
 	if(length(id)>1) stop("Only one individual at the time, please")
 	if(id %in% x$orig.ids[x$nonfounders]) stop(paste("Individual", id, "already has parents in the pedigree")) 
 	
-	p = relabel(x$pedigree, x$orig.ids)
-	n = max(p[,'ID'])
+	p = .as.annotated.matrix(x); attrs = attributes(p); nm = x$nMark
+	oldids = p[,'ID']
+	n = max(oldids)
 	if (missing(father)) father <- n <- n+1	
 	if (missing(mother)) mother = n + 1
-
-	p[id.row_in <- match(id, p[,'ID']), 2:3] <- c(father, mother)
+	new.father = !father %in% oldids
+	new.mother = !mother %in% oldids
+	if(new.father) cat("Father: Creating new individual with ID", father, "\n")
+	if(new.mother) cat("Mother: Creating new individual with ID", mother, "\n")
 	
-	if(!father %in% p[,'ID']) {
-		cat("Father: Creating new individual with ID", father, "\n")
-		p = rbind(p, c(father,0,0,1,1))[append(1:nrow(p), nrow(p)+1, after=id.row_in-1), ] #insert row
-	}
-	if(!mother %in% p[,'ID']) {
-		cat("Mother: Creating new individual with ID", mother, "\n")
-		p = rbind(p, c(mother,0,0,2,1))[append(1:nrow(p), nrow(p)+1, after=match(id, p[,'ID'])-1), ] #insert row
-	}
+	int.id <- .internalID(x, id)
+	p[int.id, c('FID', 'MID')] <- c(father, mother)
 
-	new_x = linkdat(p, model=x$model, verbose=FALSE)
-	
-	if (!is.null(m <- x$markerdata)) {
-		new_m = .prettyMarkers(m); mis = attr(m, "missing"); nro_m = nrow(new_m)
-		if (0 < (added <- nrow(p) - nro_m)) { #if any individuals has been added
-			new_m = rbind(new_m, matrix(mis, nrow=added, ncol=ncol(m)))[append(1:nro_m, nro_m + 1:added, id.row_in-1), ] #insert row(s)
-		}
-		new_x = setMarkers(new_x, new_m, missing=mis)
-	}
-	new_x
+	if(new.father) 
+		p = rbind(p, c(x$famid, father, 0, 0, 1, 1, rep.int(0, nm*2)))[append(1:nrow(p), nrow(p)+1, after=int.id - 1), ] #insert father before 'id'
+
+	if(new.mother) 
+		p = rbind(p, c(x$famid, mother, 0, 0, 2, 1, rep.int(0, nm*2)))[append(1:nrow(p), nrow(p)+1, after=int.id - 1 + as.numeric(new.father)), ] #insert mother before 'id'
+
+	.restore.linkdat(p, attrs=attrs)
 }
 
-removeIndiv <- function(x, ids) { #removes (one by one) individuals 'ids' and all their descendants. Spouse-founders are removed as well.
-	if(length(ids)==0) return(x)
-	if(any(!ids %in% x$orig.ids)) stop(paste("Some of the indicated individuals do not exist:", paste(ids[!ids %in% x$orig.ids], collapse=", ")))  
-	id = ids[[1]]
-	internal_id = .internalID(x, id)
 
+removeIndividuals <- function(x, ids, verbose=TRUE) { #removes (one by one) individuals 'ids' and all their descendants. Spouse-founders are removed as well.
+	if(any(!ids %in% x$orig.ids)) stop(paste("Non-existing individuals:", .prettycat(ids[!ids %in% x$orig.ids], "and")))  
+	pedm = .as.annotated.matrix(x)
+	
 	#founders without children after 'id' and 'desc' indivs are removed. The redundancy here does not matter.
-	desc = descendants(x, internal_id, original.id=F)
-	leftover.spouses = setdiff(x$founders, c(internal_id, as.numeric(x$pedigree[ -c(internal_id, desc) , c('FID','MID')])))   #last part: remaining parents
-	remov = c(internal_id, desc, leftover.spouses)
-	cat("Removing individual", id, "and all his/her descendants (including leftover spouses):", paste(x$orig.ids[c(desc, leftover.spouses)], collapse=", "), "\n")
-	new_df = as.data.frame(x, famid=T)[-remov, ] 
+	desc = numeric(0)
+	for(id in ids) {
+		desc = c(desc, dd <- descendants(x, id, original.id=T))
+		if(verbose) cat("Removing", id, if(length(dd)>0) paste("and descendant(s):", .prettycat(dd, "and")), "\n")
+	}
 
-	mis = ifelse(is.null(x$markerdata), 0, attr(x$markerdata, "missing"))
-	new_x = linkdat(new_df, model=x$model, missing=mis, verbose=FALSE)
-	new_x = setSim(new_x, x$sim[-remov])
-	removeIndiv(new_x, ids=ids[!ids %in% x$orig.ids[remov]])
+	leftover.spouses = setdiff(x$orig.ids[x$founders], c(ids, as.numeric(pedm[!x$orig.ids %in% c(ids, desc), c('FID','MID')])))  #founders that are not parents of remaining indivs
+	if(verbose && length(leftover.spouses)>0) cat("Removing leftover spouse(s):", .prettycat(leftover.spouses, "and"), "\n")	
+
+	remov = unique(c(ids, desc, leftover.spouses))
+	.restore.linkdat(pedm[-.internalID(x, remov), ], attrs=attributes(pedm))
+}
+
+trim = function(x, keep="available", return.ids=FALSE){
+	store = paramlink:::.as.annotated.matrix(x)
+	store_attrs = attributes(store)
+	keep = match.arg(keep, c("available", "affected"))
+	
+	y = linkdat(relabel(x$pedigree, x$orig.ids), verbose=F)
+	y$available = x$available
+	while(TRUE) {
+		p = y$pedigree
+		leaves = setdiff(p[, 'ID'], p[, c('FID','MID')])
+		throw = switch(keep,
+			available = setdiff(leaves, .internalID(y, y$available)), #nonavailable leaves
+			affected = leaves[p[leaves, 'AFF'] != 2] #nonaffected leaves
+		)
+		if (length(throw)==0) break
+		y = removeIndividuals(y, y$orig.ids[throw], verbose=FALSE)
+	}
+
+	remov = setdiff(x$orig.ids, y$orig.ids)
+	if(return.ids) return(remov)
+	
+	cat("Removing individuals:", .prettycat(remov, "and"), "\n") 
+	return(paramlink:::.restore.linkdat(store[!store[, 'ID'] %in% remov, ], attrs=store_attrs))
 }

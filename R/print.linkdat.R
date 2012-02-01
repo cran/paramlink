@@ -1,19 +1,16 @@
 print.linkdat <- function(x, ..., markers) {
-	if (missing(markers)) marker.nos = seq_len(min(x$nMark, 10)) 
+	if (missing(markers)) marker.nos = seq_len(min(x$nMark, 5)) 
 	else {
 		if(length(markers) > 0 && max(markers) > x$nMark) stop("Nonexisting marker(s) indicated") 
 		marker.nos = markers
 	}
-	print(as.data.frame(x, markers=marker.nos, missing="-", singleCol=TRUE), ...)
-	if (missing(markers) && x$nMark > 10)
-		cat("\nOnly first 10 markers are shown. Use option 'markers=' to print specified markers.\n")
+	print(as.data.frame(x, markers=marker.nos, sep="/", missing="-", singleCol=TRUE), ...)
+	if (missing(markers) && x$nMark > 5)
+		cat("\nOnly first 5 markers are shown. Use option 'markers=' to print specified markers.\n")
 
-	if (is.null(x$model)) cat("\nModel parameters:\nNo model parameters set.\n")
-	else print(x$model)
 }
 
 print.linkdat.model <- function(x, ...) {
-	cat("\nModel parameters:\n")
 	model = x
 	switch(model$chrom, 
 		AUTOSOMAL = cat("Autosomal inheritance with penetrances: (f0, f1, f2) =", paste('(',paste(model$penetrances, collapse=", "),')',sep=""), "\n"),
@@ -21,38 +18,47 @@ print.linkdat.model <- function(x, ...) {
 				"\n\tFemales: (f0, f1, f2) =", paste('(', paste(model$penetrances$female, collapse=", "),')',sep=""), "\n")
 	)
 	cat("Disease allele frequency:", model$dfreq,"\n")
-	cat("Marker allele frequencies:", model$afreq,"\n")
+	
+	#if(x$nMark > 0) { #ERROR: x is the model, not the linkdat object.
+	#	cat("Allele frequencies:\n")
+	#	m = x$markerdata
+	#	for(i in seq_len(x$nMark)) cat(paste("M",i,":",sep=""), paste(as.numeric(attr(m[[i]], "afreq")), sep=", "), "\n")
+	#}
 }
 
 summary.linkdat <- function(object, ...) {
 	x <- object
-	cat("Pedigree:\n")
+	cat("Pedigree:\n---------\n")
 	cat(x$nInd,"individuals\n")
-	cat(length(x$founders),"founders,",length(x$nonfounders),"nonfounders\n")
+	cat(length(x$founders),"founders,", length(x$nonfounders),"nonfounders; bit size =", 2*length(x$nonfounders)-length(x$founders), "\n")
 	if((ant<-length(x$subnucs)) > 0) cat(ant,"nuclear", ifelse(ant==1, "subfamily","subfamilies"),"\n")
 	aff = x$pedigree[, 'AFF']
 	if(all(aff==1)) cat("No pedigree members affected by disease\n")
 	else cat(sum(aff==2), "affected by disease,", sum(aff==1), "unaffected,", sum(aff==0), "with unknown affection status\n") 
 	
-	cat("\nMarker data:\n", x$nMark, " markers in total\n", sep="")
+	cat("\nMarker data:\n------------\n", x$nMark, ifelse(x$nMark==1, " marker ", " markers "), "in total\n", sep="")
 	if (x$nMark > 0) {
-		miss = which(rowSums(m <- x$markerdata)==0)
+		miss = which(rowSums(m <- do.call(cbind, x$markerdata)) == 0)
 		cat(length(miss), "individuals with no available genotypes")
 		if(length(miss)>0) {
 			cat(":", paste(x$orig.ids[miss], collapse=", "), "\n")
 			cat(round(sum(m[-miss,]==0)/length(m[-miss,])*100, 2),"% missing alleles (excluding ungenotyped individuals)\n")
 		} else 
 			cat("\n", sum(m==0)/length(m)*100, "% missing alleles\n", sep="")
+		cat("\nChromosome distribution of markers:\n")
+		chrtbl = table(sapply(x$markerdata, attr, 'chr'), useNA="ifany")
+		names(chrtbl)[is.na(names(chrtbl))] = "unknown"
+		for(i in seq_along(chrtbl)) 
+			cat(" chromosome ", names(chrtbl)[i], ": ", chrtbl[i], ifelse(chrtbl[i]==1, " marker\n", " markers\n"), sep="")
+		
+		cat("\nAllele number distribution:\n")
+		ntbl = table(unlist(lapply(x$markerdata, attr, 'nalleles')))
+		for(i in seq_along(ntbl)) 
+			cat(" ", names(ntbl)[i], " alleles", ": ", ntbl[i], ifelse(ntbl[i]==1, " marker\n", " markers\n"), sep="")
 	}
-	cat("\nMarker simulation:\n")
-	if (is.null(x$sim)) cat("No simulation indicated\n")
-	else {
-		s=(x$sim==2)
-		if (all(s)) cat("All individuals marked for simulation\n")
-		else cat("Individuals marked for simulation:", paste(x$orig.ids[s], collapse=", "), 
-			   "\nIndividuals excluded from simulation:", paste(x$orig.ids[!s], collapse=", "), "\n")
-	}
+
 	
-	if (is.null(x$model)) cat("\nModel parameters:\nNo model parameters set\n")
+	cat("\nModel parameters:\n-----------------\n")
+	if(is.null(x$model)) cat("No model parameters set\n")
 	else print(x$model)
 }
