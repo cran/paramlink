@@ -2,22 +2,24 @@ linkdat <-
 function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, verbose=TRUE, missing=0, ...) {  
 
 	subnucs <- function(ped) {  	# output: peeling order of nuclear subfamilies. Format for each nuc: c(pivot,father,mother,offsp1,..), where pivot=0 for the last nuc.
-		parents <- unique(ped[, 2:3]); parents = parents[ -match(0, parents[,1]), , drop=FALSE]
-		list1 <- lapply(nrow(parents):1, function(i) { 
-			par=parents[i,]; 
-			c(fa = par[[1]], mo = par[[2]], offs = as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) } )  #listing all nucs
-		res=list(); i=1; k = 1
+		parents = unique(ped[, 2:3])
+		parents = parents[ -match(0, parents[,1]), , drop=FALSE]
+		list1 = lapply(nrow(parents):1, function(i) { 
+			par = parents[i,]; 
+			list(father = par[[1]], mother = par[[2]], offspring = as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) } )  #listing all nucs
+		res = list(); i = 1; k = 1
 		while(length(list1) > 1)	{
-			if (i > length(list1)) 
-				return(FALSE)
-			link = ( (sub <- list1[[i]]) %in% unlist(list1[-i]))
-			if (sum(link)==1) 	{
-				res[[k]] <- c(pivot=sub[[which(link)]], sub)
+			if (i > length(list1)) 	return(FALSE)
+			sub = list1[[i]]
+			subvec = unlist(sub)
+			links = subvec[subvec %in% unlist(list1[-i])]
+			if (length(links)==1) 	{
+				res[[k]] <- c(sub, list(pivot = as.numeric(links), pivtype = match(links, c(sub[['father']], sub[['mother']]), nomatch=3)))
 				list1 <- list1[-i]
 				k <- k+1;	i <- 1
 			} else i <- i+1
 		}	
-		res[[k]] <- c(pivot=0, list1[[1]]) #final nuclear
+		res[[k]] <- c(list1[[1]], list(pivot = 0, pivtype = 0)) #final nuclear
 		res
 	}
 	

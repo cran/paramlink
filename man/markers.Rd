@@ -15,12 +15,12 @@ Functions for setting and manipulating marker genotypes for 'linkdat' objects.
 }
 \usage{
 marker(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0,
-       chr=NA, name=NA, pos=NA)
+       chrom=NA, name=NA, pos=NA)
 addMarker(x, m, alleles=NULL, afreq=NULL, missing=0)
 setMarkers(x, m, map=NULL, dat=NULL, freq=NULL, missing = 0)
 removeMarkers(x, markers)
-modifyMarker(x, marker, ids, genotype, alleles, afreq, chr, name, pos)
-mendelianCheck(x)
+modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
+mendelianCheck(x, verbose=TRUE)
 }
 \arguments{
   \item{x}{
@@ -38,7 +38,7 @@ a \code{marker} object or a matrix with alleles. (In \code{setMarkers} this matr
   \item{missing}{
 a numeric - or character - of length 1, indicating the code for missing alleles.
 }
-  \item{chr}{
+  \item{chrom}{
 NA or an integer (the chromosome number of the marker).
 }
   \item{name}{
@@ -71,10 +71,13 @@ a character containing the path to a dat file, MERLIN style. See MERLIN's online
  \item{freq}{
 a character with the path to a allele frequency file in MERLIN (short) format. (Not used if \code{map=NULL}.)
 }
+ \item{verbose}{
+a logical. If TRUE, details of the markers failing the tests are shown.
+}
 }
 \value{
 The \code{marker} function returns an object of class \code{marker}: This is a numerical 2-column matrix with one row per individual, and attributes 
-'alleles' (a character vector with allele names), 'nalleles' (the number of alleles) and 'missing' (the input symbol for missing marker alleles), 'chr' (chromosome number), 'name' (marker identidier), 'pos' (chromosome position in cM).
+'alleles' (a character vector with allele names), 'nalleles' (the number of alleles) and 'missing' (the input symbol for missing marker alleles), 'chrom' (chromosome number), 'name' (marker identidier), 'pos' (chromosome position in cM).
 
 For \code{addMarker}, \code{setMarkers}, \code{removeMarkers} and \code{modifyMarkers}, a \code{linkdat} object is returned, whose \code{markerdata} element has been set/modified. 
 

@@ -128,17 +128,16 @@ removeIndividuals <- function(x, ids, verbose=TRUE) { #removes (one by one) indi
 }
 
 trim = function(x, keep="available", return.ids=FALSE){
-	store = paramlink:::.as.annotated.matrix(x)
-	store_attrs = attributes(store)
+	mysetdiff = function(x,y) x[match(x,y,0L)==0L]
 	keep = match.arg(keep, c("available", "affected"))
 	
 	y = linkdat(relabel(x$pedigree, x$orig.ids), verbose=F)
 	y$available = x$available
 	while(TRUE) {
 		p = y$pedigree
-		leaves = setdiff(p[, 'ID'], p[, c('FID','MID')])
+		leaves = mysetdiff(p[, 'ID'], p[, c('FID','MID')])
 		throw = switch(keep,
-			available = setdiff(leaves, .internalID(y, y$available)), #nonavailable leaves
+			available = mysetdiff(leaves, .internalID(y, y$available)), #nonavailable leaves
 			affected = leaves[p[leaves, 'AFF'] != 2] #nonaffected leaves
 		)
 		if (length(throw)==0) break
@@ -148,6 +147,8 @@ trim = function(x, keep="available", return.ids=FALSE){
 	remov = setdiff(x$orig.ids, y$orig.ids)
 	if(return.ids) return(remov)
 	
-	cat("Removing individuals:", .prettycat(remov, "and"), "\n") 
-	return(paramlink:::.restore.linkdat(store[!store[, 'ID'] %in% remov, ], attrs=store_attrs))
+	cat("Removing individuals:", .prettycat(remov, "and"), "\n")
+	store = .as.annotated.matrix(x)
+	trimmed = store[!store[, 'ID'] %in% remov, ]
+	.restore.linkdat(trimmed, attrs=attributes(store))
 }

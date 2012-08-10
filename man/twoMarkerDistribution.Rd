@@ -9,7 +9,7 @@ Only for autosomal markers at the moment.
 }
 \usage{
 twoMarkerDistribution(x, id, partialmarker1, partialmarker2, theta, 
-                      loop_breakers=NULL, verbose=TRUE)
+                      loop_breakers=NULL, eliminate=99, verbose=TRUE)
 }
 
 \arguments{
@@ -28,6 +28,9 @@ A single numeric in the interval [0, 0.5] - the recombination fraction between t
   \item{loop_breakers}{
 A numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.
 }
+ \item{eliminate}{
+A non-negative integer, indicating the number of iterations in the internal genotype-compatibility algorithm. Positive values can save time if \code{partialmarker} is non-empty and the number of alleles is large.
+}
   \item{verbose}{
 A logical.
 }
@@ -43,9 +46,8 @@ Magnus Dehli Vigeland
 \code{\link{oneMarkerDistribution}}
 }
 \examples{
-data(toyped)
-x = linkdat(toyped)
-emptySNP = marker(x, 1:4, 0, alleles=c('a','b')) # empty marker
+x = nuclearPed(2)
+emptySNP = marker(x, alleles=c('a','b'))
 SNP1 = marker(x, 1, c(1,1), 2, c(1,0), alleles=1:2, afreq=c(0.1, 0.9))
 twoMarkerDistribution(x, id=2, emptySNP, SNP1, theta=0)
 twoMarkerDistribution(x, id=2, emptySNP, SNP1, theta=0.5)

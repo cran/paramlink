@@ -28,14 +28,14 @@ summary.linkres <- function(object, threshold=NULL, ...) {
 
 .getMap = function(x, markers=seq_len(x$nMark), na.action=0, verbose=TRUE) {
 	m=x$markerdata[markers]
-	chr=unlist(lapply(m, attr, 'chr')); marker=unlist(lapply(m, attr, 'name')); pos=unlist(lapply(m, attr, 'pos'))
-	map = data.frame(CHR=chr, MARKER=marker, POS=pos, stringsAsFactors=FALSE)
+	chrom=unlist(lapply(m, attr, 'chrom')); marker=unlist(lapply(m, attr, 'name')); pos=unlist(lapply(m, attr, 'pos'))
+	map = data.frame(CHR=chrom, MARKER=marker, POS=pos, stringsAsFactors=FALSE)
 	if(na.action > 0) {
 		nas = is.na(marker) 	
 		map$MARKER[nas] = paste("M", markers[nas], sep="")
 	}
 	if(na.action == 1) {
-		nas2 = (is.na(chr) | is.na(pos))
+		nas2 = (is.na(chrom) | is.na(pos))
 		if (all(nas2)) {
 			if(verbose) cat("Warning: No map info given. Creating dummy map.\n")
 			map$CHR = rep.int(1, x$nMark)
@@ -43,7 +43,7 @@ summary.linkres <- function(object, threshold=NULL, ...) {
 		}
 	}
 	# if(na.action ==2) 
-		# nas2 = (is.na(chr) | is.na(pos))
+		# nas2 = (is.na(chrom) | is.na(pos))
 		# if(any(nas2)) {
 			# if(verbose) cat("Warning: Deleting", sum(nas2), "markers with missing map coordinates.\n")
 			# map = map[!nas2, , drop=FALSE]

@@ -22,15 +22,19 @@ plot.linkdat <- function(x, marker=NULL, alleles=NULL, sep="/", missing="-",
 	if(available) cols = ifelse(x$orig.ids %in% x$available, 2, 1)
 	else cols = col
 	
+	if(!is.null(lb <- x$loop_breakers) && length(id.labels)==x$nInd) {origint = .internalID(x, lb[,1]); copyint = .internalID(x, lb[,2]); id.labels[copyint] = paste(id.labels[copyint], id.labels[origint], sep="=")}
+	
 	strid = rep(id.labels, length.out=x$nInd)
 	starred = .internalID(x, starred)
 	strid[starred] = paste(strid[starred], "*", sep="")
 	if (!is.null(marker)) {
-		m = x$markerdata[marker]
-		chrom = ifelse(is.null(x$model), 'AUTOSOMAL', x$model$chrom)
-		gg = .prettyMarkers(m, alleles=alleles, sep=sep, missing=missing, singleCol=TRUE, chrom=chrom, sex=x$pedigree[, 'SEX'])
+		if(class(marker)=="marker") m = list(marker)
+		else if(is.list(marker) && all(sapply(marker, class)=="marker")) m = marker  #marker must be either a 'marker' object, a list of such, or an integer vector.
+		else m = x$markerdata[marker]
+		chrom = ifelse(all(sapply(m, function(mm) identical(23L, as.integer(attr(mm, 'chrom'))))), 'X', 'AUTOSOMAL')
+		gg = .prettyMarkers(m, alleles=alleles, sep=sep, missing=missing, singleCol=TRUE, sex=x$pedigree[, 'SEX'])
 		geno = gg[,1]
-		for(i in seq_along(marker)[-1]) geno = paste(geno, gg[, i], sep="\n")
+		for(i in seq_along(m)[-1]) geno = paste(geno, gg[, i], sep="\n")
 		if(is.null(strid) || !any(nzchar(strid))) strid = geno else strid = paste(strid, geno, sep="\n")
 	}	
 	#par(xpd=T)

@@ -146,7 +146,7 @@ x
 summary(x)
 
 # test read/write:
-x = modifyMarker(x, 1, alleles=c('B','C'), afreq=c(.9, .1), chr=2, name="SNP1", pos=123)
+x = modifyMarker(x, 1, alleles=c('B','C'), afreq=c(.9, .1), chrom=2, name="SNP1", pos=123)
 write.linkdat(x, prefix="toy")
 y = linkdat("toy.ped", map="toy.map", dat="toy.dat", freq="toy.freq", model=1)
 unlink(c("toy.ped", "toy.map", "toy.dat", "toy.freq", "toy.model"))

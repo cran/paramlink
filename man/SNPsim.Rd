@@ -7,8 +7,8 @@ Simulate SNP markers
 Simulates SNP markers conditional on the pedigree structure, affection statuses and disease model.
 }
 \usage{
-SNPsim(x, N=1, partialmarker=NULL, available=x$available, loop_breakers=NULL, 
-       unique=FALSE, seed=NULL)
+SNPsim(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, 
+       unique=FALSE, seed=NULL, verbose=TRUE)
 }
 \arguments{
   \item{x}{
@@ -23,6 +23,9 @@ Either NULL (indicating no given marker data), or a matrix with two columns givi
  \item{available}{
 a vector containing IDs of the available individuals, i.e. those whose genotypes should be simulated.
 }
+ \item{afreq}{
+a vector of length 2 containing the population frequencies for the SNP alleles.
+}
  \item{loop_breakers}{
 a numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.
 }
@@ -31,6 +34,9 @@ a logical indicating if duplicates among the simulated markers should be removed
 }
   \item{seed}{
 NULL, or a numeric seed for the random number generator. 
+}
+  \item{verbose}{
+a logical. 
 }
 
 }

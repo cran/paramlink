@@ -16,11 +16,11 @@ function(x, markers=seq_len(x$nMark), theta=0, loop_breakers=NULL, max.only=FALS
 	}
 
 	ilink <- function(x, marker) {
-		log_denom <- stopl <- likelihood(x, marker, logbase=10, TR.MATR=.TRhalf)
+		log_denom <- stopl <- likelihoodSNP(x, marker, logbase=10, TR.MATR=.TRhalf)
 		if (log_denom==-Inf) return(c(NaN, NaN))
 
-		startl <- likelihood(x, marker, logbase=10, TR.MATR=.TRzero)
-		optimal <- optimize(likelihood, c(0, 0.5), x=x, marker=marker, afreq=NULL, logbase=10, tol=tol, maximum=TRUE)
+		startl <- likelihoodSNP(x, marker, logbase=10, TR.MATR=.TRzero)
+		optimal <- optimize(likelihoodSNP, c(0, 0.5), x=x, marker=marker, afreq=NULL, logbase=10, tol=tol, maximum=TRUE)
 		if (optimal$objective > max(startl,stopl)) {
 			log_numer <- optimal$objective; theta_max <- optimal$maximum
 		} else {
@@ -41,8 +41,8 @@ function(x, markers=seq_len(x$nMark), theta=0, loop_breakers=NULL, max.only=FALS
 		
 		markerdata_list = x$markerdata[markers]
 		trm_list = lapply(theta, .TRmatr, chrom=x$model$chrom)
-		denoms = unlist(lapply(markerdata_list, function(m) likelihood(x, m, theta=NULL, logbase=10, TR.MATR=.TRhalf) ))
-		numers = vapply(markerdata_list, function(m)  unlist(lapply(trm_list, function(TR) likelihood(x, marker=m, theta=NULL, logbase=10, TR.MATR=TR))) , FUN.VALUE=numeric(length(theta)))
+		denoms = unlist(lapply(markerdata_list, function(m) likelihoodSNP(x, m, theta=NULL, logbase=10, TR.MATR=.TRhalf) ))
+		numers = vapply(markerdata_list, function(m)  unlist(lapply(trm_list, function(TR) likelihoodSNP(x, marker=m, theta=NULL, logbase=10, TR.MATR=TR))) , FUN.VALUE=numeric(length(theta)))
 		res = numers - rep(denoms, each=length(theta))
 		res = structure(res, dim=c(length(theta), length(markers)), dimnames = list(theta, map$MARKER), analysis="mlink", map=map, class="linkres")
 	} 

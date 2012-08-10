@@ -11,7 +11,8 @@ lod(x, markers=seq_len(x$nMark), theta=0, loop_breakers=NULL,
     max.only=FALSE, verbose=FALSE, tol=0.01)
 }
 \arguments{
-  \item{x}{a \code{\link{linkdat}} object.
+  \item{x}{
+a \code{\link{linkdat}} object.
 }
   \item{markers}{
 an integer vector denoting which markers to use.
@@ -75,11 +76,9 @@ res1 = lod(z, loop_breakers=c(8,12))
 z = modifyMarker(z, marker=1, ids=c(7,9,11,13), genotype=3, alleles=1:3, afreq=c(0.001, 0.499, 0.5)) # making the marker triallelic and adding some genotypes.
 plot(z,1)
 res2 = lod(z, loop_breakers=c(8,12))
-z$markerdata[[1]]
+
 z = modifyMarker(z, marker=1, alleles=1:4, afreq=c(0.001, 0.499, 0.25, 0.25)) 
-z$markerdata[[1]]
 res3 = lod(z, loop_breakers=c(8,12))
-res1;res2;res3
 stopifnot(all(3 == round(c(res1,res2,res3), 1)))
 }
 \keyword{ math }

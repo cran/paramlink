@@ -1,7 +1,19 @@
+addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
+	if(is.matrix(m) || is.data.frame(m)) stopifnot(nrow(m)==x$nInd, ncol(m)==2)
+	if(class(m)=="marker") 
+		m = list(m)
+	if(is.list(m) && all(unlist(lapply(m, class))=="marker")) 
+		return(setMarkers(x, structure(c(x$markerdata, m), class="markerdata")))
+	if(!is.list(m) && length(m)==1)	
+		m = matrix(m, ncol=2, nrow=x$nInd)  #gives a nice way of setting an empty or everywhere-homozygous marker, e.g.: x=addMarker(x,0)
+	mm = .createMarkerObject(m, alleles, afreq=afreq, missing=missing)
+	setMarkers(x, structure(c(x$markerdata, list(mm)), class="markerdata"))
+}
 
 setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 	if(is.null(m)) 								markerdata_list = NULL
 	else if(class(m) == "marker")				markerdata_list = structure(list(m), class="markerdata")
+	else if(is.list(m) && all(unlist(lapply(m, class))=="marker")) markerdata_list = structure(m, class="markerdata")
 	else if(class(m) == "markerdata")			markerdata_list = m
 	else if ((n <- ncol(m <- as.matrix(m))) == 0)	markerdata_list = NULL
 	else {
@@ -13,7 +25,7 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 			markerdata_list = lapply(1:nMark, function(i) {
 				if (is.merged)	mi = t(sapply(m[,i], function(markeri) strsplit(markeri,"/",fixed=T)[[1]]))
 				else 			mi = m[, c(2*i-1, 2*i)]
-				.createMarkerObject(mi, missing=missing, chr=NA, pos=NA, name=NA)
+				.createMarkerObject(mi, missing=missing, chrom=NA, pos=NA, name=NA)
 		})}
 		else {
 			if(is.null(dat)) stop("Missing 'dat' file.") 
@@ -26,7 +38,7 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 				if (is.merged)	mi = t(sapply(m[,i], function(markeri) strsplit(markeri,"/",fixed=T)[[1]]))
 				else 			mi = m[, c(2*i-1, 2*i)]
 				
-				.createMarkerObject(mi, alleles=info$alleles, afreq=info$afreq, missing=missing, chr=info$chr, pos=info$pos, name=name) 
+				.createMarkerObject(mi, alleles=info$alleles, afreq=info$afreq, missing=missing, chrom=info$chrom, pos=info$pos, name=name) 
 			})}
 		markerdata_list[sapply(markerdata_list, is.null)] = NULL
 		class(markerdata_list) = "markerdata"
@@ -73,7 +85,7 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 	}
 	else if(is.list(freq))	freqlist = freq
 	
-	mapinfo = lapply(1:nrow(map1), function(i) list(chr=map1$CHR[i], pos=map1$POS[i], alleles=freqlist[[map1[i,2]]]$alleles, afreq=freqlist[[map1[i,2]]]$afreq))
+	mapinfo = lapply(1:nrow(map1), function(i) list(chrom=map1$CHR[i], pos=map1$POS[i], alleles=freqlist[[map1[i,2]]]$alleles, afreq=freqlist[[map1[i,2]]]$afreq))
 	names(mapinfo) = map1$MARKER
 	
 	Mmatch = match(datnames, map1$MARKER, nomatch=NA)
@@ -84,13 +96,14 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 }
 
 
-.createMarkerObject = function(matr, missing, alleles=NULL, afreq=NULL, chr=NA, pos=NA, name=NA) {
+.createMarkerObject = function(matr, missing, alleles=NULL, afreq=NULL, chrom=NA, pos=NA, name=NA) {
 	if(is.null(alleles)) {
 		vec = as.vector(matr)
-		alleles = .Internal(unique(vec[vec != missing], incomparables=FALSE, fromLast=FALSE))
+		alleles = unique.default(vec[vec != missing])
 		if (length(alleles)==0) alleles = 1
 	}
-	all_ord = .Internal(order(T, F, alleles))
+	if(all(alleles %in% 0:99)) alleles = as.numeric(alleles)
+	all_ord = order(alleles)
 	alleles = as.character(alleles[all_ord])
 	nalleles = length(alleles)
 	if(is.null(afreq)) afreq = rep.int(1, nalleles)/nalleles 
@@ -99,21 +112,27 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 		if(round(sum(afreq),2) != 1) warning(paste("Allele frequencies for marker", name," do not sum to 1:", paste(afreq, collapse=" ")))
 		afreq = afreq[all_ord]
 	}
-	m_obj = .Internal(match(matr, alleles, nomatch=0, NULL))
-	attributes(m_obj) = list(dim=dim(matr), alleles=alleles, missing=missing, nalleles=nalleles, afreq = afreq, chr=chr, pos=pos, name=name, class="marker") 
+	m_obj = match(matr, alleles, nomatch=0)
+	attributes(m_obj) = list(dim=dim(matr), alleles=alleles, missing=missing, nalleles=nalleles, afreq = afreq, chrom=chrom, pos=pos, name=name, class="marker") 
 	m_obj
 }
 
-marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chr=NA, name=NA, pos=NA) {
+marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chrom=NA, name=NA, pos=NA) {
 	arglist = list(...)
 	n = length(arglist)
-	if(n==0 && missing(allelematrix)) m = matrix(fill, ncol=2, nrow=x$nInd)
-	if(n>0) {
+	if(n == 0) {
+		if(missing(allelematrix)) m = matrix(missing, ncol=2, nrow=x$nInd)
+		else {
+			m = as.matrix(allelematrix)
+			stopifnot(nrow(m)==x$nInd, ncol(m)==2)
+		}
+	}
+	if(n > 0) {
 		if(!missing(allelematrix)) stop("Syntax error. See ?marker.")
 		if(n == 1 && length(arglist[[1]]) > 2) stop("Syntax error. See ?marker.")
 		if(n > 1 && n%%2 != 0) stop("Wrong number of arguments.")
 		
-		fill = {if(n==1) arglist[[1]] else 0}
+		fill = {if(n==1) arglist[[1]] else missing}
 		m = matrix(fill, ncol=2, nrow=x$nInd, byrow=TRUE)  #create marker matrix with all individuals equal.
 		
 		for(i in (seq_len(n/2)*2 - 1)) {   # odd numbers up to n-1.
@@ -122,11 +141,8 @@ marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chr
 			for(j in match(ids, x$orig.ids)) m[j, ] = geno
 		}
 	}
-	else {
-		stopifnot(nrow(allelematrix)==x$nInd, ncol(allelematrix)==2)
-		m = as.matrix(allelematrix)
-	}
-	.createMarkerObject(m, missing=missing, alleles=alleles, afreq=afreq, chr=chr, name=name, pos=pos)
+	
+	.createMarkerObject(m, missing=missing, alleles=alleles, afreq=afreq, chrom=chrom, name=name, pos=pos)
 }
 
 removeMarkers <- function(x, markers) {
@@ -135,10 +151,7 @@ removeMarkers <- function(x, markers) {
 	setMarkers(x, m)
 }
 
-.prettycat = function(v, andor)
-	switch(min(len <- length(v), 3), toString(v), paste(v, collapse=" and "), paste(paste(v[-len], collapse=", "), andor, v[len]))
-	
-.prettyMarkers = function(m, alleles=NULL, sep="", missing=NULL, singleCol=FALSE, chrom, sex) {
+.prettyMarkers = function(m, alleles=NULL, sep="", missing=NULL, singleCol=FALSE, sex) {
 	if(is.null(m)) return(m) 
 	if(is.matrix(m)) m = list(m)
 	if((n <- length(m))==0) return(m)
@@ -156,21 +169,16 @@ removeMarkers <- function(x, markers) {
 	mNames = unlist(lapply(m, attr, 'name')); mNames[is.na(mNames)]=""
 	pretty_m = do.call(c, lapply(seq_len(n), function(i)  c(missing[i], alleles[[i]])[m[[i]]+1]))
 	dim(pretty_m) = c(length(pretty_m)/(2*n), 2*n)
-	
 	if (singleCol) {
 		al1 = pretty_m[, 2*seq_len(n)-1, drop=FALSE]
 		al2 = pretty_m[, 2*seq_len(n), drop=FALSE]
-		if (missing(chrom) || is.null(chrom)) stop("Missing argument: 'chrom'.")
-		switch(chrom, AUTOSOMAL = { 
-			m.matrix = matrix(paste(al1, al2, sep=sep), ncol=n )
-		}, X = {
-			if (missing(sex)) stop("Missing argument: 'sex'.")
-			males = which(sex==1); females = which(sex==2)
-			if (!all(hh <- al1[males,] == al2[males,])) warning("Some male individuals are heterozygous.")
-			m.matr.male = al1[males, , drop=FALSE]
-			m.matr.female = matrix(paste(al1, al2, sep=sep), ncol=n)[females, , drop=FALSE]
-			m.matrix = rbind(m.matr.male, m.matr.female)[order(c(males, females)), , drop=FALSE]
-		})
+		m.matrix = matrix(paste(al1, al2, sep=sep), ncol=n )
+		chrom_X = unlist(lapply(m, function(mm) identical(23L, as.integer(attr(mm, 'chrom')))))
+		if(any(chrom_X)) {
+			males = (sex==1)
+			if (!all(hh <- al1[males, chrom_X] == al2[males, chrom_X])) warning("Male heterozygosity at X-linked marker detected.")
+			m.matrix[males, chrom_X] = al1[males, chrom_X]
+		}
 		colnames(m.matrix) = mNames
 		return(m.matrix)
 	}
@@ -181,20 +189,8 @@ removeMarkers <- function(x, markers) {
 	}
 }
 
-
-addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
-	if(is.matrix(m) || is.data.frame(m)) stopifnot(nrow(m)==x$nInd, ncol(m)==2)
-	if(class(m)=="marker") 
-		m = list(m)
-	if(is.list(m) && all(unlist(lapply(m, class))=="marker")) 
-		return(setMarkers(x, structure(c(x$markerdata, m), class="markerdata")))
-	if(!is.list(m) && length(m)==1)	
-		m = matrix(m, ncol=2, nrow=x$nInd)  #gives a nice way of setting an empty or everywhere-homozygous marker, e.g.: x=addMarker(x,0)
-	mm = .createMarkerObject(m, alleles, afreq=afreq, missing=missing)
-	setMarkers(x, mm, missing=missing)
-}
 	
-modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, pos) {
+modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, pos) {
 	if(class(marker)=="marker") {
 		if(nrow(marker) != x$nInd) stop("Wrong dimensions of marker matrix.")
 		m = marker
@@ -208,16 +204,16 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, po
 	
 	if(!missing(alleles)) {
 		stopifnot(is.atomic(alleles), is.numeric(alleles) || is.character(alleles))
-		if(is.numeric(alleles)) alleles = as.character(alleles)
+		#if(is.numeric(alleles)) alleles = as.character(alleles)
 		if(attr(m, 'missing') %in% alleles) stop("The 'missing allele' character cannot be one of the alleles.")
 		lena = length(alleles)
 		if(lena == attr(m, 'nalleles'))
 			attr(m, 'alleles') = alleles
 		else {
-			num_als = .Internal(unique(as.vector(m[m!=0]), incomparables=FALSE, fromLast=FALSE))
+			num_als = unique.default(as.vector(m[m!=0]))
 			if(lena < length(num_als)) stop("Too few alleles.")
 			pm = matrix(c(0, attr(m, 'alleles'))[m + 1], ncol=2)
-			m = .createMarkerObject(pm, missing=0, alleles=alleles, afreq=rep(1, lena)/lena, chr=attr(m, 'chr'), pos=attr(m, 'pos'), name=attr(m, 'name'))
+			m = .createMarkerObject(pm, missing=0, alleles=alleles, afreq=rep(1, lena)/lena, chrom=attr(m, 'chrom'), pos=attr(m, 'pos'), name=attr(m, 'name'))
 		}
 	}
 	if(!missing(afreq)) {
@@ -240,7 +236,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, po
 		m = match(pm, attr(m, 'alleles'), nomatch=0)
 		attributes(m) = attribs
 	}
-	if(!missing(chr)) attr(m, 'chr') = chr
+	if(!missing(chrom)) attr(m, 'chrom') = chrom
 	if(!missing(name)) attr(m, 'name') = name
 	if(!missing(pos)) attr(m, 'pos') = pos
 	if(class(marker)=="marker") return(m)
@@ -251,7 +247,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, po
 }
 
 .getMarkers=function(x, markernames=NULL, chrom=NULL, startpos=NULL, endpos=NULL) {
-	dat = data.frame(CHR = sapply(x$markerdata, attr, 'chr'), POS = sapply(x$markerdata, attr, 'pos'), NAME = sapply(x$markerdata, attr, 'name'), stringsAsFactors=F)
+	dat = data.frame(CHR = sapply(x$markerdata, attr, 'chrom'), POS = sapply(x$markerdata, attr, 'pos'), NAME = sapply(x$markerdata, attr, 'name'), stringsAsFactors=F)
 	test = !logical(nrow(dat)) 
 	if(!is.null(markernames)) test = test & (dat$NAME %in% markernames)
 	if(!is.null(chrom)) test = test & (dat$CHR %in% chrom)
@@ -259,6 +255,22 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, po
 	if(!is.null(endpos)) test = test & (dat$POS < endpos)
 	which(test)
 }
+
+.swapMarkerData=function(x, ids){ #Laget for Thore, eksporteres ikke.
+	stopifnot(length(ids)==2)
+	ids = .internalID(x, ids)
+	y = .as.annotated.matrix(x)
+	y[ids, -(1:6)] = y[ids[2:1], -(1:6)]
+	.restore.linkdat(y)
+}
+
+.modifyMarkerData=function(x, ids, new.alleles){
+	ids = .internalID(x, ids)
+	y = .as.annotated.matrix(x)
+	y[ids, -(1:6)] = new.alleles
+	.restore.linkdat(y)
+}
+
 
 .diallel2geno <- function(marker) { #marker a numerical nInd * 2 matrix   
 	#Coding genotypes as single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5.
@@ -273,68 +285,103 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chr, name, po
 	t(decode)
 }
 
-mendelianCheck <- function(x) {
 
-	autosCheck = function(al.fa, al.mo, al.of) {
-		fa0 = (0 %in% al.fa); mo0 = (0 %in% al.mo); of0 = (al.of==0)
-		ff = fa0 | of0 | (al.of %in% al.fa)
-		mm = mo0 | of0 | (al.of %in% al.mo)
-		(ff[1] && mm[2]) || (ff[2] && mm[1])
+mendelianCheck <- function(x, verbose=TRUE) {
+
+	trioCheckFast = function(fa, mo, of) {
+		fa_odd = fa[odd]; fa_even = fa[even]; mo_odd = mo[odd]; mo_even = mo[even]
+		of_odd = of[odd]; of_even = of[even];
+		fa0 = (fa_odd == 0 | fa_even == 0)
+		mo0 = (mo_odd == 0 | mo_even == 0)
+		of_odd0 = (of_odd == 0); of_even0 = (of_even == 0)
+		ff1 = (fa0 | of_odd0 | of_odd == fa_odd | of_odd == fa_even)
+		ff2 = (fa0 | of_even0 | of_even == fa_odd | of_even == fa_even)
+		mm1 = (mo0 | of_odd0 | of_odd == mo_odd | of_odd == mo_even)
+		mm2 = (mo0 | of_even0 | of_even == mo_odd | of_even == mo_even)
+		(ff1 & mm2) | (ff2 & mm1)
 	}
-  
-	maleXHomoz = function(al.of) 	al.of[1]==al.of[2]
 	
-	maleXCheck = function(al.mo, al.of)		(al.of==0) || (0 %in% al.mo) || (al.of %in% al.mo)
+	maleXHomoz = function(of) 	of[odd] == of[even]
 	
-	mdat = x$markerdata
-	chr = ifelse(is.null(x$model), "AUTOSOMAL", x$model$chrom)
-
-	error = numeric(0)
-	switch(chr, 
-	AUTOSOMAL = {
-	for (i in seq_len(x$nMark)) {
-		m = mdat[[i]]
-		for (nuc in x$subnucs) {
-			al.fa = m[nuc[2], ]
-			al.mo = m[nuc[3], ]
-			for (of in nuc[-c(1:3)]) {
-				if (!autosCheck(al.fa, al.mo, m[of, ])) {
-				  cat("Marker ", i, ", individual ", x$orig.ids[of], ": Alleles not compatible with parents.\n", sep="")
-				  error = union(error, i)
-				}
+	maleXCheck = function(mo, of)	{
+		mo_odd = mo[odd]; mo_even = mo[even]
+		of = of[odd]
+		mo0 = (mo_odd == 0 | mo_even == 0)
+		of == 0 | mo0 | of == mo_odd | of == mo_even
+	}
+	
+	nuclearAllelCheck = function(parents, offs) { #both matrices with 2*N columns
+		unlist(lapply(even, function(i) {
+			offs_als = unique.default(offs[,(i-1):i])
+			offs_count = length(offs_als[offs_als > 0])
+	
+			par_als = parents[,(i-1):i]
+			iszero = (par_als == 0); nzero = sum(iszero)
+			if(nzero==0) 	parents_count = length(unique.default(par_als))
+			else { 
+				par_als = unique.default(par_als[!iszero])
+				parents_count = length(.myintersect(par_als, offs_als)) + nzero
 			}
-			if (length(setdiff(.Internal(unique(as.vector(m[nuc[-c(1:3)], ]), incomparables=FALSE, fromLast=FALSE)), 0)) > 4){
-				cat("Marker ", i, ": Offspring of ", x$orig.ids[nuc[2]], " and ", x$orig.ids[nuc[3]], " have too many different alleles.\n", sep="")
-				error = union(error, i)
+			offs_count <= parents_count
+		}))
+	}	
+	
+	ped = x$pedigree
+	parents = unique(ped[, 2:3]) 
+	parents = parents[ -match(0, parents[,1]), , drop=FALSE]
+	subnucs = lapply(nrow(parents):1, function(i) { 
+		par = parents[i,];  
+		c(fa=par[[1]], mo=par[[2]], offs=as.vector(ped[,1])[ which(ped[,2]==par[[1]] & ped[,3]==par[[2]], useNames=FALSE) ]) 
+	})
+	
+	chroms = ifelse(all(unlist(lapply(x$markerdata, function(mm) identical(23L, as.integer(attr(mm, 'chrom')))))), 'X', 'AUTOSOMAL')
+	mdat = do.call(cbind, x$markerdata)
+	Nseq = seq_len(length(x$markerdata)); even = 2* Nseq; odd = even - 1 
+	
+	error = numeric(0)
+	switch(chroms, 
+	AUTOSOMAL = {
+		for (sub in subnucs) {
+			fa = mdat[sub[[1]], ]; mo = mdat[sub[[2]], ]; offs = sub[-(1:2)]
+			for (of in offs) {
+				new_errors = Nseq[!trioCheckFast(fa, mo, mdat[of, ])]
+				if(verbose) for (i in new_errors) cat("Marker ", i, ", individual ", x$orig.ids[of], ": Alleles not compatible with parents.\n", sep="")
+				error = c(error, new_errors)
+			}
+			if (length(offs) > 1) {
+				new_errors = Nseq[!nuclearAllelCheck(parents = mdat[sub[1:2], ], offs = mdat[sub[-(1:2)], ])]
+				if(verbose) for (i in new_errors)  cat("Marker ", i, ": Offspring of ", x$orig.ids[sub[1]], " and ", x$orig.ids[sub[2]], " have too many different alleles.\n", sep="")
+				error = c(error, new_errors)
 			}
 		}
-	}}, 
+	}, 
 	X = {
 	sex = x$pedigree[, 'SEX']
-	for (i in seq_len(x$nMark)) {
-		m = mdat[[i]]
-		for (nuc in x$subnucs) {
-			al.fa = m[nuc[2], ]
-			al.mo = m[nuc[3], ]
-			for (of in nuc[-c(1:3)]) {
-				al.of = m[of, ]
-				switch(sex[of], {
-					if (!maleXHomoz(al.of)) {
-						cat("Marker ", i, ", individual ", x$orig.ids[of], ": Male heterozygosity not compatible with X-linked model.\n", sep="")
-						error = union(error, i)
-					}
-					if (!maleXCheck(al.mo, al.of)) {
-						cat("Marker ", i, ", individual ", x$orig.ids[of], ": Allele not compatible with mother.\n", sep="")
-						error = union(error, i)
-					}
-				}, {
-				  if (!autosCheck(al.fa, al.mo, al.of)) {
-					 cat("Marker ", i, ", individual ", x$orig.ids[of], ": Alleles not compatible with parents.\n", sep="")
-					 error = union(error, i)
-				  }
-				})
+	for (sub in subnucs) {
+			fa = mdat[sub[[1]], ]; mo = mdat[sub[[2]], ]; offs = sub[-(1:2)]
+			for (of in offs) {
+				ofdat = mdat[of, ]
+				if(sex[of]==1) {
+					new_errors = Nseq[!maleXHomoz(ofdat)]
+					if(verbose) for (i in new_errors) cat("Marker ", i, ", individual ", x$orig.ids[of], ": Male heterozygosity not compatible with X-linked model.\n", sep="")
+					error = c(error, new_errors)
+					
+					new_errors = Nseq[!maleXCheck(mo, ofdat)]
+					if(verbose) for (i in new_errors) cat("Marker ", i, ", individual ", x$orig.ids[of], ": Allele not compatible with mother.\n", sep="")
+					error = c(error, new_errors)
+				}
+				else {
+					new_errors = Nseq[!trioCheckFast(fa, mo, ofdat)]
+					if(verbose) for (i in new_errors) cat("Marker ", i, ", individual ", x$orig.ids[of], ": Alleles not compatible with parents.\n", sep="")
+					error = c(error, new_errors)
+				}
+			}
+			if (length(offs) > 2) {
+				new_errors = Nseq[!nuclearAllelCheck(parents = mdat[sub[1:2], ], offs = mdat[offs, ])] #TODO: fix this for X-linked
+				if(verbose) for (i in new_errors)  cat("Marker ", i, ": Offspring of ", x$orig.ids[sub[1]], " and ", x$orig.ids[sub[2]], " have too many different alleles.\n", sep="")
+				error = c(error, new_errors)
 			}
 		}
-	}})
-	error
+	})
+	sort.int(unique.default(error))
 }

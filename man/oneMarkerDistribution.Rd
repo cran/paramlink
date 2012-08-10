@@ -1,0 +1,92 @@
+\name{oneMarkerDistribution}
+\alias{oneMarkerDistribution}
+\title{
+Genotype probability distribution
+}
+\description{
+Computes the (joint) genotype probability distribution of one or several pedigree members, possibly conditional on partial marker data.
+}
+\usage{
+oneMarkerDistribution(x, ids, partialmarker, theta=NULL, grid.subset=NULL, 
+                      loop_breakers=NULL, eliminate=0, verbose=TRUE)
+}
+
+\arguments{
+  \item{x}{
+A \code{linkdat} object.
+}
+  \item{ids}{
+A numeric with ID labels of one or more pedigree members.
+}
+  \item{partialmarker}{
+Either a single integer indicating the number of one of \code{x}'s existing markers, or a \code{\link{marker}} object.
+}
+  \item{theta}{
+The recombination fraction between marker and disease locus. Only relevant if at least one individual is affected by disease. In that case an error is raised if \code{theta} is NULL, and if \code{x} does not have a disease model. 
+}
+ \item{grid.subset}{
+A numeric matrix describing a subset of all marker genotype combinations for the \code{ids} individuals. The matrix should have one column for each of the \code{ids} individuals, 
+and one row for each combination: The genotypes are described in terms of the matrix \code{M = paramlink:::.allGenotypes(n)}, where \code{n} is the number of alleles for the marker. 
+If the entry in column \code{j} is the integer \code{k}, this means that the genotype of individual \code{ids[j]} is row \code{k} of\code{M}.
+}
+  \item{loop_breakers}{
+A numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.
+}
+  \item{eliminate}{
+A non-negative integer, indicating the number of iterations in the internal genotype-compatibility algorithm. Positive values can save time if \code{partialmarker} is non-empty and the number of alleles is large.
+}
+  \item{verbose}{
+A logical.
+}
+}
+\value{
+A named array (of dimension \code{length(ids)}) giving the joint marker genotype distribution for the \code{ids} individuals, conditional on 1) the marker allele frequencies given in \code{partialmarker}, 
+2) non-missing alleles in \code{partialmarker}, and 3) the disease model of \code{x} (if the pedigree is affected).
+}
+\author{
+Magnus Dehli Vigeland
+}
+
+\seealso{
+\code{\link{twoMarkerDistribution}}
+}
+\examples{
+x = nuclearPed(2)
+x_aff = swapAff(x, c(1,3))
+x_aff = setModel(x_aff, model=1) # dominant model
+	
+snp = marker(x, 1, c(1,1), 2, c(1,0), alleles=1:2, afreq=c(0.1, 0.9))
+res1 = oneMarkerDistribution(x, ids=3:4, partialmarker=snp)
+res2 = oneMarkerDistribution(x_aff, ids=3:4, partialmarker=snp, theta=0.5) 
+# should give same result, since theta=0.5 implies that marker is independent of disease.
+stopifnot(all.equal(res1, res2))
+
+# Different example for the same pedigree. A marker with 4 alleles:
+m2 = marker(x, 3:4, c('C','D'), alleles=LETTERS[1:4])
+oneMarkerDistribution(x, ids=1, partialmarker=m2)
+
+# Same as above, but computing only the cases where individual 1 is heterozygous.
+# (The numbers 5:10 refer to the 6 last rows of paramlink:::.allGenotypes(4), which contain the heterozygous genotypes.)
+oneMarkerDistribution(x, ids=1, partialmarker=m2, grid.subset=matrix(5:10, ncol=1)) 
+
+# Expanding on the previous example: Joint genotype probabilities of the parents, but including only the combinations where the father is heterozygous and the mother is homozygous:
+grid = expand.grid(5:10, 1:4)
+oneMarkerDistribution(x, ids=1:2, partialmarker=m2, grid.subset=grid) 
+
+# Something else: The genotype distribution of an individual whose half cousin is homozygous for a rare allele.
+y = halfCousinPed(degree=1)
+snp = marker(y, 9, c('a','a'), alleles=c('a', 'b'), afreq=c(0.01, 0.99))
+oneMarkerDistribution(y, ids=8, partialmarker=snp)
+
+# X-linked example:
+data(Xped)
+z = linkdat(Xped, model=4) # X-linked recessive model
+z2 = swapAff(z, 1:z$nInd, 1) # disease free version of the same pedigree
+snpX = marker(z, c(5,15), c('A','A'), alleles=c('A', 'B'), chrom=23)
+r1 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0.5)	# results: A - 0.8; B - 0.2
+r2 = oneMarkerDistribution(z2, ids=13, partialmarker=snpX)	# should be same as above
+r3 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0)		# results: A - 0.667; B - 0.333
+stopifnot(all.equal(r1,r2), round(r1[1], 2)==0.8, round(r3[1], 2) == 0.67)
+}
+
+\keyword{ distributions }

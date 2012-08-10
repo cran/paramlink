@@ -46,7 +46,7 @@ summary.linkdat <- function(object, ...) {
 		} else 
 			cat("\n", sum(m==0)/length(m)*100, "% missing alleles\n", sep="")
 		cat("\nChromosome distribution of markers:\n")
-		chrtbl = table(sapply(x$markerdata, attr, 'chr'), useNA="ifany")
+		chrtbl = table(sapply(x$markerdata, attr, 'chrom'), useNA="ifany")
 		names(chrtbl)[is.na(names(chrtbl))] = "unknown"
 		for(i in seq_along(chrtbl)) 
 			cat(" chromosome ", names(chrtbl)[i], ": ", chrtbl[i], ifelse(chrtbl[i]==1, " marker\n", " markers\n"), sep="")

@@ -1,47 +1,67 @@
 \name{likelihood}
 \alias{likelihood}
+\alias{likelihoodSNP}
 \title{Pedigree likelihood
 }
 \description{
-Calculates the likelihood of a pedigree, given the recombination rate between the disease locus and one marker locus.
+Calculates various forms of pedigree likelihoods.
 }
 \usage{
-likelihood(x, marker, theta=NULL, afreq=NULL, logbase=NULL, TR.MATR=NULL, 
-           singleNum.geno=NULL)
+likelihood(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, eliminate=0, 
+           logbase=NULL)
+
+likelihoodSNP(x, marker, theta=NULL, afreq=NULL, logbase=NULL, TR.MATR=NULL, 
+              singleNum.geno=NULL)
 }
 \arguments{
   \item{x}{
 a \code{linkdat} object, with \code{x$model} different from NULL.
 }
-  \item{marker}{
-an integer between 0 and \code{x$nMark}, indicating which marker to use in the calculation. If NULL, the marker is taken to be all zeroes.
+  \item{locus1}{
+a \code{\link{marker}} object compatible with \code{x}.
+}
+  \item{locus2}{
+either NULL, the character "disease", or a \code{\link{marker}} object compatible with \code{x}. See Details.
 }
   \item{theta}{
-a numeric of length 1 indicating the recombination rate between the disease and marker loci. 
-To make biological sense this should be between 0 and 0.5.
+the recombination rate between locus1 and locus2 (in \code{likelihoodSNP}: between the marker and the disease locus). 
+To make biological sense theta should be between 0 and 0.5.
+}
+  \item{eliminate}{
+mostly for internal use: a non-negative integer indicating the number of iterations in the internal genotype-compatibility algorithm. 
+Positive values can save time if \code{partialmarker} is non-empty and the number of alleles is large.
+}
+  \item{logbase}{
+a numeric, or NULL. If numeric the loglikelihood is returned, with \code{logbase} as basis for the logarithm.
+}
+  \item{marker}{
+an integer between 0 and \code{x$nMark}, indicating which marker to use in the calculation.
 }
   \item{afreq}{
 a numeric containing the marker allele frequencies. 
 }
- \item{logbase}{
-a numeric, or NULL. If numeric, the loglikelihood is computed, with \code{logbase} as basis for the logarithm.
+  \item{startdata}{
+for internal use.
 }
  \item{TR.MATR}{
-an 10*10*10 array with haplotype transmission probabilities, for speedy computation with diallelic markers.
-	}
- \item{singleNum.geno}{
-Mostly for internal use: a numeric vector containing genotypes coded as a single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5. 
-If this is non-null the \code{marker} argument is ignored.
+for internal use: an 10*10*10 array with haplotype transmission probabilities, for speedy computation with diallelic markers.
+}
+  \item{singleNum.geno}{
+for internal use: a numeric vector containing SNP genotypes coded as a single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5. 
+If this is non-NULL the \code{marker} argument is ignored.
 }
 }
 \details{
-The likelihood is calculated using the Elston-Stewart algorithm.
+The likelihoods are calculated using the Elston-Stewart algorithm.
+If \code{locus2 = NULL}, the result is the likelihood of the genotypes observed at the marker in locus1.
+If \code{locus2 = "disease"}, the result is the likelihood of the marker genotypes in locus1, given the affection statuses of the pedigree members, the disease model and the recombination rate \code{theta} between the marker and disease loci. 
+(This computation is central in parametric linkage analysis.)
+If \code{locus2} is a marker object, the result is the likelihood of the genotypes at the two markers, given the recombination rate theta between them. 
+
+The function \code{likelihoodSNP} is a fast version of the case \code{locus2 = "disease"}, when the marker in locus1 is diallelic.
 }
 \value{
-The likelihood of the pedigree with disease marker data, given the disease model and the recombination rate. 
-If \code{marker=NULL}, the result is the likelihood of the pedigree at the disease locus only (regardless the value of \code{theta}).
-
-If the parameter \code{logbase} is numeric, the output is \code{log(likelihood, logbase)}.
+The likeihood of the data. If the parameter \code{logbase} is numeric, the output is \code{log(likelihood, logbase)}.
 }
 \author{
 Magnus Dehli Vigeland
@@ -51,17 +71,14 @@ Magnus Dehli Vigeland
 \code{\link{lod}}
 }
 \examples{
-ped = data.frame(ID=1:4, FID=c(0,0,1,1), MID=c(0,0,2,2), SEX=c(1,2,1,1), 
-                 AFF=c(2,1,2,2), M_A1=c(1,1,1,1), M_A2=c(2,1,2,2))
+data(toyped)
+x = linkdat(toyped, model=1) #dominant model
 
-x = linkdat(ped, model = 1)
-
-
-lod1 = likelihood(x, marker=1, theta=0, logbase=10) - 
-       likelihood(x, marker=1, theta=0.5, logbase=10)
+lod1 = likelihoodSNP(x, marker=1, theta=0, logbase=10) - 
+       likelihoodSNP(x, marker=1, theta=0.5, logbase=10)
 lod2 = lod(x, markers=1, theta=0)
 # should be the same:
-stopifnot(identical(lod1, as.numeric(lod2)))
+stopifnot(identical(lod1, as.numeric(lod2)), round(lod1, 2)==0.3)
 }
 
 \keyword{ math }

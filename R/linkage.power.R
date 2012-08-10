@@ -1,10 +1,10 @@
-linkage.power <- function(x, N=100, all=FALSE, loop_breakers=NULL, threshold=NULL, seed=NULL) {
+linkage.power <- function(x, N=100, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, threshold=NULL, seed=NULL) {
 	if (is.null(x$model)) stop("No model set.")
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
 	
-	if (all || length(x$available)==0) x = setAvailable(x, x$orig.ids)
+	if (length(available)==0) available = x$orig.ids
 	 
-	sims = SNPsim(x, N=N, partialmarker=NULL, available=x$available, loop_breakers=loop_breakers, unique=FALSE, seed=seed)
+	sims = SNPsim(x, N=N, partialmarker=NULL, available=available, afreq=afreq, loop_breakers=loop_breakers, unique=FALSE, seed=seed)
 	cat(N, "markers simulated\n")
 	lds = structure( lod(sims, theta=0, loop_breakers=loop_breakers, verbose=FALSE), analysis="power", class="linkres")
 	summary(lds, threshold=threshold)
@@ -18,7 +18,7 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 	
 	if (all) x = setAvailable(x, x$orig.ids)
 	
-	models = switch(x$model$chr,
+	models = switch(x$model$chrom,
 		AUTOSOMAL = {switch(varyPar,
 			f0 = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances[1]=k; mod}),
 			f1 = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances[2]=k; mod}),
@@ -43,3 +43,53 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 	plot(values, lods, type='l', xlab=varyPar, ylab='Maximum LOD')
 	data.frame(value=values, LOD=lods)
 }
+
+
+.lod.varyParam <- function(x, markers=1, f0, f1, f2, dfreq, afreq1, theta, loop_breakers=NULL, plot=T, ...) {
+	if (is.null(x$model)) stop("No model set.")
+	
+	if(missing(f0)) f0 = x$model$penetrances[1]
+	if(missing(f1)) f1 = x$model$penetrances[2]
+	if(missing(f2)) f2 = x$model$penetrances[3]
+	if(missing(dfreq)) dfreq = x$model$dfreq
+	if(missing(afreq1)) {
+		vary_a = FALSE
+		afreq1 = -99  # dummy...anything of length 1
+	} else {
+		if(length(afreq1)>1 && length(markers)>1) stop("When varying marker allele frequencies, a single marker must be chosen")
+		vary_a = TRUE
+	}
+	if(missing(theta)) theta=0
+	
+	arglist = list(f0,f1,f2,dfreq,afreq1,theta)
+	arglength = sapply(arglist, length)
+	varyP = which(arglength > 1)
+	if(any(arglength < 1) || length(varyP) == 0 || length(varyP) > 2) stop("Something is wrong with the input parameters: See ?lod.varyParam")
+	
+	lods = numeric(0)
+	for(f_0 in f0) for(f_1 in f1) for(f_2 in f2) for(d_frq in dfreq) for(a_frq in afreq1) {
+		y = setModel(x, penetrances=c(f_0, f_1, f_2), dfreq=d_frq)
+		if(vary_a) {
+			nn = attr(y$markerdata[[markers]], 'nalleles')
+			y = modifyMarker(y, marker=markers, afreq=c(a_frq, rep(1-a_frq, nn-1)/(nn-1)))
+		}
+		ld = lod(y, markers=markers, theta=theta, loop_breakers=loop_breakers, max.only=TRUE)  # theta can be of length > 1!
+		lods = c(lods, ld)
+	}
+	shortnames = c('f0','f1','f2','d','a','th')
+	longnames = c('Phenocopy rate', 'Penetrance parameter f1', 'Penetrance parameter f2', 'Frequency of disease allele', 'Frequency of marker allele 1', 'Recombination fraction (theta)')
+	values1 = arglist[[varyP[1]]]
+	names1 = paste(shortnames[varyP[1]], round(values1, 4), sep="_")
+		
+	switch(length(varyP), {
+		result = structure(lods, names=names1)
+		if(plot) plot(values1, result, xlab = longnames[varyP[1]], ylab="LOD", ...)
+	},{
+		values2 = arglist[[varyP[2]]]
+		names2 = paste(shortnames[varyP[2]], round(values2, 4), sep="_")
+		result = matrix(lods, byrow=T, ncol=arglength[varyP[2]], dimnames=list(names1, names2))
+		if(plot)	contour(values1, values2, result, xlab = longnames[varyP[1]], ylab=longnames[varyP[2]], ...)
+	})
+	result	
+}
+

@@ -8,7 +8,7 @@ Power of a linkage study
 Power analysis of parametric linkage studies
 }
 \usage{
-linkage.power(x, N=100, all=FALSE, loop_breakers=NULL, threshold=NULL, seed=NULL)
+linkage.power(x, N=100, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, threshold=NULL, seed=NULL)
 
 %power.varyPar(x, N=100, varyPar, values, all=FALSE, loop_breakers=NULL, seed=NULL)
 }
@@ -20,9 +20,11 @@ a \code{linkdat} object.
   \item{N}{
 an integer; the number of markers to simulate.
 }
-  \item{all}{
-a logical indicating whether markers should be simulated for all pedigree members. If FALSE, the availability vector \code{x$availability} will be used.
-If \code{x} has existing marker data, the default is to simulate only the genotyped individuals.
+  \item{available}{
+a vector containing IDs of the available individuals, i.e. those whose genotypes should be simulated.
+}
+  \item{afreq}{
+a vector of length 2 containing the population frequencies for the SNP alleles.
 }
   \item{loop_breakers}{
 a numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.

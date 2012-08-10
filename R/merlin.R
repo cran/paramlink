@@ -4,7 +4,7 @@ merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="
 	
 	if (x$nMark == 0) stop("No markers exist for this linkdat object.")
 	x = removeMarkers(x, seq_len(x$nMark)[-markers])
-	map = paramlink:::.getMap(x, na.action=1, verbose=F)
+	map = .getMap(x, na.action=1, verbose=F)
 	mNames = map$MARKER
 	
 	extensions = c("ped", "dat", "map", "freq", if(model) "model")

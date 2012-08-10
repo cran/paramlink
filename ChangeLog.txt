@@ -1,3 +1,23 @@
+2012-08-10
+	* DESCRIPTION (Version, Date): 0.7-0
+	* Removed all calls to .Internal().
+	* oneMarkerDistribution() behaves better with X-linked markers.
+	* improved likelihood calculation in twoMarkerDistribution.
+
+2012-03-08
+	* DESCRIPTION (Version, Date): 0.6-3
+	* SNPsim() now stores all simulated markers as diallelic, annotated with the input allele frequencies. (In earlier versions markers with only one allele were stored as uniallelic).
+	* Fixed bug in mendelianCheck() causing empty result with looped pedigrees.
+
+2012-02-10
+	* DESCRIPTION (Version, Date): 0.6-2
+	* new function simpleSim() for unconditional simulation (gene dropping) of unlinked markers.
+	* new function lod.varyParam() which computes and plots the LOD score under variable model parameteres. Either one or two parameters are allowed to vary; in the latter case a contour plot of the LOD is produced. 
+	* added logical argument 'verbose' to mendelianCheck().
+	* added argument 'afreq' for specifying allele frequencies in functions SNPsim() and linkage.power(). In earlier versions this was done in given in setModel().
+	* fixed bug in addMarkers() which deleted other markers when given an allele matrix as input.
+	* new function exclusion() (undocumented and experimental).
+
 2012-01-31
 	* DESCRIPTION (Version, Date): 0.6-0
 	* Rewritten User's Manual.
