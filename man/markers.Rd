@@ -4,11 +4,13 @@
 \alias{setMarkers}
 \alias{removeMarkers}
 \alias{modifyMarker}
+\alias{modifyMarkerMatrix}
+\alias{swapGenotypes}
 \alias{mendelianCheck}
 \alias{setMap}
 
 \title{
-Marker genotypes for linkdat objects  
+Marker functions  
 }
 \description{
 Functions for setting and manipulating marker genotypes for 'linkdat' objects.
@@ -20,6 +22,8 @@ addMarker(x, m, alleles=NULL, afreq=NULL, missing=0)
 setMarkers(x, m, map=NULL, dat=NULL, freq=NULL, missing = 0)
 removeMarkers(x, markers)
 modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
+modifyMarkerMatrix(x, ids, new.alleles)
+swapGenotypes(x, ids)
 mendelianCheck(x, verbose=TRUE)
 }
 \arguments{
@@ -51,7 +55,7 @@ NA or a non-negative real number indicating the genetic position (in cM) of the 
 a numeric indicating which marker(s) to use/modify.
 }
   \item{ids}{
-a numeric indicating individual(s) to be modified.
+a numeric indicating individual(s) to be modified. In \code{swapGenotypes} this must have length 2.
 }
   \item{genotype}{
 a vector of length 1 or 2, containing the genotype to be given the \code{ids} individuals. See examples.
@@ -71,6 +75,9 @@ a character containing the path to a dat file, MERLIN style. See MERLIN's online
  \item{freq}{
 a character with the path to a allele frequency file in MERLIN (short) format. (Not used if \code{map=NULL}.)
 }
+ \item{new.alleles}{
+a numerical matrix of dimensions \code{length(ids), 2*x$nMark}. Entries refer to the internal allele numbering.
+}
  \item{verbose}{
 a logical. If TRUE, details of the markers failing the tests are shown.
 }
@@ -79,7 +86,7 @@ a logical. If TRUE, details of the markers failing the tests are shown.
 The \code{marker} function returns an object of class \code{marker}: This is a numerical 2-column matrix with one row per individual, and attributes 
 'alleles' (a character vector with allele names), 'nalleles' (the number of alleles) and 'missing' (the input symbol for missing marker alleles), 'chrom' (chromosome number), 'name' (marker identidier), 'pos' (chromosome position in cM).
 
-For \code{addMarker}, \code{setMarkers}, \code{removeMarkers} and \code{modifyMarkers}, a \code{linkdat} object is returned, whose \code{markerdata} element has been set/modified. 
+For \code{addMarker}, \code{setMarkers}, \code{removeMarkers}, \code{modifyMarker}, \code{modifyMarkerMatrix} and \code{swapGenotypes}, a \code{linkdat} object is returned, whose \code{markerdata} element has been set/modified. 
 
 For \code{mendelianCheck}, a numeric containing the indices of the markers that did not pass the tests.
 }

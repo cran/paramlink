@@ -36,7 +36,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 	gridlist = .make.grid.subset(x, m, x$orig.ids, chrom, make.grid=F)
 	for(id in 1:x$nInd)
 		if(any(m[id, ]==0) && length(gridlist[[id]]) == 1) {
-			m[id,] =  allgenos[gridlist[[id]], ]; 
+			m[id,] =  allgenos[gridlist[[id]], ]
 			if(verbose) cat("Individual", x$orig.ids[id], "has forced genotype", ifelse(chrom=="X", alleles[m[id,1]], paste(alleles[m[id,]], collapse="/")), "\n")
 		}
 
@@ -78,9 +78,12 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 			cost_int[seq_len(which.min(initvec))]
 		},
 		X = {				
-			males = cost_int[SEX[cost_int]==1]; females = cost_int[SEX[cost_int]==2]
-			ngrid_m = sapply(gridlist[males], length); ngrid_f = sapply(gridlist[females], length)
-			n_males=length(males); n_females=length(females)
+			males = cost_int[SEX[cost_int]==1]
+         females = cost_int[SEX[cost_int]==2]
+			ngrid_m = as.numeric(sapply(gridlist[males], length))
+         ngrid_f = as.numeric(sapply(gridlist[females], length))
+			n_males=length(males)
+         n_females=length(females)
 			# find optimal 'init' values for males/females
 			calls = matrix(nrow=n_males+1, ncol=n_females+1)
 			for(ma in 0:n_males) for(fe in 0:n_females)

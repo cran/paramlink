@@ -42,7 +42,7 @@
 		{ a=g_i[1]; b=g_i[2]; if(a==b) cbind(g_i, deparse.level=0) else cbind(g_i, c(b, a), deparse.level=0)},
 		{ nz = g_i[g_i!=0]; rbind(c(nseq, rep.int(nz, n-1)), c(rep.int(nz, n), nseq[-nz]), deparse.level=0)},
 		{ .COMPLETE })
-		if ((i %in% x$founders) && (!x$orig.ids[i] %in% x$loop_breakers)) 
+		if ((i %in% x$founders) && (!x$orig.ids[i] %in% x$loop_breakers[,2])) 
 			m = m[, m[1,] <= m[2,], drop=FALSE]
 		m
 	})

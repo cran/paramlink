@@ -1,10 +1,10 @@
 \name{markerSim}
 \alias{markerSim}
 \title{
-Simulate SNP markers
+Marker simulation
 }
 \description{
-Simulates SNP markers conditional on the pedigree structure, affection statuses and disease model.
+Simulates marker genotypes conditional on the pedigree structure, affection statuses and disease model.
 }
 \usage{
 markerSim(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, partialmarker=NULL, 
@@ -53,7 +53,7 @@ a logical.
 
 }
 \details{
-This implementats (with various time savers) the algortihm used in SLINK of the LINKAGE/FASTLINK suite.
+This implements (with various time savers) the algortihm used in SLINK of the LINKAGE/FASTLINK suite.
 }
 \value{
 a \code{linkdat} object equal to \code{x} in all respects except its \code{markerdata} entry, which consists of the \code{N} simulated markers.

@@ -256,7 +256,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 	which(test)
 }
 
-.swapMarkerData=function(x, ids){ #Laget for Thore, eksporteres ikke.
+swapGenotypes=function(x, ids){
 	stopifnot(length(ids)==2)
 	ids = .internalID(x, ids)
 	y = .as.annotated.matrix(x)
@@ -264,7 +264,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 	.restore.linkdat(y)
 }
 
-.modifyMarkerData=function(x, ids, new.alleles){
+modifyMarkerMatrix=function(x, ids, new.alleles){
 	ids = .internalID(x, ids)
 	y = .as.annotated.matrix(x)
 	y[ids, -(1:6)] = new.alleles

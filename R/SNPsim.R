@@ -104,21 +104,3 @@ SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.
 	if(loops) x = tieLoops(x)
 	x
 }
-
-
-.exclusion = function(x, N, available, id.check, Xchrom=FALSE, afreq=c(0.5, 0.5), return.simdata=FALSE, seed=NULL, verbose=T){
-  if (!is.null(seed)) set.seed(seed)
-  y = simpleSim(x, N=N, afreq=afreq, available=available, Xchrom=Xchrom, verbose=verbose)
-  
-  random.genos = 
-  if(Xchrom) rep(sample.int(length(afreq), N, prob = afreq, replace = TRUE), each=2) 
-  else sample.int(length(afreq), 2*N, prob = afreq, replace = TRUE)
-
-  y = .modifyMarkerData(y, id.check, random.genos)
-  
-  exclude = mendelianCheck(y, verbose=FALSE)
-  exclusion.prob = length(exclude)/N
-  cat("Exclusion probability for individual", id.check, "=", exclusion.prob, "\n")
-  if(return.simdata) return(list(exclusion.prob = exclusion.prob, simdata = y))
-  else return(exclusion.prob)
-}

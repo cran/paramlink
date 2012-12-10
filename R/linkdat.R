@@ -40,15 +40,13 @@ function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, verbose=TRUE, missing=0
 	else famid=1
 	if (verbose) cat("Family name: ", famid, ".\n", sep="")
 	if(ncol(ped) < 5) stop("Too few columns: ID, FID, MID, SEX and AFF are mandatory.")
-	
 	pedigree = as.matrix(ped[, 1:5], rownames.force=FALSE)
 	colnames(pedigree) = c('ID', 'FID', 'MID', 'SEX', 'AFF')
 	.checkped(pedigree)
-	
 	orig.ids = ped[,1]
 	nInd = nrow(pedigree)
 	pedigree = relabel(pedigree, new=1:nInd)
-	if (verbose) cat("Pedigree read,", nInd, "individuals.\n")
+	if (verbose) cat(nInd, "individuals;", sum(pedigree[, 'AFF']==2), "affected\n")
 	
 	founders = as.integer(which(pedigree[,'FID'] == 0))
 	nonfounders = as.integer(which(pedigree[,'FID'] > 0))

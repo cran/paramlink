@@ -1,7 +1,7 @@
 \name{setAvailable}
 \alias{setAvailable}
 \alias{swapAvailable}
-\title{Availability vector for 'linkdat' objects}
+\title{Functions for modifying availability vectors}
 \description{
 Functions to set and modify the availability vector of a 'linkdat' object. This vector is used in 'linkage.power' and 'SNPsim', indicating for whom genotypes should be simulated. 
 }

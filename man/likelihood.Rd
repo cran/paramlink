@@ -61,7 +61,7 @@ If \code{locus2} is a marker object, the result is the likelihood of the genotyp
 The function \code{likelihoodSNP} is a fast version of the case \code{locus2 = "disease"}, when the marker in locus1 is diallelic.
 }
 \value{
-The likeihood of the data. If the parameter \code{logbase} is numeric, the output is \code{log(likelihood, logbase)}.
+The likelihood of the data. If the parameter \code{logbase} is numeric, the output is \code{log(likelihood, logbase)}.
 }
 \author{
 Magnus Dehli Vigeland
