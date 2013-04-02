@@ -4,7 +4,7 @@
 
 .lodm <- function(x, markers=seq_len(x$nMark), theta=0, loop_breakers=NULL, max.only=FALSE, verbose=FALSE) {
 
-	stopifnot(class(x)=="linkdat")
+	stopifnot(inherits(x,"linkdat"))
 	if (is.null(x$model)) 	stop("No model set.")
 	if (x$nMark==0) 		stop("No marker data indicated.")
 	if (x$hasLoops)		{	
@@ -16,8 +16,8 @@
 	lods = vapply(x$markerdata[markers], function(marker) {
 		attr(marker, 'chrom') = x$model$chrom
 		start.dat = .startdata_MD(x, marker)
-		denom = likelihood(x, locus1=marker, locus2="disease", theta=0.5, startdata = start.dat, logbase=10)
-		unlist(lapply(theta_list, function(tht) likelihood(x, locus1=marker, locus2="disease", theta=tht, startdata = start.dat, logbase=10) - denom))
+		denom = likelihood.linkdat(x, locus1=marker, locus2="disease", theta=0.5, startdata = start.dat, logbase=10)
+		unlist(lapply(theta_list, function(tht) likelihood.linkdat(x, locus1=marker, locus2="disease", theta=tht, startdata = start.dat, logbase=10) - denom))
 	}, FUN.VALUE=numeric(length(theta)))
 	
 	map = .getMap(x, na.action=1, verbose=F)[markers, ,drop=FALSE]

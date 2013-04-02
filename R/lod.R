@@ -1,6 +1,7 @@
 lod <-
 function(x, markers=seq_len(x$nMark), theta=0, loop_breakers=NULL, max.only=FALSE, verbose=FALSE, tol=0.01) {
-	stopifnot(class(x)=="linkdat")
+	stopifnot(inherits(x, 'linkdat'))
+   if(inherits(x, 'singleton')) stop("This function is not applicable to singleton objects.")
 	if (is.null(x$model)) 	stop("No model set.")
 	if (x$nMark==0) 		stop("No marker data indicated.")
 	if (x$hasLoops)		{	

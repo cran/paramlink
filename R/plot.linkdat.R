@@ -6,7 +6,7 @@
 	if(!is.null(aff2)) {
 		stopifnot(is.numeric(aff2), length(aff2)==x$nInd, all(aff2 %in% 0:2))
 		aff2[aff2==0] = NA; aff2 = aff2 - 1
-		AFF = cbind(aff1 = AFF, aff2=aff2)
+		AFF = cbind(aff1 = AFF, aff2 = aff2)
 	}
 	
 	status = ifelse(x$orig.ids %in% deceased, 1, 0)
@@ -28,8 +28,9 @@ plot.linkdat <- function(x, marker=NULL, alleles=NULL, sep="/", missing="-",
 	starred = .internalID(x, starred)
 	strid[starred] = paste(strid[starred], "*", sep="")
 	if (!is.null(marker)) {
-		if(class(marker)=="marker") m = list(marker)
-		else if(is.list(marker) && all(sapply(marker, class)=="marker")) m = marker  #marker must be either a 'marker' object, a list of such, or an integer vector.
+		if(inherits(marker, "marker")) m = list(marker)
+		else if(is.list(marker) && all(sapply(marker, inherits, what="marker"))) 
+         m = marker  #marker must be either a 'marker' object, a list of such, or an integer vector.
 		else m = x$markerdata[marker]
 		chrom = ifelse(all(sapply(m, function(mm) identical(23L, as.integer(attr(mm, 'chrom'))))), 'X', 'AUTOSOMAL')
 		gg = .prettyMarkers(m, alleles=alleles, sep=sep, missing=missing, singleCol=TRUE, sex=x$pedigree[, 'SEX'])
@@ -41,3 +42,34 @@ plot.linkdat <- function(x, marker=NULL, alleles=NULL, sep="/", missing="-",
 	plot(pedigree, id=strid, col=cols, mar=margins, ...)
 	if(!is.null(title)) title(title)
 }
+
+
+plot.singleton = function(x, marker=NULL, alleles=NULL, sep="/", missing="-", 
+	id.labels=x$orig.ids, title=paste("Family", x$famid), available=FALSE, col = 1,
+	starred=numeric(0), margins=c(4.1, 1, 4.1, 1), symbolsize=4, offset=0.5+0.2*symbolsize, textsize=1, ...) {
+   
+   sex=x$pedigree[, 'SEX']
+   
+   if(available) cols = ifelse(x$orig.ids %in% x$available, 2, 1)
+	else cols = col
+   
+   strid = rep(id.labels, length.out=x$nInd)
+	starred = .internalID(x, starred)
+	strid[starred] = paste(strid[starred], "*", sep="")
+	if (!is.null(marker)) {
+		if(inherits(marker, "marker")) m = list(marker)
+		else if(is.list(marker) && all(sapply(marker, inherits, what="marker")))
+         m = marker  #marker must be either a 'marker' object, a list of such, or an integer vector.
+		else m = x$markerdata[marker]
+		chrom = ifelse(all(sapply(m, function(mm) identical(23L, as.integer(attr(mm, 'chrom'))))), 'X', 'AUTOSOMAL')
+		gg = .prettyMarkers(m, alleles=alleles, sep=sep, missing=missing, singleCol=TRUE, sex=sex)
+		geno = gg[,1]
+		for(i in seq_along(m)[-1]) geno = paste(geno, gg[, i], sep="\n")
+		if(is.null(strid) || !any(nzchar(strid))) strid = geno else strid = paste(strid, geno, sep="\n")
+	}
+   
+	plot(1, 1, pch=ifelse(sex==1, 0, 1), col=cols, axes=FALSE, xlab="", ylab="", cex=symbolsize, mar=margins, ...)
+   text(1, 1, strid, pos=1, offset=offset, cex=textsize)
+	if(!is.null(title)) title(title)
+}
+

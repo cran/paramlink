@@ -1,5 +1,32 @@
+likelihood = function(x, ...)  UseMethod("likelihood", x)
 
-likelihood <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, eliminate=0, logbase=NULL) {
+likelihood.singleton = function(x, locus1, logbase=NULL, ...) {
+   if(is.null(locus1) || all(locus1==0)) 
+      return(if (is.numeric(logbase)) 0 else 1)
+   
+   m = locus1
+   chrom = as.integer(attr(m, 'chrom'))
+   afreq = attr(m, 'afreq') 
+   if(identical(chrom, 23L) && x$pedigree[, 'SEX']==1) {# X chrom and male
+      if(all(m>0) && m[1]!=m[2]) stop("Heterozygous genotype detected for X-linked marker in male individual.")
+      res = afreq[m[1]]
+   }
+   else 
+      if (0 %in% m) 
+         res = afreq[m[m!=0]]
+      else 
+         res = prod(afreq[m]) * ifelse(m[1]!=m[2], 2, 1)  # assumes HWE
+   return(if (is.numeric(logbase)) log(res, logbase) else res)
+}
+
+
+likelihood.list = function(x, locus1, ...) {
+   if (all(sapply(x, inherits, what=c('singleton', 'linkdat'))))
+      prod(sapply(1:length(x), function(i) likelihood(x[[i]], locus1[[i]], ...)))
+   else stop("First argument must be either a 'linkdat' object, a 'singleton' object, or a list of such")
+}
+
+likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, eliminate=0, logbase=NULL, ...) {
 	
 	if(x$hasLoops) stop("Unbroken loops in pedigree.")
 	
@@ -466,15 +493,18 @@ likelihood <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, elimi
 	is_uninf_fou = is_miss & seq_len(x$nInd) %in% x$founders
 	
 	for(sub in x$subnucs) {
-		fa = sub[['father']]; mo = sub[['mother']]; offs = sub[['offspring']]
+		fa = sub[['father']]; mo = sub[['mother']]; offs = sub[['offspring']]; pivot = sub[['pivot']]
 		sub[['offspring']] = offs[!is_uninf_leaf[offs]]
 		noffs = length(sub[['offspring']])
 		switch(sub[['pivtype']], 
 			{if(noffs==0 && is_uninf_fou[mo]) sub = NULL}, 
 			{if(noffs==0 && is_uninf_fou[fa]) sub = NULL},
-			{if(noffs==1 && is_uninf_fou[fa] && is_uninf_fou[mo]) {newfounders = c(newfounders, sub[['pivot']]); sub = NULL}})
-		if(!is.null(sub)) new_subnucs = c(new_subnucs, list(sub))
-	}
+			{if(noffs==1 && is_uninf_fou[fa] && is_uninf_fou[mo]) {newfounders = c(newfounders, pivot); sub = NULL}})
+		if(!is.null(sub)) {
+         new_subnucs = c(new_subnucs, list(sub))
+         is_uninf_fou[pivot] = FALSE  #added in v0.8-1 to correct a bug marking certain "middle" subnucs uninformative
+      }
+   }
 	list(subnucs = new_subnucs, newfounders = newfounders)
 }
 
@@ -482,19 +512,26 @@ likelihood <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, elimi
 .make.grid.subset = function(x, partialmarker, ids, chrom, make.grid=T) {
 	int.ids = .internalID(x, ids)
 	nall = attr(partialmarker, 'nalleles')
+   if(missing(chrom)) 
+      chrom = if(identical(attr(partialmarker, 'chrom'), 23)) 'X' else 'AUTOSOMAL'
+
 	allg = .allGenotypes(nall)
 	allg_ref = 1000*(allg[,1] + allg[,2]) + abs(allg[,1] - allg[,2])
-	switch(chrom, 
+	
+   match_ref_rows = function(genomatr) # In: matrix with 2 rows (each column a genotype). Out: vector of 'allg' row numbers
+      sort.int(unique.default(match(1000*(genomatr[1,] + genomatr[2,]) + abs(genomatr[1,] - genomatr[2,]), allg_ref)))
+   
+   switch(chrom, 
 	'AUTOSOMAL' = {
 		glist = .build_genolist(x, partialmarker, eliminate=100)
 		if (attr(glist, 'impossible')) stop("Impossible partial marker")
-		rows = lapply(glist[int.ids], function(mm)  sort.int(unique.default(match(1000*(mm[1,]+mm[2,]) + abs(mm[1,]-mm[2,]), allg_ref))))
+		rows = lapply(glist[int.ids], match_ref_rows)
 	},
 	'X' = {
 		SEX = x$pedigree[, 'SEX']
 		glist = .build_genolist_X(x, partialmarker, eliminate=100)
 		if (attr(glist, 'impossible')) stop("Impossible partial marker")
-		rows = lapply(int.ids, function(i)  {mm = glist[[i]]; switch(SEX[i], mm, sort.int(unique.default(match(1000*(mm[1,]+mm[2,]) + abs(mm[1,]-mm[2,]), allg_ref))))})
+		rows = lapply(int.ids, function(i) switch(SEX[i], glist[[i]], match_ref_rows(glist[[i]])))
 	})
 	if (make.grid) .my.grid(rows) else rows
 }

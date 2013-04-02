@@ -4,7 +4,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 	likel_counter = 0
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
 	if (!is.null(partialmarker)) {
-		if (class(partialmarker)!="marker") stop("Argument 'partialmarker' must be a 'marker' object.")
+		if (!inherits(partialmarker, "marker")) stop("Argument 'partialmarker' must be a 'marker' object.")
 		else if (nrow(partialmarker)!=x$nInd) stop("Partial marker does not fit the pedigree.")
 		if(!is.null(alleles) || !is.null(afreq)) stop("When 'partialmarker' is non-NULL, both 'alleles' and 'afreq' must be NULL.")
 		if(length(mendelianCheck(setMarkers(x, partialmarker), verbose=F)) > 0) stop("Mendelian error in the given partial marker.")
@@ -99,7 +99,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 		initp = apply(allgenos_row_grid, 2, function(rownrs) { 
 			partial = m
 			partial[init_int, ] = allgenos[rownrs, ];   
-			likelihood(x, locus1=partial, eliminate=eliminate) 
+			likelihood.linkdat(x, locus1=partial, eliminate=eliminate) 
 		})
 		likel_counter = likel_counter + length(initp)
 		if (identical(sum(initp), 0)) stop("When trying to precompute joint probabilities: All probabilities zero. Mendelian error?")
@@ -121,7 +121,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 		rowsample = unlist(lapply(2*seq_len(N), function(mi) {
 			partial = m
 			partial[] = markers[, c(mi-1, mi)]  # preserves all attributes of the m.
-			probs = unlist(lapply(gridi, function(r) { partial[i, ] = allgenos[r,];	likelihood(x, locus1=partial, eliminate=eliminate)	}))
+			probs = unlist(lapply(gridi, function(r) { partial[i, ] = allgenos[r,];	likelihood.linkdat(x, locus1=partial, eliminate=eliminate)	}))
 			if (sum(probs)==0) { print(cbind(ped, partial)); stop("\nIndividual ", x$orig.ids[i],": All genotype probabilities zero. Mendelian error?")}
 			sample(gridi, size=1, prob=probs)
 		}))

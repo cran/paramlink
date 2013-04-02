@@ -45,39 +45,6 @@
 	res
 }
 
-.as.annotated.matrix = function(x) {
-	p = cbind(FAMID=x$famid, relabel(x$pedigree, x$orig.ids))
-	if(x$nMark>0) {
-		p = cbind(p, do.call(cbind, x$markerdata))
-		attr(p, "markerattr") = lapply(x$markerdata, attributes)
-	}
-	attr(p, "available") = x$available
-	attr(p, "model") = x$model
-	p
-}
-
-.restore.linkdat = function(x, attrs=NULL) { #x = annotated matrix
-	if(is.null(attrs)) attrs = attributes(x)
-	y = linkdat(x[, 1:6], model = attrs$model, verbose=FALSE)
-	markers = x[, -(1:6)]
-	nMark = ncol(markers)/2
-	if(nMark==0) y = setMarkers(y, NULL)
-	else {
-		markerattr = attrs$markerattr
-		markerdata_list = lapply(seq_len(nMark), function(k) {
-			m = markers[, c(2*k-1,2*k)]
-			attributes(m) = c(markerattr[[k]][-1], list(dim=dim(m)))
-			m
-		})
-		class(markerdata_list) = "markerdata"
-		y = setMarkers(y, markerdata_list)
-	}
-	
-	y$available = intersect(y$orig.ids, attrs$available)
-	#y$map = attrs$map
-	y
-}
-
 offspring = function(x, id, original.id=TRUE) {
 	if(original.id) id = .internalID(x, id)
 	p = x$pedigree
@@ -92,7 +59,7 @@ spouses = function(x, id, original.id=TRUE) { #returns a vector containing all i
 	offs_rows = p[, 1 + p[internal_id, 'SEX'] ] == internal_id
 	spou = unique(p[offs_rows, 4 - p[internal_id, 'SEX']])  #sex=1 -> column 3; sex=2 -> column 2.
 	if (original.id) return(x$orig.ids[spou]) else return(spou)
-}	
+}
 
 .ancestors = function(x, ids, original.id=TRUE) { #climbs up the pedigree storing parents iteratively. Output does not include 'ids'.
 	if (original.id) ids = .internalID(x, ids)
@@ -172,10 +139,11 @@ pedigreeLoops = function(x) {
 
 
 breakLoops = function(x, loop_breakers) {
-	stopifnot(is.numeric(loop_breakers), length(loop_breakers)>0)
+	if(inherits(x,'singleton')) stop("This function does not apply to singleton objects.")
+   stopifnot(is.numeric(loop_breakers), length(loop_breakers)>0)
 	if(any(loop_breakers %in% x$orig.ids[x$founders])) stop("Pedigree founders cannot be loop breakers.")
 
-	pedm = .as.annotated.matrix(x)#data.frame(x, famid=T, missing=0)
+	pedm = as.matrix(x)#data.frame(x, famid=T, missing=0)
 	attrs = attributes(pedm) #all attributes except 'dim'
 	dup_pairs = x$loop_breakers #normally = NULL at this stage 
 	for(id in loop_breakers) {
@@ -188,7 +156,7 @@ breakLoops = function(x, loop_breakers) {
 		pedm[intern+1, c('ID', 'FID','MID')] = c(dup_id, 0, 0)
 		pedm[pedm[, sex_col] == id, sex_col] = dup_id
 	}
-	newx = .restore.linkdat(pedm, attrs=attrs) 
+	newx = restore_linkdat(pedm, attrs=attrs) 
 	newx$loop_breakers = dup_pairs
 	newx
 }
@@ -197,7 +165,7 @@ tieLoops = function(x) {
 	dups = x$loop_breakers
 	if(is.null(dups) || nrow(dups)==0) {cat("No loops to tie\n"); return(x)}
 	if(!all(dups %in% x$orig.ids)) stop("Something's wrong: Duplicated individuals no longer in pedigree.")
-	pedm = .as.annotated.matrix(x)
+	pedm = as.matrix(x)
 	attrs = attributes(pedm)
 
 	origs = dups[,1]; copies = dups[,2]
@@ -207,11 +175,13 @@ tieLoops = function(x) {
 		sex = pedm[pedm[,'ID']==orig, 'SEX']
 		pedm[pedm[, sex+2] == copy, sex+2] = orig 
 	}
-	.restore.linkdat(pedm, attrs=attrs)
+	restore_linkdat(pedm, attrs=attrs)
 }
 
-all.equal.linkdat = function(target, current, ...) {
-	if(class(target)!='linkdat' || class(current)!='linkdat') return(F)
+.all.equal.linkdat = function(target, current, ...) {
+	if(!all.equal(class(target), class(current))) {
+      cat("Class attributes are not equal\n"); return(F)
+   }
 	if(!setequal(target$orig.ids, current$orig.ids)) {
 		cat("ID labels are not equal\n"); return(FALSE)
 	}
@@ -226,16 +196,75 @@ all.equal.linkdat = function(target, current, ...) {
 			cat("Missing slots in second object:\n", paste(sec_miss, sep=","), "\n")
 		return(FALSE)
 	}
-	target_m = .as.annotated.matrix(target)
-	target = .restore.linkdat(target_m[match(current$orig.ids, target$orig.ids), ], attrs=attributes(target_m))
+	target_m = as.matrix(target)
+	target = restore_linkdat(target_m[match(current$orig.ids, target$orig.ids), ,drop=F], attrs=attributes(target_m))
 	test = sapply(names.t, function(name) isTRUE(all.equal(target[[name]], current[[name]])))
-	if(!all(test)) {
+	
+   if(!all(test)) {
 		cat("Difference detected in the following slots:\n", paste(names.t[!test], sep=","), "\n")
 		return(FALSE)
 	}
 	return(TRUE)
 }
 
+all.equal.linkdat = function(target, current, ...) {
+	res = TRUE
+   if(!all.equal(class(target), class(current))) {
+      cat("Class attributes are not equal\n")
+      res = FALSE
+   }
+   
+   if(target$nMark != current$nMark) {
+      cat("Unequal numbers of markers:", target$nMark, "vs.", current$nMark, "\n")
+      res = FALSE
+   }
+	names.t = names(target)
+	names.c = names(current)
+	if(!setequal(names.t, names.c)) {
+		if(length(first_miss <- setdiff(names.c, names.t)) > 0)
+			cat("Missing slots in first object:", paste(first_miss, sep=", "), "\n")
+		if(length(sec_miss <- setdiff(names.t, names.c)) > 0)
+			cat("Missing slots in second object:", paste(sec_miss, sep=", "), "\n")
+		res = FALSE
+	}
+   if(!setequal(target$orig.ids, current$orig.ids)) {
+		cat("ID labels are not equal\n")
+      res = FALSE
+	}
+   
+	new_order = match(current$orig.ids, target$orig.ids)
+   ped_targ = relabel(target$pedigree, target$orig.ids)[new_order, , drop=F]
+   ped_curr = relabel(current$pedigree, current$orig.ids)
+   if(!identical(ped_curr, ped_targ)) {
+      cat("Pedigree topologies are not equal\n")
+      res = FALSE
+   }
+   
+   if(!setequal(target$available, current$available)) {
+      cat("Unequal vectors of availability\n")
+      res = FALSE
+   }
+   if(!res) return(res)
+   
+   if(target$nMark > 0) {
+      mark_targ <- do.call(cbind, as.list(target$markerdata))[new_order, , drop=F]
+      mark_curr <- do.call(cbind, as.list(current$markerdata))
+      if(!isTRUE(all.equal(mark_targ, mark_curr))) {
+         diffs = which(mark_targ != mark_curr, arr.ind=T)
+         cat("Differences in the following markers:", sort(unique((diffs[,2]+1) %/% 2)), "\n")
+         res = FALSE
+      }
+      
+      markerattr_targ <- lapply(target$markerdata, attributes)
+      markerattr_curr <- lapply(current$markerdata, attributes)
+      if(!identical(markerattr_targ, markerattr_curr)) {
+         diffattr = which(sapply(seq_along(markerattr_targ), function(i) !identical(markerattr_targ[[i]], markerattr_curr[[i]])))
+         cat("Difference in marker attributes for marker", diffattr, "\n")
+         res = FALSE
+      }
+   }
+   return(res)
+}
 
 #pedDistMatrix(x) computes a symmetrix integer matrix (d_ij), where d_ij is the pedigree distance (i.e., the length of the shortest pedigree path) between i and j. For example, the following relations have the indicated pedigree distances: parent/offspring	1, siblings	2, parents	2, uncle/niece	3, first cousins 4.
 # .pedDistMatrix <- function(x) { 
@@ -258,7 +287,7 @@ all.equal.linkdat = function(target, current, ...) {
 # }
 
 # .getpaths = function(obj, i, j) {
-	# if (class(obj)=="linkdat") d = .pedDistMatrix(obj)
+	# if (inherits(obj, "linkdat")) d = .pedDistMatrix(obj)
 	# else if (is.matrix(obj)) d = obj
 	# else stop("'obj' must be either a matrix or a 'linkdat' object.")
 	# if (i==j) return(i)

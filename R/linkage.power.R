@@ -1,4 +1,5 @@
 linkage.power <- function(x, N=100, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, threshold=NULL, seed=NULL) {
+	if(inherits(x,"singleton")) stop("This function is not applicable to singleton objects.")
 	if (is.null(x$model)) stop("No model set.")
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
 	
@@ -13,6 +14,7 @@ linkage.power <- function(x, N=100, available=x$available, afreq=c(0.5, 0.5), lo
 
 
 power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NULL, seed=NULL) {
+	if(inherits(x,"singleton")) stop("This function is not applicable to singleton objects.")
 	if (is.null(x$model)) stop("No model set.")
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
 	
@@ -46,6 +48,7 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 
 
 .lod.varyParam <- function(x, markers=1, f0, f1, f2, dfreq, afreq1, theta, loop_breakers=NULL, plot=T, ...) {
+	if(inherits(x, 'singleton')) stop("This function is not applicable to singleton objects.")
 	if (is.null(x$model)) stop("No model set.")
 	
 	if(missing(f0)) f0 = x$model$penetrances[1]

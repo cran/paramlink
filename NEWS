@@ -1,16 +1,29 @@
-2012-08-10
-	* DESCRIPTION (Version, Date): 0.7-0
+2013-04-02: Version 0.8-3
+	* Reading and writing large pedfiles is now must faster, by using scan() and write() directly instead of read.table() and write.table().
+   * Fixed bug in .readMap() which caused allel frequencies to be ignored when reading .freq files in (short) MERLIN format.
+   * Added S3 function as.matrix() and its reverse restore_linkdat(), facilitating individual-by-individual operations on linkdat objects.
+   * Added "/" separators to the dimnames in the output array of oneMarkerDistribution() and twoMarkerDistribution().
+
+2013-03-01: Version 0.8-2
+	* The construction of linkdat objects now accepts singleton pedigrees, i.e. consisting of a single individual. 
+   * Improved plot in exclusionPower().
+
+2013-01-02: Version 0.8-1
+	* Fixed algorithmic bug in .informative() which caused likelihood() to give wrong answer in certain (rare) cases.
+
+2012-10-12: Version 0.8-0
+	* New function exclusionPower() replaces exclusion().
+
+2012-08-10: Version 0.7-0
 	* Removed all calls to .Internal().
 	* oneMarkerDistribution() behaves better with X-linked markers.
 	* improved likelihood calculation in twoMarkerDistribution.
 
-2012-03-08
-	* DESCRIPTION (Version, Date): 0.6-3
+2012-03-08: Version 0.6-3
 	* SNPsim() now stores all simulated markers as diallelic, annotated with the input allele frequencies. (In earlier versions markers with only one allele were stored as uniallelic).
 	* Fixed bug in mendelianCheck() causing empty result with looped pedigrees.
 
-2012-02-10
-	* DESCRIPTION (Version, Date): 0.6-2
+2012-02-10: Version 0.6-2
 	* new function simpleSim() for unconditional simulation (gene dropping) of unlinked markers.
 	* new function lod.varyParam() which computes and plots the LOD score under variable model parameteres. Either one or two parameters are allowed to vary; in the latter case a contour plot of the LOD is produced. 
 	* added logical argument 'verbose' to mendelianCheck().
@@ -18,16 +31,14 @@
 	* fixed bug in addMarkers() which deleted other markers when given an allele matrix as input.
 	* new function exclusion() (undocumented and experimental).
 
-2012-01-31
-	* DESCRIPTION (Version, Date): 0.6-0
+2012-01-31: Version 0.6-0
 	* Rewritten User's Manual.
 	* Improved and fixed bugs in merlin().
 	* Genotypes of more than one marker can now be included in pedigree plots.
 	* New function oneMarkerDistribution() replacing genotypeDistribution().
 	* Many small cleanups.
 
-2012-01-11
-	* DESCRIPTION (Version, Date): 0.5-2
+2012-01-11: Version 0.5-2
 	* Fixed bugs in twoMarkerDistribution().
 	* Fixed bug in marker() that gave error with missing 'alleles' argument. 
 	* The 'sim' slot of a linkdat object, with availability statuses in SLINK format, is now depreciated. It is replaced by an 'available' slot, 	which simply contains the IDs of available individuals. The main use of this is to indicate availability in SNPsim(), linkage.power() and plot.linkdat(). If the linkdat object includes marker data, the default is to set all genotyped individuals as available. 
@@ -37,26 +48,22 @@
 		'starred': individuals that should be marked with a star.
 	* By default, print.linkdat and plot.linkdat now use "/" as marker allele separator.
 	
-2012-01-06
-	* DESCRIPTION (Version, Date): 0.5-1
+2012-01-06: Version 0.5-1
 	* merlin() now returns 'linkres' objects, for better summary and plotting of LOD scores.
 	* relabel() improved.
 	* marker() stops with an error if the genotypes given don't match the 'alleles' argument.
 		
-2012-01-04
-	* DESCRIPTION (Version, Date): 0.5-0
+2012-01-04: Version 0.5-0
 	* Updating the plot.linkdat() function, which now imports the plot.pedigree function from the new kinship2 package (instead of the old kinship)
 	* Many small cleanups.
 	
-2012-01-02
-	* DESCRIPTION (Version, Date): 0.4-1
+2012-01-02: Version 0.4-1
 	* genotypeDistribution() can now computes join genotype distributions for any number of individuals (at a single marker). 
 	* New function twoMarkerDistribution() computes the joint genotype distribution at two linked or unliked markers for a single individual, possibly conditional on partial data on the two markers.
 	* New function merlin(): This is a wrapper to MERLIN, which must be properly installed and included in the path variable.
 	* New function setMap(), for describing the position of the markers. The input should be a data.frame or a mapfile/datfile pair in MERLIN format. 
 	
-2011-12-20
-	* DESCRIPTION (Version, Date): 0.4-0
+2011-12-20: Version 0.4-0
 	* The functions lod(), linkage.power(), SNPsim() and genotypeDistribution() now handle looped pedigrees.
 	* New functions to deal with looped pedigrees: breakLoops() and tieLoops().
 	* lod() handles markers with more than 2 alleles. The likelihood calculation (using Elston-Stewart algorithm) is done in paramlink:::.likelihood_multi().

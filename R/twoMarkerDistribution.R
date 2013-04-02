@@ -2,9 +2,9 @@
 
 twoMarkerDistribution <- function(x, id, partialmarker1, partialmarker2, theta, loop_breakers=NULL, eliminate=99, verbose=TRUE) {
 	starttime = proc.time()
-	if (class(m1 <- partialmarker1) != "marker")
+	if (!inherits(m1 <- partialmarker1, "marker"))
 		if(is.numeric(m1) && length(m1)==1 && m1 <= x$nMark) m1 = x$markerdata[[m1]] else stop("The 'partialmarker1' must be a 'marker' object.")
-	if (class(m2 <- partialmarker2) != "marker")
+	if (!inherits(m2 <- partialmarker2, "marker"))
 		if(is.numeric(m2) && length(m2)==1 && m2 <= x$nMark) m2 = x$markerdata[[m2]] else stop("The 'partialmarker2' must be a 'marker' object.")
 	
 	x = setMarkers(x, structure(list(m1 <- partialmarker1, m2 <- partialmarker2), class="markerdata"))
@@ -12,7 +12,7 @@ twoMarkerDistribution <- function(x, id, partialmarker1, partialmarker2, theta, 
 	afreq1 = attr(m1, 'afreq'); alleles1 = attr(m1, 'alleles'); nall1 = attr(m1, 'nalleles')
 	afreq2 = attr(m2, 'afreq'); alleles2 = attr(m2, 'alleles'); nall2 = attr(m2, 'nalleles')
 	allgenos1 = .allGenotypes(nall1); allgenos2 = .allGenotypes(nall2)
-	geno.names = list(paste(alleles1[allgenos1[, 1]], alleles1[allgenos1[, 2]], sep=""), paste(alleles2[allgenos2[, 1]], alleles2[allgenos2[, 2]], sep=""))
+	geno.names = list(paste(alleles1[allgenos1[, 1]], alleles1[allgenos1[, 2]], sep="/"), paste(alleles2[allgenos2[, 1]], alleles2[allgenos2[, 2]], sep="/"))
 		
 	if(verbose) {
 		cat("Conditioning on the following marker data:\n")

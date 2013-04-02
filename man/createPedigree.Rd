@@ -62,9 +62,8 @@ y = addOffspring(y, father=15, noffs=1)
 z = halfCousinPed(0)
 
 # Alternative construction:
-z2 = nuclearPed(noffs=1, sex=1)
-z2 = addOffspring(z2, father=1, noffs=1, sex=2)
-z2 = relabel(z2, new=1:5,old=c(1,2,4,3,5))
+z2 = addOffspring(nuclearPed(1), father=1, noffs=1, sex=2)
+z2 = relabel(z2, new=3:4, old=4:3)
 stopifnot(all.equal(z,z2))
 }
 \keyword{ manip }

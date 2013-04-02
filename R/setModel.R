@@ -1,5 +1,5 @@
 setModel <- function(x, model=NULL, chrom=NULL, penetrances=NULL, dfreq=NULL, nallel=NULL, afreq=NULL) {
-	stopifnot(class(x)=="linkdat")
+	stopifnot(inherits(x,"linkdat"))
 	if (!is.null(chrom)) stopifnot(is.character(chrom))
 	if (!is.null(penetrances)) stopifnot(is.numeric(unlist(penetrances)), max(unlist(penetrances))<=1, min(unlist(penetrances))>=0)
 	if (!is.null(dfreq)) stopifnot(is.numeric(dfreq), length(dfreq)==1, dfreq>=0, dfreq<=1)

@@ -52,7 +52,7 @@
 
 
 likelihoodSNP = function (x, marker, theta = NULL, afreq = NULL, logbase = NULL, TR.MATR = NULL, singleNum.geno = NULL) {
-  	
+  	 if (inherits(x,'singleton')) stop("This function is not applicable to singleton objects")
     if (x$hasLoops) stop("Unbroken loops in pedigree.")
     nInd = x$nInd;    ped = x$pedigree;    chrom = x$model$chrom
     if (is.null(singleNum.geno)) {

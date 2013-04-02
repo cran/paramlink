@@ -1,16 +1,21 @@
 \name{plot.linkdat}
 \alias{plot.linkdat}
+\alias{plot.singleton}
 \title{
 Plot pedigrees with genotypes
 }
 \description{
-Plots a medical pedigree with genotypes for a single marker, or (for power analysis) indicating which individuals are available for genotyping.  
+This is the main function for pedigree plotting, with many options for controlling the appearence of pedigree symbols, labels and marker genotypes.  
 }
 \usage{
-\method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "", missing = "-", 
+\method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
                        id.labels = x$orig.ids, title = paste("Family", x$famid), 
-                       available = FALSE, col =1, deceased = numeric(0), 
+                       available = FALSE, col = 1, deceased = numeric(0), 
                        starred = numeric(0), aff2 = NULL, margins = c(4.1, 1, 4.1, 1), ...)
+\method{plot}{singleton}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
+                       id.labels = x$orig.ids, title = paste("Family", x$famid), 
+                       available = FALSE, col = 1, starred = numeric(0), margins = c(4.1, 1, 4.1, 1),
+                       symbolsize=4, offset=0.5+0.2*symbolsize, textsize=1, ...)
 }
 
 \arguments{
@@ -18,7 +23,9 @@ Plots a medical pedigree with genotypes for a single marker, or (for power analy
 a \code{linkdat} object.
 }
   \item{marker}{
-NULL, or a single integer.
+either NULL, a vector of positive integers, a \code{\link{marker}} object, or a list of \code{marker} objects. If NULL, no genotypes are plotted. 
+If a \code{marker} object (or a list of such), the genotypes are written below each individual in the pedigree, in the format determined by 
+\code{alleles}, \code{sep} and \code{missing}. If a vector of integers is given, the corresponding marker objects are extracted from \code{x$markerdata}.
 }
   \item{alleles}{
 a character vector with allele names.
@@ -42,26 +49,38 @@ if TRUE, the available individuals are drawn in red.
 a vector with color indicators for the pedigree members. Recycled if necessary. By default everyone is drawn black.
 }
   \item{deceased}{
-a numeric containing ID's of deceased pedigree members. 
+a numeric containing ID's of deceased pedigree members. (Not implemented for singletons.)
 }
   \item{starred}{
 a numeric containing ID's of pedigree members that should be marked with a star in the pedigree plot.
 }
   \item{aff2}{
-NULL, or a numeric with affection statuses (2=affected, 1=unaffected, 0=unknown) for a second trait.
+NULL, or a numeric with affection statuses (2=affected, 1=unaffected, 0=unknown) for a second trait. (Not implemented for singletons.)
 }
   \item{margins}{
 a numeric of length 4 indicating the plot margins.
 }
+  \item{symbolsize}{
+numeric controlling the size of pedigree symbols (squares for males, circles for females). NB: This works differently in 
+\code{plot.linkdat} and \code{plot.singleton}.
+}
+  \item{offset}{
+a numeric controlling the vertical distance between the symbol and text label in singleton plots.
+}
+  \item{textsize}{
+a numeric controlling the text label size in singleton plots.
+}
   \item{\dots}{
-arguments to \code{plot.pedigree} from the \code{kinship} package. In particular \code{symbolsize} is useful.}
+in \code{plot.linkdat}: Arguments passed on to \code{plot.pedigree} in the \code{kinship2} package. In particular \code{symbolsize} and 
+\code{cex} can be useful.
+}
 }
 \details{
-Uses the \code{plot.pedigree} from the \code{kinship} package.
+The main plotting is done by \code{plot.pedigree} in the package \code{kinship2} package.
 }
 
 \author{
-Magnus Dehli Vigeland
+Magnus Dehli Vigeland, Guro Doerum
 }
 
 \seealso{
@@ -70,6 +89,10 @@ Magnus Dehli Vigeland
 data(toyped)
 x = linkdat(toyped)
 plot(x, marker=1, alleles=c("a1","a2"), sep=" | ", deceased=2)
+
+y = singleton(id=1) 
+m = marker(y, 1, c('A',0), alleles=c('A','B'))
+plot(y, marker=m, id="indiv 1", title="Singleton", available=TRUE)
 }
 
 \keyword{ plot }

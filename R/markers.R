@@ -1,8 +1,8 @@
 addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
 	if(is.matrix(m) || is.data.frame(m)) stopifnot(nrow(m)==x$nInd, ncol(m)==2)
-	if(class(m)=="marker") 
+	if(inherits(m, "marker"))
 		m = list(m)
-	if(is.list(m) && all(unlist(lapply(m, class))=="marker")) 
+	if(is.list(m) && all(sapply(m, inherits, what="marker"))) 
 		return(setMarkers(x, structure(c(x$markerdata, m), class="markerdata")))
 	if(!is.list(m) && length(m)==1)	
 		m = matrix(m, ncol=2, nrow=x$nInd)  #gives a nice way of setting an empty or everywhere-homozygous marker, e.g.: x=addMarker(x,0)
@@ -10,36 +10,38 @@ addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
 	setMarkers(x, structure(c(x$markerdata, list(mm)), class="markerdata"))
 }
 
-setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
+setMarkers <- function(x, m, annotations = NULL, missing=0) {
 	if(is.null(m)) 								markerdata_list = NULL
-	else if(class(m) == "marker")				markerdata_list = structure(list(m), class="markerdata")
-	else if(is.list(m) && all(unlist(lapply(m, class))=="marker")) markerdata_list = structure(m, class="markerdata")
-	else if(class(m) == "markerdata")			markerdata_list = m
+	else if(inherits(m, "marker"))				markerdata_list = structure(list(m), class="markerdata")
+	else if(is.list(m) && all(sapply(m, inherits, what="marker"))) markerdata_list = structure(m, class="markerdata")
+	else if(inherits(m, "markerdata"))			markerdata_list = m
 	else if ((n <- ncol(m <- as.matrix(m))) == 0)	markerdata_list = NULL
 	else {
-		is.merged = is.character(m[1,1]) && ("/" %in% strsplit(m[1,1],"")[[1]]); 
-		if (!is.merged && n%%2 != 0) stop("Uneven number of marker allele columns")
-		nMark <- ifelse(is.merged, n, n/2)
-		
-		if(is.null(map)) {
-			markerdata_list = lapply(1:nMark, function(i) {
-				if (is.merged)	mi = t(sapply(m[,i], function(markeri) strsplit(markeri,"/",fixed=T)[[1]]))
-				else 			mi = m[, c(2*i-1, 2*i)]
-				.createMarkerObject(mi, missing=missing, chrom=NA, pos=NA, name=NA)
-		})}
+		if(is.character(m[1,1]) && ("/" %in% strsplit(m[1,1],"")[[1]])) { #if alleles are merged to 1 genotype per column 
+         splitvec = unlist(strsplit(m, "/", fixed=T))
+         nrows = nrow(m)
+         msplit = matrix(missing, ncol=2*n, nrow=nrows)
+         msplit[, 2*seq_len(n)-1] = splitvec[2*seq_len(n*nrows) - 1]
+         msplit[, 2*seq_len(n)] = splitvec[2*seq_len(n*nrows)]
+         m = msplit
+      }
+      if(ncol(m)%%2 != 0) stop("Uneven number of marker allele columns")
+      nMark = ncol(m)/2
+      
+      if(!is.null(annotations)) {
+         if(length(annotations) != nMark) stop("Length of marker annotation list does not equal number of markers.")
+         markerdata_list = lapply(1:nMark, function(i) {
+				if(is.null(attribs <- annotations[[i]])) return(NULL)
+            mi = m[, c(2*i-1, 2*i), drop=FALSE]
+            do.call(.createMarkerObject, c(list(matr=mi, missing=missing), attribs))
+         })
+      }
 		else {
-			if(is.null(dat)) stop("Missing 'dat' file.") 
-			mapinfo = .readMap(map, dat, freq)
-			
-			markerdata_list = lapply(seq_along(mapinfo), function(i) {
-				info = mapinfo[i]; name=names(info); info=info[[1]]
-				if(is.na(name)) return(NULL)
-				
-				if (is.merged)	mi = t(sapply(m[,i], function(markeri) strsplit(markeri,"/",fixed=T)[[1]]))
-				else 			mi = m[, c(2*i-1, 2*i)]
-				
-				.createMarkerObject(mi, alleles=info$alleles, afreq=info$afreq, missing=missing, chrom=info$chrom, pos=info$pos, name=name) 
-			})}
+			markerdata_list = lapply(1:nMark, function(i) {
+				mi = m[, c(2*i-1, 2*i), drop=FALSE]
+				.createMarkerObject(mi, missing=missing)
+		})}
+		
 		markerdata_list[sapply(markerdata_list, is.null)] = NULL
 		class(markerdata_list) = "markerdata"
 	}
@@ -49,73 +51,114 @@ setMarkers <- function(x, m, map=NULL, dat=NULL, freq=NULL, missing=0) {
 	x
 }
 
-.readMap = function(map, dat, freq) {
-	stopifnot(!is.null(map), !is.null(dat))
-	if(is.character(map) && length(map)==1) {
-		rawmap = read.table(map, as.is=TRUE, header=FALSE)
-		if(is.character(rawmap[[1]]) && !any(1:9 %in% strsplit(rawmap[[1]][1],"")[[1]])) rawmap = rawmap[-1,] #If no number occurs in first entry, first row is assumed to be header.
-	}
-	else  rawmap = map 
-	rawmap[[1]][rawmap[[1]]=="X"] = 23
-	map1 = data.frame(CHR = as.numeric(rawmap[,1]), MARKER = as.character(rawmap[, 2]), POS = as.numeric(rawmap[, 3]),stringsAsFactors=FALSE) 
-
-	if(is.character(dat) && length(map)==1)
-		rawdat = read.table(dat, as.is=TRUE, header=FALSE)
-	else  rawdat = dat
-	datnames = as.character(rawdat[rawdat[, 1] == "M", 2])  #names of all markers in map
-	
-	freqlist=list()
-	if(is.character(freq) && length(freq)==1) {
-		rawfreq = read.table(freq, as.is=T, fill=T, header=FALSE) 
-		if(rawfreq[2,1]=="F") {
-			rawfreq = apply(rawfreq, 1, function(r) as.character(r[!is.na(r) & nzchar(r)]))
-			for(i in 2*seq_len(length(rawfreq)/2))
-				afreq = as.numeric(rawfreq[[i]][-1])
-				freqlist[[rawfreq[[i-1]][2]]] = list(alleles = seq_along(afreq), afreq = afreq)
-		}
-		else { #if rawfreq[2,1]=="A" ... i.e. long format! See MERLIN tutorial about input files.
-			Mrow = which(rawfreq[1]=="M")
-			lastA = c(Mrow[-1] - 1, nrow(rawfreq))
-			for(i in seq_along(Mrow)) {
-				name = rawfreq[Mrow[i], 2]
-				freqrows = (Mrow[i]+1):lastA[i]
-				freqlist[[name]] = list(alleles = rawfreq[freqrows, 2], afreq = as.numeric(rawfreq[freqrows, 3]))
-			}
-		}
-	}
-	else if(is.list(freq))	freqlist = freq
-	
-	mapinfo = lapply(1:nrow(map1), function(i) list(chrom=map1$CHR[i], pos=map1$POS[i], alleles=freqlist[[map1[i,2]]]$alleles, afreq=freqlist[[map1[i,2]]]$afreq))
-	names(mapinfo) = map1$MARKER
-	
-	Mmatch = match(datnames, map1$MARKER, nomatch=NA)
-	if(any(NAs <- is.na(Mmatch)))
-		cat("Deleting the following marker(s), which are not found in the map file:\n", paste(datnames[NAs], collapse="\n"), "\n", sep="")
-
-	mapinfo[Mmatch]
-}
-
-
 .createMarkerObject = function(matr, missing, alleles=NULL, afreq=NULL, chrom=NA, pos=NA, name=NA) {
 	if(is.null(alleles)) {
 		vec = as.vector(matr)
 		alleles = unique.default(vec[vec != missing])
 		if (length(alleles)==0) alleles = 1
 	}
-	if(all(alleles %in% 0:99)) alleles = as.numeric(alleles)
-	all_ord = order(alleles)
-	alleles = as.character(alleles[all_ord])
+	if(!is.numeric(alleles) && !any(grepl("[^0-9]", alleles)))
+      alleles = as.numeric(alleles)
+   all_ord = order(alleles)
+	alleles = alleles[all_ord]
 	nalleles = length(alleles)
 	if(is.null(afreq)) afreq = rep.int(1, nalleles)/nalleles 
 	else {
 		if(length(afreq) != nalleles) stop("Number of alleles don't match length of frequency vector")
-		if(round(sum(afreq),2) != 1) warning(paste("Allele frequencies for marker", name," do not sum to 1:", paste(afreq, collapse=" ")))
+		if(round(sum(afreq),2) != 1) warning(paste("Allele frequencies for marker", name," do not sum to 1:", paste(afreq, collapse=", ")))
 		afreq = afreq[all_ord]
 	}
 	m_obj = match(matr, alleles, nomatch=0)
-	attributes(m_obj) = list(dim=dim(matr), alleles=alleles, missing=missing, nalleles=nalleles, afreq = afreq, chrom=chrom, pos=pos, name=name, class="marker") 
+	attributes(m_obj) = list(dim=dim(matr), missing=missing, alleles=as.character(alleles), nalleles=nalleles, afreq = afreq, chrom=chrom, pos=pos, name=name, class="marker") 
 	m_obj
 }
+
+
+.readMap = function(map, dat, freq, verbose, numerical=FALSE) {
+	stopifnot(!is.null(map), !is.null(dat))
+	if(is.character(map) && length(map)==1) {
+		rawmap = read.table(map, header=FALSE, comment.char="", colClasses="character")
+		if(!any(1:9 %in% strsplit(rawmap[[1]][1],"")[[1]])) rawmap = rawmap[-1,] #If no number occurs in first entry, first row is assumed to be header.
+	}
+	else  
+      rawmap = map 
+	rawmap[[1]][rawmap[[1]]=="X"] = 23
+   rawmap[[1]][rawmap[[1]]=="Y"] = 24
+   mapnames = as.character(rawmap[[2]])
+	map1 = matrix(as.numeric(c(rawmap[[1]], rawmap[[3]])), ncol=2, dimnames = list(mapnames, c('CHR','POS'))) 
+
+	if(is.character(dat) && length(dat)==1) #if a file name
+		rawdat = read.table(dat, header=FALSE, comment.char="", colClasses="character")
+	else  
+      rawdat = dat
+	datnames = as.character(rawdat[rawdat[[1]] == "M", 2])  #names of all markers in map
+	
+   if(is.character(freq) && length(freq)==1) {
+		rawfreq = as.matrix(read.table(freq, header=FALSE, colClasses="character", fill=T))
+      NROW = nrow(rawfreq)
+		if(rawfreq[2,1]=="F") {
+			freqnames = rawfreq[seq(1, NROW, by=2), 2]
+         freqmatr = matrix(as.numeric(rawfreq[seq(2, NROW, by=2), -1]), nrow=NROW/2, dimnames=list(freqnames, NULL))
+         isna = is.na(freqmatr)
+         nalls = rowSums(!isna)
+         allelmatr = col(freqmatr)
+         allelmatr[isna] = NA
+      }
+		else { #if rawfreq[2,1]=="A" ... i.e. long format! See MERLIN tutorial about input files.
+			Mrow = which(rawfreq[, 1]=="M")
+         freqnames = rawfreq[Mrow, 2]
+         
+         nalls = c(Mrow[-1], NROW+1) - Mrow -1
+         nM = length(Mrow)
+			
+         freqmatr = matrix(integer(), ncol=max(nalls), nrow=nM, dimnames=list(freqnames, NULL))
+         indexmatr = cbind(rep(seq_len(nM), times=nalls), unlist(lapply(nalls, seq_len)))
+         freqmatr[indexmatr] = as.numeric(rawfreq[-Mrow, 3])
+         
+         allalleles = rawfreq[-Mrow, 2, drop=F]
+         numerical = !any(is.na(suppressWarnings(all_num <- as.numeric(allalleles))))
+         if(numerical) {
+            allelmatr = matrix(numeric(), ncol=max(nalls), nrow=nM, dimnames=list(freqnames, NULL))
+            allelmatr[indexmatr] = all_num
+         } else {
+            allelmatr = matrix(character(), ncol=max(nalls), nrow=nM, dimnames=list(freqnames, NULL))
+            allelmatr[indexmatr] = allalleles
+         }
+      }
+      seqlist = lapply(1:max(nalls), seq_len) # precomputing vectors to speed up mapinfo further down
+	}
+	else if(is.list(freq))	{
+      stop("Unexpected frequency object in readmap()")
+      freqlist = freq #old
+   }
+   else freqmatr = NULL
+	
+   mapMatch = match(datnames, mapnames, nomatch=0)
+	if(verbose && any(NAs <- mapMatch==0))
+		cat("Deleting the following marker(s), which are not found in the map file:\n", paste(datnames[NAs], collapse="\n"), "\n", sep="")
+	
+   if(is.null(freqmatr))
+      annotations = lapply(seq_along(datnames), function(i) {
+         if((mapmatch = mapMatch[i]) == 0) return(NULL)
+         list(chrom = map1[mapmatch,1], pos = map1[mapmatch,2], name=datnames[i])
+      })   
+   else {
+      freqMatch = match(datnames, freqnames, nomatch=0)
+      annotations = lapply(seq_along(datnames), function(i) {
+         if((mapmatch <- mapMatch[i]) ==0) return(NULL)
+         if((fmatch <- freqMatch[i]) ==0) alleles = afreq = NULL
+         else {
+            sq = seqlist[[nalls[fmatch]]]
+            alleles = allelmatr[fmatch, sq]
+            afreq = as.vector(freqmatr[fmatch, sq])
+            
+         }
+         list(alleles=alleles, afreq=afreq, chrom = map1[mapmatch,1], pos = map1[mapmatch,2], name=datnames[i])
+      })
+   }
+   annotations
+}
+
 
 marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chrom=NA, name=NA, pos=NA) {
 	arglist = list(...)
@@ -191,7 +234,7 @@ removeMarkers <- function(x, markers) {
 
 	
 modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, pos) {
-	if(class(marker)=="marker") {
+	if(inherits(marker, "marker")) {
 		if(nrow(marker) != x$nInd) stop("Wrong dimensions of marker matrix.")
 		m = marker
 	}
@@ -208,7 +251,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 		if(attr(m, 'missing') %in% alleles) stop("The 'missing allele' character cannot be one of the alleles.")
 		lena = length(alleles)
 		if(lena == attr(m, 'nalleles'))
-			attr(m, 'alleles') = alleles
+			attr(m, 'alleles') = as.character(alleles)
 		else {
 			num_als = unique.default(as.vector(m[m!=0]))
 			if(lena < length(num_als)) stop("Too few alleles.")
@@ -239,7 +282,7 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 	if(!missing(chrom)) attr(m, 'chrom') = chrom
 	if(!missing(name)) attr(m, 'name') = name
 	if(!missing(pos)) attr(m, 'pos') = pos
-	if(class(marker)=="marker") return(m)
+	if(inherits(marker, "marker")) return(m)
 	else {
 		x$markerdata[[marker]] = m
 		x
@@ -259,16 +302,16 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 swapGenotypes=function(x, ids){
 	stopifnot(length(ids)==2)
 	ids = .internalID(x, ids)
-	y = .as.annotated.matrix(x)
+	y = as.matrix(x)
 	y[ids, -(1:6)] = y[ids[2:1], -(1:6)]
-	.restore.linkdat(y)
+	restore_linkdat(y)
 }
 
 modifyMarkerMatrix=function(x, ids, new.alleles){
 	ids = .internalID(x, ids)
-	y = .as.annotated.matrix(x)
+	y = as.matrix(x)
 	y[ids, -(1:6)] = new.alleles
-	.restore.linkdat(y)
+	restore_linkdat(y)
 }
 
 
@@ -287,7 +330,8 @@ modifyMarkerMatrix=function(x, ids, new.alleles){
 
 
 mendelianCheck <- function(x, verbose=TRUE) {
-
+   if(inherits(x, 'singleton')) return(numeric(0))
+	
 	trioCheckFast = function(fa, mo, of) {
 		fa_odd = fa[odd]; fa_even = fa[even]; mo_odd = mo[odd]; mo_even = mo[even]
 		of_odd = of[odd]; of_even = of[even];

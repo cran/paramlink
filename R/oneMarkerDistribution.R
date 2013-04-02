@@ -1,8 +1,10 @@
 
 oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset=NULL, loop_breakers=NULL, eliminate=0, verbose=TRUE) {
 	starttime = proc.time()
-	if (class(m <- partialmarker) != "marker")
-		if(is.numeric(m) && length(m)==1 && m <= x$nMark) m=x$markerdata[[m]] else stop("The 'partialmarker' must be a 'marker' object.")
+	if (!inherits(m <- partialmarker, "marker"))
+		if(is.numeric(m) && length(m)==1 && m <= x$nMark) 
+         m=x$markerdata[[m]] 
+      else stop("The 'partialmarker' must be a 'marker' object.")
 	markerchrom = as.integer(attr(m, 'chrom'))
 	alleles = attr(m, "alleles")
 	
@@ -41,13 +43,12 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
 	}
 	int.ids = .internalID(x, ids)
 	geno.names = switch(chrom, 
-		AUTOSOMAL = rep(list(paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="")), length(ids)),
-		X = list(alleles, paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep=""))[SEX[int.ids]]
+		AUTOSOMAL = rep(list(paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="/")), length(ids)),
+		X = list(alleles, paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="/"))[SEX[int.ids]]
 	)
 	
 	marginal = likelihood(x, locus1=m, locus2=locus2, theta=theta, eliminate=eliminate)
 	if(marginal==0) stop("Partial marker is impossible")
-	
 	probs = array(0, dim=sapply(geno.names, length), dimnames=geno.names)
 	probs[grid.subset] = apply(grid.subset, 1, function(allg_rows) {
 		m[int.ids, ] = allgenos[allg_rows, ]

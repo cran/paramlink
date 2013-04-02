@@ -1,6 +1,12 @@
 relabel <- function(x, new, old) {
-	if(islinkdat <- (class(x)=="linkdat")) ped = .as.annotated.matrix(x) else ped = x
-	orig.ids = ped[, 'ID']
+	islinkdat = inherits(x,"linkdat")
+   if(islinkdat) {
+      ped = as.matrix(x)
+      avail = attr(ped, "available")
+   } 
+   else ped = x
+	
+   orig.ids = ped[, 'ID']
 	if(missing(old)) old = orig.ids
 	stopifnot(is.numeric(old), is.numeric(new), length(old)==length(new), !0 %in% new, all(old %in% ped[, 'ID']))
 	ped[match(old, orig.ids), 'ID'] = new
@@ -8,19 +14,22 @@ relabel <- function(x, new, old) {
 	parents = ped[, c('FID','MID')]
 	ped[, c('FID','MID')][parents %in% old] <- new[match(parents, old, nomatch=0)] #relabeling parents
 	
-	if(islinkdat) return(.restore.linkdat(ped))
+	if(islinkdat) {
+      attr(ped, "available") = new[match(avail, old)]
+      return(restore_linkdat(ped))
+   }
 	else return(ped)
 }
 
 setAvailable = function(x, available) {
-	x$available = available
+	x$available = sort(as.numeric(available))
 	x
 }
 
 swapAvailable = function(x, ids) {
 	ava = x$available
-	x$available = sort(c(ava[!ava %in% ids], ids[!ids %in% ava]))
-	x
+   new_ava = c(ava[!ava %in% ids], ids[!ids %in% ava])
+	setAvailable(x, new_ava)
 }
 	
 swapSex <- function(x, ids) {
@@ -30,26 +39,26 @@ swapSex <- function(x, ids) {
 		cat("Changing sex of the following spouses as well:", paste(x$orig.ids[setdiff(ids.spouses, ids)], collapse=", "), "\n")
 		return(swapSex(x, x$orig.ids[union(ids, ids.spouses)]))
 	}	
-	pedm = .as.annotated.matrix(x)
+	pedm = as.matrix(x)
 	pedm[ids, 'SEX'] <- (3 - pedm[ids, 'SEX'])
 	offs = x$pedigree[,"FID"] %in% ids
 	pedm[offs, c('FID', 'MID')] <- pedm[offs, c('MID', 'FID')]
 	
-	.restore.linkdat(pedm)
+	restore_linkdat(pedm)
 }
 
 swapAff <- function(x, ids, newval=NULL) {
-	pedm = .as.annotated.matrix(x)
+	pedm = as.matrix(x)
 	ids = .internalID(x, ids)
 	if (is.null(newval))  newval <- (3 - pedm[ids, 'AFF'])
 	
 	pedm[ids, 'AFF'] <- newval
-	.restore.linkdat(pedm)
+	restore_linkdat(pedm)
 }
 
 
 addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1) {
-	p = .as.annotated.matrix(x); attrs = attributes(p); nm = x$nMark
+	p = as.matrix(x); attrs = attributes(p); nm = x$nMark
 	taken <- oldids <- p[,'ID']
 	if(!missing(father)) taken = c(taken, father)
 	if(!missing(mother)) taken = c(taken, mother)
@@ -79,14 +88,14 @@ addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1) {
 	}
 	p = rbind(p, cbind(x$famid, ids, father, mother, sex, aff, matrix(0, ncol=nm*2, nrow=length(ids))))
 
-	.restore.linkdat(p, attrs=attrs)
+	restore_linkdat(p, attrs=attrs)
 }
 
 addParents <- function(x, id, father, mother) {
 	if(length(id)>1) stop("Only one individual at the time, please")
 	if(id %in% x$orig.ids[x$nonfounders]) stop(paste("Individual", id, "already has parents in the pedigree")) 
 	
-	p = .as.annotated.matrix(x); attrs = attributes(p); nm = x$nMark
+	p = as.matrix(x); attrs = attributes(p); nm = x$nMark
 	oldids = p[,'ID']
 	n = max(oldids)
 	if (missing(father)) father <- n <- n+1	
@@ -105,13 +114,13 @@ addParents <- function(x, id, father, mother) {
 	if(new.mother) 
 		p = rbind(p, c(x$famid, mother, 0, 0, 2, 1, rep.int(0, nm*2)))[append(1:nrow(p), nrow(p)+1, after=int.id - 1 + as.numeric(new.father)), ] #insert mother before 'id'
 
-	.restore.linkdat(p, attrs=attrs)
+	restore_linkdat(p, attrs=attrs)
 }
 
 
 removeIndividuals <- function(x, ids, verbose=TRUE) { #removes (one by one) individuals 'ids' and all their descendants. Spouse-founders are removed as well.
 	if(any(!ids %in% x$orig.ids)) stop(paste("Non-existing individuals:", .prettycat(ids[!ids %in% x$orig.ids], "and")))  
-	pedm = .as.annotated.matrix(x)
+	pedm = as.matrix(x)
 	
 	#founders without children after 'id' and 'desc' indivs are removed. The redundancy here does not matter.
 	desc = numeric(0)
@@ -124,11 +133,12 @@ removeIndividuals <- function(x, ids, verbose=TRUE) { #removes (one by one) indi
 	if(verbose && length(leftover.spouses)>0) cat("Removing leftover spouse(s):", .prettycat(leftover.spouses, "and"), "\n")	
 
 	remov = unique(c(ids, desc, leftover.spouses))
-	.restore.linkdat(pedm[-.internalID(x, remov), ], attrs=attributes(pedm))
+	restore_linkdat(pedm[-.internalID(x, remov), , drop=F], attrs=attributes(pedm))
 }
 
 trim = function(x, keep="available", return.ids=FALSE){
-	mysetdiff = function(x,y) x[match(x,y,0L)==0L]
+	if(inherits(x, 'singleton')) return(x)
+   mysetdiff = function(x,y) x[match(x,y,0L)==0L]
 	keep = match.arg(keep, c("available", "affected"))
 	
 	y = linkdat(relabel(x$pedigree, x$orig.ids), verbose=F)
@@ -148,7 +158,7 @@ trim = function(x, keep="available", return.ids=FALSE){
 	if(return.ids) return(remov)
 	
 	cat("Removing individuals:", .prettycat(remov, "and"), "\n")
-	store = .as.annotated.matrix(x)
+	store = as.matrix(x)
 	trimmed = store[!store[, 'ID'] %in% remov, ]
-	.restore.linkdat(trimmed, attrs=attributes(store))
+	restore_linkdat(trimmed, attrs=attributes(store))
 }

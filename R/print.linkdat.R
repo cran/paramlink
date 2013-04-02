@@ -18,12 +18,6 @@ print.linkdat.model <- function(x, ...) {
 				"\n\tFemales: (f0, f1, f2) =", paste('(', paste(model$penetrances$female, collapse=", "),')',sep=""), "\n")
 	)
 	cat("Disease allele frequency:", model$dfreq,"\n")
-	
-	#if(x$nMark > 0) { #ERROR: x is the model, not the linkdat object.
-	#	cat("Allele frequencies:\n")
-	#	m = x$markerdata
-	#	for(i in seq_len(x$nMark)) cat(paste("M",i,":",sep=""), paste(as.numeric(attr(m[[i]], "afreq")), sep=", "), "\n")
-	#}
 }
 
 summary.linkdat <- function(object, ...) {

@@ -19,7 +19,7 @@ Functions for setting and manipulating marker genotypes for 'linkdat' objects.
 marker(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0,
        chrom=NA, name=NA, pos=NA)
 addMarker(x, m, alleles=NULL, afreq=NULL, missing=0)
-setMarkers(x, m, map=NULL, dat=NULL, freq=NULL, missing = 0)
+setMarkers(x, m, annotations=NULL, missing = 0)
 removeMarkers(x, markers)
 modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
 modifyMarkerMatrix(x, ids, new.alleles)
@@ -51,6 +51,9 @@ NA or a character (the name of the marker).
   \item{pos}{
 NA or a non-negative real number indicating the genetic position (in cM) of the marker.
 }
+ \item{annotations}{
+a list of marker annotations.
+}
   \item{marker, markers}{
 a numeric indicating which marker(s) to use/modify.
 }
@@ -65,15 +68,6 @@ a numeric or character vector containing allele names.
 }
   \item{afreq}{
 a numerical vector with allele frequencies. An error is given if they don't sum to 1 (rounded to 3 decimals).
-}
-  \item{map}{
-a character containing the path to a map file in MERLIN style, i.e. with three columns: CHR (chromosome number), MARKER (marker identifier) and POS (centiMorgan position of the marker).
-}
- \item{dat}{
-a character containing the path to a dat file, MERLIN style. See MERLIN's online tutorial for details on format. Our use of this file here is mainly to communicate the ordering of the markers.
-}
- \item{freq}{
-a character with the path to a allele frequency file in MERLIN (short) format. (Not used if \code{map=NULL}.)
 }
  \item{new.alleles}{
 a numerical matrix of dimensions \code{length(ids), 2*x$nMark}. Entries refer to the internal allele numbering.
