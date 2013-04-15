@@ -27,8 +27,7 @@ The format is standard LINKAGE (pre-makeped) format.
 data(Xped)
 Xped
 
-# Convert to a \code{linkdat} object and set a recessive X-linked model 
-# with default parameters:
+# Convert to a 'linkdat' object and set a recessive X-linked model:
 x = linkdat(Xped, model=4)
 summary(x)
 }

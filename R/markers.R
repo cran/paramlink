@@ -233,7 +233,7 @@ removeMarkers <- function(x, markers) {
 }
 
 	
-modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, pos) {
+modifyMarker = function(x, marker, ids, genotype, alleles, afreq, chrom, name, pos) {
 	if(inherits(marker, "marker")) {
 		if(nrow(marker) != x$nInd) stop("Wrong dimensions of marker matrix.")
 		m = marker
@@ -289,17 +289,17 @@ modifyMarker <- function(x, marker, ids, genotype, alleles, afreq, chrom, name, 
 	}
 }
 
-.getMarkers=function(x, markernames=NULL, chrom=NULL, startpos=NULL, endpos=NULL) {
+getMarkers = function(x, markernames=NULL, chrom=NULL, from=NULL, to=NULL) {
 	dat = data.frame(CHR = sapply(x$markerdata, attr, 'chrom'), POS = sapply(x$markerdata, attr, 'pos'), NAME = sapply(x$markerdata, attr, 'name'), stringsAsFactors=F)
 	test = !logical(nrow(dat)) 
 	if(!is.null(markernames)) test = test & (dat$NAME %in% markernames)
 	if(!is.null(chrom)) test = test & (dat$CHR %in% chrom)
-	if(!is.null(startpos)) test = test & (dat$POS > startpos)
-	if(!is.null(endpos)) test = test & (dat$POS < endpos)
+	if(!is.null(from)) test = test & (dat$POS >= from)
+	if(!is.null(to)) test = test & (dat$POS <= to)
 	which(test)
 }
 
-swapGenotypes=function(x, ids){
+swapGenotypes = function(x, ids){
 	stopifnot(length(ids)==2)
 	ids = .internalID(x, ids)
 	y = as.matrix(x)
@@ -307,7 +307,7 @@ swapGenotypes=function(x, ids){
 	restore_linkdat(y)
 }
 
-modifyMarkerMatrix=function(x, ids, new.alleles){
+modifyMarkerMatrix = function(x, ids, new.alleles){
 	ids = .internalID(x, ids)
 	y = as.matrix(x)
 	y[ids, -(1:6)] = new.alleles
@@ -315,21 +315,7 @@ modifyMarkerMatrix=function(x, ids, new.alleles){
 }
 
 
-.diallel2geno <- function(marker) { #marker a numerical nInd * 2 matrix   
-	#Coding genotypes as single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5.
-	#Each pair of alleles is seen as an integer written in base 3, and this integer is permuted to fit with the above code.
-	c(0,4,5,4,1,3,5,3,2)[colSums(c(3,1) * t(marker)) + 1]
-}
-
-.geno2diallel <- function(codedgenos) { #input: matrix of single-numerical genotypes. 
-	#Ouput: Matrix with twice the number of columns, decoded as 1 -> 1 1, 2 -> 1 2, 3 -> 2 2, 4 -> 1 0, 5 -> 2 0
-	decode = sapply(t(codedgenos+1),function(i) switch(i, c(0,0), c(1,1), c(2,2), c(1,2), c(1,0), c(2,0)))
-	dim(decode) = c(2*ncol(codedgenos), nrow(codedgenos))
-	t(decode)
-}
-
-
-mendelianCheck <- function(x, verbose=TRUE) {
+mendelianCheck = function(x, remove=FALSE, verbose=!remove) {
    if(inherits(x, 'singleton')) return(numeric(0))
 	
 	trioCheckFast = function(fa, mo, of) {
@@ -427,5 +413,8 @@ mendelianCheck <- function(x, verbose=TRUE) {
 			}
 		}
 	})
-	sort.int(unique.default(error))
+	err_index = sort.int(unique.default(error))
+   
+   if(remove) return(removeMarkers(x, err_index))
+   else return(err_index)
 }

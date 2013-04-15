@@ -4,10 +4,11 @@ print.linkdat <- function(x, ..., markers) {
 		if(length(markers) > 0 && max(markers) > x$nMark) stop("Nonexisting marker(s) indicated") 
 		marker.nos = markers
 	}
-	print(as.data.frame(x, markers=marker.nos, sep="/", missing="-", singleCol=TRUE), ...)
+	datafr = as.data.frame(x, markers=marker.nos, sep="/", missing="-", singleCol=TRUE)
+   print(datafr, ...)
 	if (missing(markers) && x$nMark > 5)
 		cat("\nOnly first 5 markers are shown. Use option 'markers=' to print specified markers.\n")
-
+   invisible(datafr)
 }
 
 print.linkdat.model <- function(x, ...) {

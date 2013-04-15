@@ -5,22 +5,25 @@
 Plot pedigrees with genotypes
 }
 \description{
-This is the main function for pedigree plotting, with many options for controlling the appearence of pedigree symbols, labels and marker genotypes.  
+This is the main function for pedigree plotting, with many options for controlling the appearance of pedigree symbols, labels and marker genotypes. 
+Most of the work is done by the plotting functionality in the 'kinship2' package.
 }
 \usage{
 \method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
-                       id.labels = x$orig.ids, title = paste("Family", x$famid), 
-                       available = FALSE, col = 1, deceased = numeric(0), 
-                       starred = numeric(0), aff2 = NULL, margins = c(4.1, 1, 4.1, 1), ...)
+     id.labels = x$orig.ids, title = paste("Family", x$famid), 
+     available = FALSE, col = 1, deceased = numeric(0), starred = numeric(0), 
+     aff2 = NULL, margins = c(4.1, 1, 4.1, 1), ...)
+                       
 \method{plot}{singleton}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
-                       id.labels = x$orig.ids, title = paste("Family", x$famid), 
-                       available = FALSE, col = 1, starred = numeric(0), margins = c(4.1, 1, 4.1, 1),
-                       symbolsize=4, offset=0.5+0.2*symbolsize, textsize=1, ...)
+     id.labels = x$orig.ids, title = paste("Family", x$famid), 
+     available = FALSE, col = 1, starred = numeric(0), 
+     margins = c(4.1, 1, 4.1, 1), symbolsize=4, offset=0.5+0.2*symbolsize, 
+     textsize=1, ...)
 }
 
 \arguments{
   \item{x}{
-a \code{linkdat} object.
+a \code{\link{linkdat}} object.
 }
   \item{marker}{
 either NULL, a vector of positive integers, a \code{\link{marker}} object, or a list of \code{marker} objects. If NULL, no genotypes are plotted. 
@@ -76,7 +79,7 @@ in \code{plot.linkdat}: Arguments passed on to \code{plot.pedigree} in the \code
 }
 }
 \details{
-The main plotting is done by \code{plot.pedigree} in the package \code{kinship2} package.
+\code{plot.linkdat} is in essence a wrapper for \code{plot.pedigree} in the \code{kinship2} package.
 }
 
 \author{

@@ -14,7 +14,7 @@ twoMarkerDistribution(x, id, partialmarker1, partialmarker2, theta,
 
 \arguments{
   \item{x}{
-A \code{linkdat} object.
+A \code{\link{linkdat}} object.
 }
   \item{id}{
 The individual in question.

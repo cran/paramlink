@@ -51,9 +51,10 @@
 }
 
 
-likelihoodSNP = function (x, marker, theta = NULL, afreq = NULL, logbase = NULL, TR.MATR = NULL, singleNum.geno = NULL) {
+.likelihoodSNP = function (x, marker, theta = NULL, afreq = NULL, logbase = NULL, TR.MATR = NULL, singleNum.geno = NULL) {
   	 if (inherits(x,'singleton')) stop("This function is not applicable to singleton objects")
     if (x$hasLoops) stop("Unbroken loops in pedigree.")
+    if (is.null(theta) && is.null(TR.MATR) && is.null(x$model)) stop("No model set.")
     nInd = x$nInd;    ped = x$pedigree;    chrom = x$model$chrom
     if (is.null(singleNum.geno)) {
         if (length(marker) == 1) marker = x$markerdata[[marker]]
@@ -69,7 +70,7 @@ likelihoodSNP = function (x, marker, theta = NULL, afreq = NULL, logbase = NULL,
         hap_list <- list(`??` = 1:10, AA = 1:3, BB = 8:10, AB = 4:7, `A?` = 1:7, `B?` = 4:10)[singleNum.geno + 1]
         a = afreq[1];   b = afreq[2]
         init_p = x$initial_probs
-        init_p[, x$founders] = init_p[, x$founders] * rep(c(a^2, 2 * a * b, b^2), c(3, 4, 3))
+        init_p[, x$founders] = init_p[, x$founders] * rep(c(a^2, 2*a*b, b^2), c(3, 4, 3))
         prob_list <- lapply(seq_len(nInd), function(i) init_p[, i][hap_list[[i]]])
     }, X = {
         haplo.poss_X <- list(list(`?` = 1:4, A = 1:2, B = 3:4, NULL, NULL, NULL), list(`??` = 1:10, AA = 1:3, BB = 8:10, AB = 4:7, `A?` = 1:7, `B?` = 4:10))
@@ -140,3 +141,18 @@ likelihoodSNP = function (x, marker, theta = NULL, afreq = NULL, logbase = NULL,
 		return(list(h, TR_f))
 	})
 }
+
+
+.diallel2geno <- function(marker) { #marker a numerical nInd * 2 matrix   
+	#Coding genotypes as single integer: 00 -> 0, 11 -> 1, 22 -> 2, 12/21 -> 3, 01/10 -> 4, 02/20 -> 5.
+	#Each pair of alleles is seen as an integer written in base 3, and this integer is permuted to fit with the above code.
+	c(0,4,5,4,1,3,5,3,2)[colSums(c(3,1) * t(marker)) + 1]
+}
+
+.geno2diallel <- function(codedgenos) { #input: matrix of single-numerical genotypes. 
+	#Ouput: Matrix with twice the number of columns, decoded as 1 -> 1 1, 2 -> 1 2, 3 -> 2 2, 4 -> 1 0, 5 -> 2 0
+	decode = sapply(t(codedgenos+1),function(i) switch(i, c(0,0), c(1,1), c(2,2), c(1,2), c(1,0), c(2,0)))
+	dim(decode) = c(2*ncol(codedgenos), nrow(codedgenos))
+	t(decode)
+}
+

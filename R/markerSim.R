@@ -1,5 +1,5 @@
-############ markerSim
-markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, partialmarker=NULL, loop_breakers=NULL, eliminate=0, seed=NULL, method=3, verbose=TRUE) {
+markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, partialmarker=NULL, 
+                     loop_breakers=NULL, eliminate=0, seed=NULL, method=3, verbose=TRUE) {
 	starttime = proc.time()
 	likel_counter = 0
 	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
@@ -43,9 +43,9 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 	preexisting = (m[,1]!=0 | m[,2]!=0)
 	preexist_orig = x$orig.ids[preexisting]
 	cost_orig = .mysetdiff(available, preexist_orig)
-	if(method == 3) {
-		sim_anc_orig = .mysetdiff(c(cost_orig, .ancestors(x, ids=cost_orig, original.id=T)), preexist_orig)
-		cost_orig = sim_anc_orig[inpreanc <- (sim_anc_orig %in% .ancestors(x, ids=preexist_orig, original.id=T))]
+	if(method == 3) {  # TODO: Make this (a lot) smarter! Often worse than method 2, e.g. in twoloops pedigree. 
+		sim_anc_orig = .mysetdiff(c(cost_orig, ancestors(x, id=cost_orig)), preexist_orig)
+		cost_orig = sim_anc_orig[inpreanc <- (sim_anc_orig %in% ancestors(x, id=preexist_orig))]
 		simpledrop_orig = sim_anc_orig[!inpreanc]
 	} 
 	
@@ -55,8 +55,8 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 		if(verbose) cat(ifelse(length(lb)==1, "Breaking loop at individual ", "\nBreaking loops at individuals "), .prettycat(lb, "and"), "\n", sep="")
 		x = breakLoops(setMarkers(x, partialmarker, missing=0), lb)
 		m = x$markerdata[[1]]
-		gridlist = gridlist[sort.int(match(c(orig_ids, x$loop_breakers[,1]), orig_ids))]
-		if(method > 1) 	cost_orig = unique.default(cost_orig, x$loop_breakers[,1])
+		gridlist = gridlist[sort.int(match(c(orig_ids, lb), orig_ids))]
+		if(method > 1) 	cost_orig = unique.default(c(cost_orig, lb)) # added c() here.
 	}
 
 	cost_orig = cost_orig[order(!cost_orig %in% x$loop_breakers[,1])] #place loop breakers first!
@@ -74,7 +74,8 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 		init_int = switch(chrom,	
 		AUTOSOMAL = {
 			ngrid_cost = ngrid[cost_int]
-			initvec = sapply(seq_along(cost_int), function(ci) prod(ngrid_cost[seq_len(ci)])  + N*sum(ngrid_cost[seq.int(ci+1, length.out=length(cost_int)-ci)]))
+			initvec = sapply(seq_along(cost_int), function(ci) 
+                           prod(ngrid_cost[seq_len(ci)])  + N*sum(ngrid_cost[seq.int(ci+1, length.out=length(cost_int)-ci)]))
 			cost_int[seq_len(which.min(initvec))]
 		},
 		X = {				
@@ -93,7 +94,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 			c(males[seq_len(calls.min[1]-1)], females[seq_len(calls.min[2]-1)])
 		})
 		
-		if(verbose) cat("\nTime saver: Precomputing", ifelse(length(init_int)==1, "probabilites for individual", "joint probabilites for individuals"), .prettycat(sort(x$orig.ids[init_int]), 'and'), "\n")	
+		if(verbose) cat("\nTime saver: Pre-computing", ifelse(length(init_int)==1, "probabilities for individual", "joint probabilities for individuals"), .prettycat(sort(x$orig.ids[init_int]), 'and'), "\n")	
 		
 		allgenos_row_grid = t.default(.my.grid( gridlist[init_int] )) #Cartesian product. Each row contains 'init' row numbers of allgenos.
 		initp = apply(allgenos_row_grid, 2, function(rownrs) { 
@@ -102,7 +103,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 			likelihood.linkdat(x, locus1=partial, eliminate=eliminate) 
 		})
 		likel_counter = likel_counter + length(initp)
-		if (identical(sum(initp), 0)) stop("When trying to precompute joint probabilities: All probabilities zero. Mendelian error?")
+		if (identical(sum(initp), 0)) stop("When trying to pre-compute joint probabilities: All probabilities zero. Mendelian error?")
 		
 		# fill the rows of the 'init' individuals 
 		sample_rows = allgenos_row_grid[, suppressWarnings(sample.int(length(initp), size=N, replace=TRUE, prob=initp))]
@@ -129,7 +130,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
 	}
 	likel_counter = likel_counter + N*sum(ngrid[cost_int])
 	
-	# Method=2: Simulate final individuals by sampling random founder alleles followed by gene dropping:
+	# Method=3: Simulate final individuals by sampling random founder alleles followed by gene dropping:
 	if(method == 3 && length(simpledrop_orig)>0) {
 		if(verbose) cat("\nTime saver: Simulation by gene dropping for individuals", .prettycat(sort(simpledrop_orig), 'and'), '\n')
 		

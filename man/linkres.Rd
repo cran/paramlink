@@ -1,5 +1,6 @@
 \name{linkres}
 \alias{linkres}
+\alias{as.data.frame.linkres}
 \alias{print.linkres}
 \alias{summary.linkres}
 \alias{plot.linkres}
@@ -10,18 +11,20 @@ S3 methods for class 'linkres'.
 Functions for printing, summarizing and plotting the results of a linkage analysis.
 }
 \usage{
-\method{print}{linkres}(x, ...)
-
-\method{summary}{linkres}(object, threshold=NULL, ...)
+\method{as.data.frame}{linkres}(x, ..., sort=TRUE)
 
 \method{plot}{linkres}(x, chrom=NULL, ylim = NULL, ...)
+
+\method{print}{linkres}(x, ...)
+
+\method{summary}{linkres}(object, ...)
 }
 \arguments{
   \item{x, object}{
 a \code{linkres} object (normally produced by \code{\link{lod}} or \code{\link{merlin}}).
 }
-  \item{threshold}{
-NULL, or a positive real number. In the latter case the summary will include the percentage of simulated markers whose LOD score exceeds this number.
+  \item{sort}{
+a logical, indicating if the data frame should be sorted according to map position.
 }
   \item{chrom}{
 NULL, or a numeric containing chromosome numbers. In the latter case only results for the markers on the indicated chromosomes will be plotted.
@@ -46,5 +49,6 @@ data(toyped)
 x = linkdat(toyped, model=1)
 lods = lod(x, theta="max")
 summary(lods)
+as.data.frame(lods)
 }
 \keyword{ methods }

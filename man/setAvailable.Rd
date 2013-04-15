@@ -3,7 +3,7 @@
 \alias{swapAvailable}
 \title{Functions for modifying availability vectors}
 \description{
-Functions to set and modify the availability vector of a 'linkdat' object. This vector is used in 'linkage.power' and 'SNPsim', indicating for whom genotypes should be simulated. 
+Functions to set and modify the availability vector of a 'linkdat' object. This vector is used in 'linkage.power' and 'linkageSim', indicating for whom genotypes should be simulated. 
 }
 \usage{
 setAvailable(x, available)
@@ -28,7 +28,7 @@ The modified \code{linkdat} object.
 Magnus Dehli Vigeland
 }
 \seealso{
-\code{\link{plot.linkdat}}, \code{\link{linkage.power}}, \code{\link{SNPsim}}
+\code{\link{plot.linkdat}}, \code{\link{linkage.power}}, \code{\link{linkageSim}}
 }
 \examples{
 data(toyped)

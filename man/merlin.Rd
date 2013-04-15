@@ -15,7 +15,7 @@ merlin(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL,
 
 \arguments{
   \item{x}{
-a \code{linkdat} object
+a \code{\link{linkdat}} object
 }
   \item{markers}{
 an integer vector indicating which markers to use (default: all).
@@ -25,7 +25,7 @@ a logical: If TRUE (and x$model is not NULL), the file "merlin.model" is created
 }
   \item{theta}{
 a numeric with values between 0 and 0.5: The recombination value(s) for which the LOD score is computed. 
-The values of \code{theta} are converted to centiMorgan positions using the Haldande map function and included in the MERLIN command using the \code{--position} parameter. Works only for single markers (i.e. \code{markers} must consist of a single integer).
+The values of \code{theta} are converted to centiMorgan positions using the Haldane map function and included in the MERLIN command using the \code{--position} parameter. Works only for single markers (i.e. \code{markers} must consist of a single integer).
 }
   \item{options}{
 a character with additional options to the MERLIN command. See details.
@@ -37,7 +37,7 @@ a logical: Show MERLIN output and other information, or not.
 a logical. If TRUE, the files "merlin.ped", "merlin.dat", "merlin.map", "merlin.freq" and (if \code{model=TRUE}) "merlin.model" are created in the working directory.
 }
   \item{cleanup}{
-a logcical: Should the files be deleted automatically after the MERLIN run?
+a logical: Should the files be deleted automatically after the MERLIN run?
 }
   \item{outputfile}{
 a character. If this is given, the MERLIN output will be written to a file with this name.

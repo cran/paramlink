@@ -17,7 +17,9 @@ write.linkdat=function(x, prefix="", what=c("ped", "map", "dat", "freq", "model"
 	
    if("model" %in% what && !is.null(x$model)) {
 		dfreq = format(x$model$dfreq, scientific=F, decimal.mark=".")
-		penets = paste(format(x$model$penetrances, scientific=F, decimal.mark="."), collapse=",")
+      # if X-linked: using the female penetrances. This works in MERLIN/MINX as long as male and female penetrances are equal. 
+		penetrances = if(x$model$chrom == "X") x$model$penetrances$female else x$model$penetrances
+      penets = paste(format(penetrances, scientific=F, decimal.mark="."), collapse=",")
 		.model = c("my_disease", dfreq, penets, "my_model")
 		write(.model, modelname <- paste(prefix, "model", sep="."), sep=" \t", ncolumns=4)
 		generated.files = c(generated.files, modelname)

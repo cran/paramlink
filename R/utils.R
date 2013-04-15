@@ -61,19 +61,29 @@ spouses = function(x, id, original.id=TRUE) { #returns a vector containing all i
 	if (original.id) return(x$orig.ids[spou]) else return(spou)
 }
 
-.ancestors = function(x, ids, original.id=TRUE) { #climbs up the pedigree storing parents iteratively. Output does not include 'ids'.
-	if (original.id) ids = .internalID(x, ids)
-	p = x$pedigree
+ancestors = function(x, id) { #climbs up the pedigree storing parents iteratively. (Not documented: Accepts id of length > 1)
+	if (inherits(x, 'linkdat')) {
+      p = x$pedigree
+      orig_ids = x$orig.ids
+      ids_int = .internalID(x, id)
+   }
+   else if(is.matrix(x) && c('ID', 'FID', 'MID') %in% colnames(x)) {
+      p = x
+      orig_ids = p[, 'ID']
+      ids_int = match(id, orig_ids)
+   }
+   else stop("x must be either a linkdat object or a matrix whose colnames include 'ID', 'FID' and 'MID'")
+   p = relabel(p, 1:nrow(p))
+   
 	ancest = numeric(0)
-	up1 = as.numeric(p[ids, c('FID', 'MID')])
+	up1 = as.numeric(p[ids_int, c('FID', 'MID')])
 	up1 = up1[(up1 != 0) & !duplicated.default(up1)]
 	while(length(up1) > 0) {
 		ancest = c(ancest, up1)
-		up1 = as.numeric(p[up1, c('FID', 'MID')])
-	}
-	ancest = sort.int(ancest[(ancest != 0) & !duplicated(ancest)])
-	ancest = .mysetdiff(ancest, ids)
-	if (original.id) return(x$orig.ids[ancest]) else return(ancest)
+		up1 = .mysetdiff(as.numeric(p[up1, c('FID', 'MID')]), ancest)
+   }
+   ancest = sort.int(ancest[(ancest != 0) & !duplicated(ancest)])
+	return(orig_ids[ancest])
 }
 
 descendants = function(x, id, original.id=TRUE) { 

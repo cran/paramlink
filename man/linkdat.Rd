@@ -3,7 +3,6 @@
 \alias{singleton}
 \alias{print.linkdat}
 \alias{summary.linkdat}
-\alias{as.data.frame.linkdat}
 \alias{subset.linkdat}
 \alias{write.linkdat}
 \title{
@@ -15,14 +14,12 @@ Functions to create and display 'linkdat' objects.
 \usage{
 linkdat(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, annotations=NULL, 
         missing=0, header=FALSE, verbose=TRUE, ...)
+        
 singleton(id, sex=1, famid=1, verbose=FALSE, ...)
 
 \method{print}{linkdat}(x, ..., markers)
 
 \method{summary}{linkdat}(object, ...)
-
-\method{as.data.frame}{linkdat}(x, ..., famid=F, markers=seq_len(x$nMark), 
-        alleles=NULL, missing=NULL, singleCol=FALSE, sep="")
 
 \method{subset}{linkdat}(x, subset=x$orig.ids, ..., markers=seq_len(x$nMark))
 
@@ -54,7 +51,7 @@ a list (of the same length and in the same order as the marker columns in \code{
 the character (of length 1) used for missing alleles. Defaults to "0".
 }
  \item{header}{
-a logical, relevant only if \code{ped} points to a pedfile: If TRUE, the first line of the pedfile is skipped.
+a logical, relevant only if \code{ped} points to a ped file: If TRUE, the first line of the ped file is skipped.
 }
  \item{verbose}{
 a logical: verbose output or not.
@@ -69,17 +66,7 @@ a numeric indicating which markers should be included/printed.
 a \code{linkdat} object.
 }
   \item{famid}{
-in \code{singleton}: a numeric  - the family ID of the singleton. 
-In \code{as.data.frame.linkdat}: a logical indicating if the family identifier should be included as the first column.
-}
-  \item{alleles}{
-a character containing the allele names, e.g. \code{alleles=c("A","B")}.
-}
-  \item{singleCol}{
-a logical: Should the two alleles for each marker be pasted into one column or kept in separate columns?
-}
-  \item{sep}{
-a single character to be used as allele separator if \code{singleCol=TRUE}.
+a numeric: the family ID of the singleton. 
 }
   \item{subset}{
 a numeric containing the individuals in the sub-pedigree to be extracted. NB: No pedigree checking is done here, so make sure the subset form a meaningful, closed pedigree.
@@ -137,12 +124,13 @@ A \code{linkdat} object, or a list of \code{linkdat} objects. A linkdat object i
  \item{nInd}{the number of individuals in the pedigree.}
  \item{founders}{vector of the founder individuals. (NB: Internal labeling used.)}
  \item{nonfounders}{vector of the nonfounder individuals (NB: Internal labeling used.)}
+ \item{hasLoops}{a logical: TRUE if the pedigree is inbred.}
  \item{subnucs}{list containing all (maximal) nuclear families in the pedigree. Each nuclear family is given as a vector of the form c(pivot, father, mother, child1, ...), where the pivot is either the id of the individual linking the nuclear family to the rest of the pedigree, or 0 if there are none. (NB: Internal labeling used.)}
  \item{markerdata}{a list of \code{\link{marker}} objects.}
  \item{nMark}{the number of markers.}
  \item{available}{a numeric vector containing IDs of available individuals. Used for simulations and plots.}
  \item{model}{a \code{linkdat.model} object, essentially a list containing the model parameters. See \code{\link{setModel}} for details.}
- \item{initial_probs}{(Not relevant for end users.)}
+ \item{loop_breakers}{a matrix with original loop breaker ID's in the first column and their duplicates in the second column. This is set by \code{\link{breakLoops}}.}
 }
 
 \author{
@@ -158,14 +146,14 @@ x = linkdat(toyped, model=1)
 x
 summary(x)
 
-# test read/write:
+#### test read/write:
 x = modifyMarker(x, 1, alleles=c('B','C'), afreq=c(.9, .1), chrom=2, name="SNP1", pos=123)
 write.linkdat(x, prefix="toy")
 y = linkdat("toy.ped", map="toy.map", dat="toy.dat", freq="toy.freq", model=1)
 unlink(c("toy.ped", "toy.map", "toy.dat", "toy.freq", "toy.model"))
 stopifnot(isTRUE(all.equal(x,y)))
 
-# test singletons:
+#### test singletons:
 w = singleton(id=3, sex=2)
 T1 = all.equal(w, linkdat(ped=rbind(c(3,0,0,2,1))))
 w = markerSim(w, N=5, alleles=2, afreq=c(0.1,.9))
@@ -174,11 +162,12 @@ T3 = all.equal(w, swapSex(swapSex(w, 3), 3))
 T4 = all.equal(w, swapAff(swapAff(w, 3), 3))
 stopifnot(T1, T2, T3, T4)
 
-# several ways of creating a linkdat object:
+#### several ways of creating the same linkdat object:
 alleles=c(157,160,163)
 afreq=c(0.3, 0.3, 0.4)
 gt10 = c(160, 160)
 gt14 = c(160, 163)
+
 z1 = relabel(addOffspring(nuclearPed(1), father=3, noffs=1, aff=2), 10:14)
 z1 = addMarker(z1, marker(z1, 10, gt10, 14, gt14, alleles=alleles, afreq=afreq))
 z1 = setModel(z1, 2)
@@ -187,22 +176,24 @@ z2 = addParents(relabel(nuclearPed(1), 12:14), 12, father=10, mother=11)
 z2 = addMarker(z2, rbind(gt10, 0, 0, 0, gt14), alleles, afreq)
 z2 = setModel(swapAff(z2, 14), 2)
 
-z3 = linkdat(data.frame(ID=10:14, FID=c(0,0,10,0,12), MID=c(0,0,11,0,13), SEX=c(1,2,1,2,1),
-    AFF=c(1,1,1,1,2), M=c("160/160", "0/0", "0/0", "0/0", "160/163")), model=2)
+z3 = linkdat(data.frame(ID=10:14, FID=c(0,0,10,0,12), MID=c(0,0,11,0,13), 
+             SEX=c(1,2,1,2,1), AFF=c(1,1,1,1,2), 
+             M=c("160/160", "0/0", "0/0", "0/0", "160/163")), model=2)
 z3 = modifyMarker(z3, 1, alleles=alleles, afreq=afreq)
 
 write.linkdat(z1, prefix="test")
-z4 = linkdat("test.ped", map="test.map", dat="test.dat", freq="test.freq", model=2)
+z4 = linkdat("test.ped", map="test.map", dat="test.dat", freq="test.freq", 
+             model=2)
 z4 = modifyMarker(z4, 1, alleles=alleles, chrom=NA, pos=NA, name=NA)
 
 write.linkdat(z1, prefix="test", merlin=TRUE)
-z5 = linkdat("test.ped", map="test.map", dat="test.dat", freq="test.freq", model=2)
+z5 = linkdat("test.ped", map="test.map", dat="test.dat", freq="test.freq", 
+             model=2)
 z5 = modifyMarker(z5, 1, alleles=alleles, chrom=NA, pos=NA, name=NA)
 
-stopifnot(isTRUE(all.equal(z1,z2)), isTRUE(all.equal(z1,z3)), isTRUE(all.equal(z1,z4)), isTRUE(all.equal(z1,z5)))
+stopifnot(isTRUE(all.equal(z1,z2)), isTRUE(all.equal(z1,z3)), 
+          isTRUE(all.equal(z1,z4)), isTRUE(all.equal(z1,z5)))
 unlink(c("test.ped", "test.map", "test.dat", "test.freq", "test.model"))
-
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+
 \keyword{ IO }

@@ -1,7 +1,7 @@
 \name{simpleSim}
 \alias{simpleSim}
 \title{
-Marker simulation
+Unconditional marker simulation
 }
 \description{
 Unconditional simulation of unlinked markers
@@ -11,7 +11,7 @@ simpleSim(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, verbose=T)
 }
 \arguments{
   \item{x}{
-a \code{linkdat} object
+a \code{\link{linkdat}} object
 }
   \item{N}{
 a positive integer: the number of markers to be simulated
@@ -46,7 +46,7 @@ a \code{linkdat} object equal to \code{x} in all respects except its \code{marke
 Magnus Dehli Vigeland
 }
 \seealso{
-\code{\link{SNPsim}}
+\code{\link{markerSim}},\code{\link{linkageSim}}
 }
 \examples{
 x = nuclearPed(1)

@@ -1,4 +1,4 @@
-SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, unique=FALSE, seed=NULL, verbose=TRUE) {
+.SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, unique=FALSE, seed=NULL, verbose=TRUE) {
 	if (is.null(x$model)) {
 		if (all(x$pedigree[,'AFF']==1)) {x=setModel(x,1); if(verbose) cat("Unaffected pedigree. Simulating autosomal markers.\n")}
 		else stop("No model set. Use setModel().")
@@ -37,14 +37,14 @@ SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.
 	if (!is.null(seed)) set.seed(seed)
 	
 	# simulate only indivs i) with no given genotype, ii) that are available or have available descendants. Duplicated individuals are not simulated.
-	sim_indivs = seq_len(nInd)[sapply(seq_len(nInd), function(i) zgeno[i]==0 && (avail[i] || any(avail[descendants(x, i, original.id=F)])))]
+	sim_indivs = seq_len(nInd)[sapply(seq_len(nInd), function(i) zgeno[i]==0 && (avail[i] || any(avail[descendants(x, x$orig.ids[i])])))]
 	if(length(sim_indivs)==0) stop("Something is wrong: No individuals available for simulation.")
 	if(verbose) cat("Simulating genotypes for the following individuals:", .prettycat(x$orig.ids[avail & !preexisting], "and"), "\n")
 	
 	genoprobs <- function(x, partialgeno, id, values) {  
 			#values are 1:3 for autosomal models, and either 1:2 (males) or 1:3 (females) for X-linked models
 			#outputs vector of length |values| with genotype probs for indiv id given pedigree og partial genotype information
-			probs <- sapply(values, function(g) { partialgeno[id]<-g;   likelihoodSNP(x, afreq=afreq, singleNum.geno=partialgeno, TR.MATR=.TRzero) } )
+			probs <- sapply(values, function(g) { partialgeno[id]<-g;   .likelihoodSNP(x, afreq=afreq, singleNum.geno=partialgeno, TR.MATR=.TRzero) } )
 			if (sum(probs)==0) { print(cbind(x$pedigree, partialgeno)); stop("\nIndividual ",id,": All genotype probabilities zero. Mendelian error?") }
 			probs
 	}
@@ -59,7 +59,7 @@ SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.
 		initg <- t(.my.grid( rep(list(1:3), init ) ))
 		initp <- apply(initg, 2, function(g) { 
 			zgeno[ sim_indivs[1:init] ] <- g;   
-			likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
+			.likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
 		if (identical(sum(initp), 0)) stop("All genotype probabilities zero. Wrong model?")
 		
 		# pre-fill the rows of the 'init' individuals (i.e. sim_indivs[1:init]) 
@@ -82,7 +82,7 @@ SNPsim <- function(x, N=1, partialmarker=NULL, available=x$available, afreq=c(0.
 		init_indivs = c(males[seq_len(init_m)], females[seq_len(init_f)])
 		# pre-calculate probabilities for the first 'init' individuals
 		initg <- t(.my.grid( list(1:2, 1:3)[rep(1:2, c(init_m, init_f))] ))
-		initp <- apply(initg, 2, function(g) { zgeno[ init_indivs ] <- g;   likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
+		initp <- apply(initg, 2, function(g) { zgeno[ init_indivs ] <- g;   .likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
 
 		# pre-fill the rows of the 'init_indivs' 
 		markers[init_indivs, ] <- initg[ , suppressWarnings(sample.int( ncol(initg), size=N, replace=TRUE, prob=initp)) ]

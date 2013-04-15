@@ -3,7 +3,8 @@ merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="
 	clean = function(cleanup, verbose, files) if (cleanup) {unlink(files); if(verbose) cat("Files successfully removed\n")}
 	
 	if (x$nMark == 0) stop("No markers exist for this linkdat object.")
-	x = removeMarkers(x, seq_len(x$nMark)[-markers])
+	if(model && is.null(x$model)) stop("No model is set for this object")
+   x = removeMarkers(x, seq_len(x$nMark)[-markers])
 	map = .getMap(x, na.action=1, verbose=F)
 	mNames = map$MARKER
 	
@@ -25,7 +26,8 @@ merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="
 		options = paste(options, " --positions:", paste(pos, collapse=","), sep="")
 	}
 	
-	command = paste("merlin -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq ", 
+	program = if(identical(x$model$chrom, "X")) "minx" else "merlin"
+   command = paste(program, " -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq ", 
 					if(model) "--model merlin.model ", options, sep="")
 					
 	if (verbose) cat("\nExecuting the following command:\n", command, "\n\n", sep="")

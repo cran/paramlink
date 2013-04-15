@@ -1,15 +1,26 @@
-linkage.power <- function(x, N=100, available=x$available, afreq=c(0.5, 0.5), loop_breakers=NULL, threshold=NULL, seed=NULL) {
+linkage.power <- function(x, N=100, available=x$available, afreq=c(0.5, 0.5), 
+                          loop_breakers=NULL, threshold=NULL, seed=NULL, verbose=FALSE) {
 	if(inherits(x,"singleton")) stop("This function is not applicable to singleton objects.")
-	if (is.null(x$model)) stop("No model set.")
-	if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
-	
 	if (length(available)==0) available = x$orig.ids
-	 
-	sims = SNPsim(x, N=N, partialmarker=NULL, available=available, afreq=afreq, loop_breakers=loop_breakers, unique=FALSE, seed=seed)
-	cat(N, "markers simulated\n")
-	lds = structure( lod(sims, theta=0, loop_breakers=loop_breakers, verbose=FALSE), analysis="power", class="linkres")
-	summary(lds, threshold=threshold)
-	invisible(lds)
+   sims = linkageSim(x, N=N, available=available, afreq=afreq, loop_breakers=loop_breakers, unique=FALSE, seed=seed, verbose=verbose)
+	if(verbose) cat("\n")
+	lds = lod(sims, theta=0, loop_breakers=loop_breakers, verbose=FALSE)
+	res = structure( list(sim = sims, lod = lds, maxlod = max(lds), elod = mean(lds)), class="powres")
+   summary(res, threshold=threshold)
+   invisible(res)
+}
+
+summary.powres <- function(object, threshold=NULL, ...) {
+	x <- object
+   afrq = attr(x$sim$markerdata[[1]], 'afreq')
+   cat(x$sim$nMark, "markers simulated with allele frequencies", .prettycat(afrq, 'and'), "\n")
+   cat("Highest singlepoint LOD score:", x$maxlod, "\n")
+   cat("Markers obtaining maximum score:", mean((x$maxlod - x$lod) < 1e-4)*100, "%\n")
+   cat("ELOD:", x$elod, "\n")
+   if (!is.null(threshold)) {
+      cat("\nThreshold:", threshold, "\n")
+      cat("Markers with score above threshold:", mean(x$lod >= threshold)*100, "%\n")
+   }
 }
 
 
@@ -26,8 +37,7 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 			f1 = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances[2]=k; mod}),
 			f2 = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances[3]=k; mod}),
 			dfreq = lapply(values, function(k) {mod=unclass(x$model); mod$dfreq=k; mod}),
-			afreq = lapply(values, function(k) {mod=unclass(x$model); mod$afreq=c(k, 1-k); mod}),
-			stop("Argument 'varyPar' must be one of 'f0', 'f1', 'f2', 'dfreq', 'afreq'.") ) },
+			stop("Argument 'varyPar' must be one of 'f0', 'f1', 'f2', 'dfreq'.") ) },
 		X = {switch(varyPar,
 			f0_m = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances$male[1]=k; mod}),
 			f1_m = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances$male[2]=k; mod}),
@@ -35,10 +45,9 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 			f1_f = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances$female[2]=k; mod}),
 			f2_f = lapply(values, function(k) {mod=unclass(x$model); mod$penetrances$female[3]=k; mod}),
 			dfreq = lapply(values, function(k) {mod=unclass(x$model); mod$dfreq=k; mod}),
-			afreq = lapply(values, function(k) {mod=unclass(x$model); mod$afreq=c(k, 1-k); mod}),
-			stop("Argument 'varyPar' must be one of 'f0_m', 'f1_m', 'f0_f', 'f1_f', 'f2_f', 'dfreq', 'afreq'.") ) } )
+			stop("Argument 'varyPar' must be one of 'f0_m', 'f1_m', 'f0_f', 'f1_f', 'f2_f', 'dfreq'.") ) } )
 
-	sims <- SNPsim(x, N=N, loop_breakers=loop_breakers, seed=seed, unique=TRUE) 
+	sims = .SNPsim(x, N=N, loop_breakers=loop_breakers, seed=seed, unique=TRUE) 
 	cat(N, "markers simulated;", ncol(sims$markerdata)/2, "unique.\n")
 
 	lods = sapply(models, function(mod) max(lod(setModel(sims, model=mod), theta=0, loop_breakers=loop_breakers, verbose=FALSE)))

@@ -125,7 +125,7 @@ removeIndividuals <- function(x, ids, verbose=TRUE) { #removes (one by one) indi
 	#founders without children after 'id' and 'desc' indivs are removed. The redundancy here does not matter.
 	desc = numeric(0)
 	for(id in ids) {
-		desc = c(desc, dd <- descendants(x, id, original.id=T))
+		desc = c(desc, dd <- descendants(x, id))
 		if(verbose) cat("Removing", id, if(length(dd)>0) paste("and descendant(s):", .prettycat(dd, "and")), "\n")
 	}
 

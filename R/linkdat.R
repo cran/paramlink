@@ -127,7 +127,7 @@ singleton = function(id, sex=1, famid=1, verbose=FALSE, ...)
 #}
 
 .checkped <- function(p) { #p a numeric matrix with 5 columns
-	ID = p[,'ID']; FID = p[,'FID']; MID = p[,'MID']; SEX = p[,'SEX']; AFF=p[,'AFF']
+   ID = p[,'ID']; FID = p[,'FID']; MID = p[,'MID']; SEX = p[,'SEX']; AFF=p[,'AFF']
    
    #singletons:
 	if (nrow(p) == 1) {
@@ -137,26 +137,27 @@ singleton = function(id, sex=1, famid=1, verbose=FALSE, ...)
    }
    #real pedigrees:
 	if (all(c(FID, MID)==0)) stop("Pedigree is not connected.")
+   ancestor_list = lapply(seq_along(ID), function(i) ancestors(p, ID[i]))
 
-	quick.check <- (!any(duplicated(ID)) && all(ID!=FID) && all(ID!=MID) && all(c(FID, MID) %in% c(0,ID)) && 
+	quick.check <- (!any(duplicated(ID)) && all(c(FID, MID) %in% c(0,ID)) && 
 					all(SEX[match(FID[FID!=0], ID)] == 1) && all(SEX[match(MID[MID!=0], ID)] == 2) && 
-					all(SEX %in% 1:2) && all(AFF %in% 0:2) && all((FID>0)==(MID>0)))
+					all(SEX %in% 1:2) && all(AFF %in% 0:2) && all((FID>0)==(MID>0)) && 
+               !any(sapply(seq_along(ID), function(i) ID[i] %in% ancestor_list[[i]])))
 	
 	if (quick.check)  #if all tests are passed
 		return()
 	else {
 	  for (i in seq_along(ID)) {
-		if (i>1 && ID[i] %in% ID[1:(i-1)]) cat("Individual ", ID[i],": ID not unique.\n")
-		if (!FID[i] %in% c(0,ID)) cat("Individual ", ID[i],": Father's ID does not appear in ID column.\n")
-		if (!MID[i] %in% c(0,ID)) cat("Individual ", ID[i],": Mother's ID does not appear in ID column.\n")
-		if (!SEX[i] %in% 1:2) cat("Individual ", ID[i],": SEX must be either 1 (male) or 2 (female).\n")
-		if (!AFF[i] %in% 0:2) cat("Individual ", ID[i],": Affection status must be either 0 (unknown), 1 (non-affected) or 2 (affected).\n")
-		if (FID[i] != 0 && SEX[match(FID[i], ID)] != 1) cat("Individual ", ID[i],": Father is not male.\n")
-		if (MID[i] != 0 && SEX[match(MID[i], ID)] != 2) cat("Individual ", ID[i],": Mother is not female.\n")
-		if ((FID[i]>0) != (MID[i]>0)) cat("Individual ", ID[i],": Only one parent in the pedigree is not allowed. Either both parents or none must be specified.\n")
-		if (ID[i]==FID[i]) cat("Individual ", ID[i]," is his own father. Paramlink does not accept this sort of behaviour.\n")
-		if (ID[i]==MID[i]) cat("Individual ", ID[i]," is her own mother. Paramlink does not accept this sort of behaviour.\n")
-	  }
+         if (i>1 && ID[i] %in% ID[1:(i-1)]) cat("Individual ", ID[i],": ID not unique.\n", sep="")
+         if (!FID[i] %in% c(0,ID)) cat("Individual ", ID[i],": Father's ID does not appear in ID column.\n", sep="")
+         if (!MID[i] %in% c(0,ID)) cat("Individual ", ID[i],": Mother's ID does not appear in ID column.\n", sep="")
+         if (!SEX[i] %in% 1:2) cat("Individual ", ID[i],": SEX must be either 1 (male) or 2 (female).\n", sep="")
+         if (!AFF[i] %in% 0:2) cat("Individual ", ID[i],": Affection status must be either 0 (unknown), 1 (non-affected) or 2 (affected).\n", sep="")
+         if (FID[i] != 0 && SEX[match(FID[i], ID)] != 1) cat("Individual ", ID[i],": Father is not male.\n", sep="")
+         if (MID[i] != 0 && SEX[match(MID[i], ID)] != 2) cat("Individual ", ID[i],": Mother is not female.\n", sep="")
+         if ((FID[i]>0) != (MID[i]>0)) cat("Individual ", ID[i],": Only one parent in the pedigree is not allowed. Either both parents or none must be specified.\n", sep="")
+         if (ID[i] %in% ancestor_list[[i]]) cat("Individual ", ID[i]," is ", switch(SEX[i],"his", "her"), " own ancestor.\n", sep="")
+      }
 	  stop("Pedigree errors detected.")
 	}
 }

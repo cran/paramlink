@@ -1,9 +1,13 @@
-print.linkres <- function(x, ...) {
-	print(as.data.frame(unclass(x)), ...)
+print.linkres = function(x, ...) {
+	rownames(x) = paste(rownames(x), ":", sep="")
+   if(attr(x, 'analysis')=="mlink")
+      rownames(x) = paste("theta=", rownames(x), sep="")
+   df = as.data.frame(unclass(x))
+   print(df, print.gap=2, ...)
 }
 
-summary.linkres <- function(object, threshold=NULL, ...) {
-	x <- object
+summary.linkres = function(object, ...) {
+	x = object
 	switch( attr(x, "analysis"), 
 	mlink = {
 		mlods <- apply(x, 2, function(i) if (all(is.na(i))) NA else max(i, 0, na.rm=TRUE)); 
@@ -15,16 +19,55 @@ summary.linkres <- function(object, threshold=NULL, ...) {
 		cat("Max LOD score:", MX, "\n")
 		cat("Achieved at the following marker(s):\n")
 		print(x[, which(MX - lods < 1e-4), drop=FALSE])
-	}, power = {	
-		cat("Highest singlepoint LOD score for simulated markers:", max(x),"\n")
-		cat("Markers obtaining maximum score:", mean((max(x)-x) < 1e-4)*100, "%\n")
-		cat("ELOD:", mean(x), "\n")
-		if (!is.null(threshold)) {
-			cat("\nThreshold:", threshold, "\n")
-			cat("Markers with score above threshold:", mean(x>=threshold)*100, "%\n")
-		}
 	})
 }
+
+as.data.frame.linkres = function(x, ..., sort=TRUE) {
+   map = attr(x, 'map')
+   map = map[map$MARKER %in% colnames(x), ,drop=FALSE]
+   if(sort) map = map[order(map$CHR, map$POS), , drop=FALSE]
+   if(attr(x,'analysis')=="mlink") 
+      LOD = apply(x[, map$MARKER, drop=FALSE], 2, function(co) if(all(is.na(co))) NA else max(co, na.rm=TRUE))
+   else {LOD = x['LOD',]; x = x[2,,drop=FALSE]}
+	lods = cbind(map, LOD=LOD, t(x[, map$MARKER, drop=FALSE]))
+   lods
+}
+
+lod.peaks = function(x, threshold, width=1) { # x et linkres objekt, eller data.frame med CHR, POS, LOD
+   
+   peak1chr = function(xchr, threshold, width) { # x must be sorted!
+      rl = rle(xchr$LOD >= threshold)
+      while(1) {
+         short = rl$values & (rl$lengths < width)
+         if(any(short)) {
+            rl$values[short] <- FALSE
+            rl = rle(inverse.rle(rl))
+         } else break
+      }
+      
+      xchr_nrow = nrow(xchr)
+      if(!any(rl$values)) return(NULL)
+      start_ind = c(0, cumsum(rl$lengths))[which(rl$values)]
+      stop_ind = start_ind + rl$lengths[rl$values] + 1 # plus 1 to compensaate for endpoint[1]
+      L = length(start_ind)
+      if(start_ind[1]==0)       stop_ind[1] = stop_ind[1]-1
+      if(stop_ind[L] > xchr_nrow) stop_ind[L] = xchr_nrow
+      lapply(1:L, function(i) {p = xchr[start_ind[i]:stop_ind[i], ,drop=F]; rownames(p)=NULL; p})
+   }
+   
+   
+   df = as.data.frame(x)
+   df = df[!is.na(df$LOD), ]
+   chrs = unique.default(df$CHR)
+   res = list()
+   for(chr in chrs) {
+      dfchr = df[df$CHR==chr, ]
+      res = c(res, peak1chr(dfchr, threshold=threshold, width=width))
+   }
+   res
+}    
+
+
 
 .getMap = function(x, markers=seq_len(x$nMark), na.action=0, verbose=TRUE) {
 	m=x$markerdata[markers]
@@ -54,7 +97,6 @@ summary.linkres <- function(object, threshold=NULL, ...) {
 plot.linkres=function(x, chrom=NULL, ylim=NULL, ...) {
 	analysis = attr(x, "analysis")
 	map = attr(x, 'map')
-	if(analysis == "power") stop("Not implemented.")
 	if(any(is.na(map$CHR))) stop("Incomplete or missing map.")
 	
 	map = map[map$MARKER %in% colnames(x), ,drop=FALSE]

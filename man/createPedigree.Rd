@@ -12,7 +12,9 @@ The function \code{nuclearPed} creates a nuclear family with a specified number 
 }
 \usage{
 nuclearPed(noffs, sex)
+
 cousinPed(degree)
+
 halfCousinPed(degree)
 }
 \arguments{
@@ -29,7 +31,7 @@ a non-negative integer: 0=siblings, 1=first cousins; 2=second cousins, a.s.o.
 \details{
 All individuals are created as unaffected. Use \code{\link{swapAff}} to edit this (see Examples).
 Use \code{\link{swapSex}} to change gender of pedigree members.
-The cousins created by \code{cousinPed} and \code{halfCousinPed} have zero removal. Removals are easily contructed using \code{\link{addOffspring}} or \code{\link{removeIndividuals}} (see Examples). 
+The cousins created by \code{cousinPed} and \code{halfCousinPed} have zero removal. Removals are easily constructed using \code{\link{addOffspring}} or \code{\link{removeIndividuals}} (see Examples). 
 }
 \note{
 To make changes of sex/affection status, or to create cousin removals, it is often helpful to plot the pedigree.

@@ -49,7 +49,7 @@ integer vectors indicating the gender and affection statuses of the offspring to
 A logical: Verbose output or not.
 }
  \item{keep}{
-A character, either "available" (trimming the pedigree for unavailable members) or "affected" (trimming for nonaffected members).
+A character, either "available" (trimming the pedigree for unavailable members) or "affected" (trimming for unaffected members).
 }
  \item{return.ids}{
 A logical. If FALSE, the trimmed pedigree is returned as a new \code{linkdat} object. If TRUE, a vector containing the IDs of "removable" individuals is returned
@@ -72,13 +72,13 @@ Magnus Dehli Vigeland
 }
 
 \seealso{
-\code{\link{linkdat}}, \code{\link{nuclearPed}}, \code{\link{cousinPed}}, \code{\link{halfCousinPed}}
+\code{\link{linkdat}}, \code{\link{nuclearPed}}
 }
 \examples{
 data(toyped)
 x = linkdat(toyped)
 
-# to see the effect of each command, use \code{plot(x)} in between
+# To see the effect of each command below, use plot(x) in between.
 x = addParents(x, id=2, father=5, mother=6)
 
 x = swapSex(x, c(1,5))
@@ -87,9 +87,10 @@ x = swapSex(x, c(2,6))
 x = addOffspring(x, mother=6, noffs=2, id=c(7,10))
 x = removeIndividuals(x, 3)
 x = swapAff(x, c(4,10))
+
 stopifnot(setequal(x$orig.ids, c(1,2,4,5,6,7,10,11)))
 
-# trimming a pedigree
+# Trimming a pedigree
 data(dominant)
 x = linkdat(dominant)
 x_affectedOnly = trim(x, keep="affected")
