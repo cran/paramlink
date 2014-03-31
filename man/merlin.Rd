@@ -10,7 +10,7 @@ The required input files are automatically created (in the working directory) an
 \usage{
 merlin(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, 
        options="", verbose=FALSE, generate.files=TRUE, 
-       cleanup=generate.files, outputfile="")
+       cleanup=generate.files, logfile="")
 }
 
 \arguments{
@@ -39,14 +39,14 @@ a logical. If TRUE, the files "merlin.ped", "merlin.dat", "merlin.map", "merlin.
   \item{cleanup}{
 a logical: Should the files be deleted automatically after the MERLIN run?
 }
-  \item{outputfile}{
-a character. If this is given, the MERLIN output will be written to a file with this name.
+  \item{logfile}{
+a character. If this is given, the MERLIN screen output will be written to a file with this name.
 }
 }
 \details{
 For this function to work, MERLIN must be installed and the path to merlin.exe included in the PATH variable. The function is first and foremost a wrapper to the parametric linkage functionality of MERLIN. By default the following MERLIN command is run (via a call to \code{\link{system}}) after creating appropriate files in the current working directory:
 
-\code{merlin -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq --model merlin.model}
+\code{merlin -p _merlin.ped -d _merlin.dat -m _merlin.map -f _merlin.freq --model _merlin.model --tabulate --markerNames --quiet}
 
 The resulting multipoint LOD scores are extracted from the output and returned in R as a \code{\link{linkres}} object. 
 
@@ -65,7 +65,6 @@ Magnus Dehli Vigeland
 }
 \examples{
 \dontrun{
-data(toyped)
 x = linkdat(toyped, model=1)
 x
 

@@ -118,10 +118,10 @@ Magnus Dehli Vigeland}
 \code{\link{linkdat}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped)
 x
 x = removeMarkers(x,1) # removing the only marker of x.
+x
 
 # creating a SNP with alleles 'a' and 'b', for which individual 1 is heterozygous, 
 # 2 and 4 are homozygous for the 'b' allele, and missing genotype for individual 3:

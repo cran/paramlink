@@ -101,8 +101,8 @@ PE4 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters, ids = c(2,
 
 stopifnot(round(c(PE1,PE2,PE3,PE4), 5) == c(0.03125, 0.00405, 0.08203, 0.03090))
 
-
-####### How does the power change if the true pedigree is inbred?               
+\dontrun{
+####### How does the power change if the true pedigree is inbred?  
 
 sisters_LOOP = addParents(sisters, 101, father = 201, mother = 202)
 sisters_LOOP = addParents(sisters_LOOP, 102, father = 201, mother = 203)
@@ -124,5 +124,6 @@ PE8 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, loop 
                      ids = c(2, 3), alleles = 4, afreq=c(0.7, 0.1, 0.1, 0.1))   
 
 stopifnot(round(c(PE5,PE6,PE7,PE8), 5) == c(0.03125, 0.00765, 0.07617, 0.03457))
+}
 }
 \keyword{math}

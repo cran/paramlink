@@ -39,21 +39,62 @@ setMap = function(x, map, dat, pos=NULL, verbose=TRUE) {
 	x
 }
 
-.readDatfile = function(datfile, chrom) {
-	dat = apply(read.table(datfile, as.is=T, comment.char="<", fill=T), 1, function(r) as.character(r[!is.na(r) & nzchar(r)]))
-	nMark = as.numeric(dat[[1]])[1] - 1
-	stopifnot(all(as.numeric(dat[[3]])==seq_len(nMark+1)), length(dat)==7+2*nMark+3)
-	
-	markernames = sapply(dat[6+(1:nMark)*2], '[', 4)
+readDatfile = function(datfile, chrom, write_to=NULL) {
+	dat = lapply(strsplit(readLines(datfile), split=" |\t"), function(v) v[v!=""])
+    #NB: comment.char = "<" necessary?
+    nMark = as.numeric(dat[[1]])[1] - 1
+	xlinked = as.numeric(dat[[1]])[3]
+    ordering = as.numeric(dat[[3]])
+    markernames = sapply(dat[6 + xlinked + (1:nMark)*2], '[', 4)
 	pos = cumsum(as.numeric(dat[[length(dat)-1]]))
+    if(ordering[1]==2) ordering = c(1,ordering)
+    if(length(markernames) - length(pos) == 1) pos = c(0, pos)
+    stopifnot(all(ordering==seq_len(nMark+1)), length(dat)==7 + xlinked + 2*nMark + 3)
+	
 	equal = (pos[-1]==pos[-length(pos)]); k=0
 	for(i in 2:length(pos)) 
 		if (equal[i-1]) pos[i]=pos[i] + 0.0001*(k <- k+1) else k=0  #if consecutive entries are equal, add 0.0001's. 
 		
 	map = data.frame(CHR=chrom, MARKER=markernames, POS=pos, stringsAsFactors=F)
 	
-	freqlist = lapply(dat[7+(1:nMark)*2], function(r) as.numeric(r))
-	names(freqlist) = markernames
-	
-	list(map=map, freq=freqlist)
+	freqlist = lapply(dat[7 + xlinked + (1:nMark)*2], function(r) as.numeric(r))
+    nalls = sapply(freqlist, length)
+    L = sum(nalls) + length(nalls)
+    cum = cumsum(c(1, nalls+1))
+    length(cum) = length(nalls) #remove last
+    col1 = rep("A", L)
+    col1[cum] = "M"
+
+    col2 = character(L)
+    col2[cum] = markernames
+    allalleles = unlist(lapply(nalls, seq_len))
+    col2[-cum] = allalleles
+    
+    col3 = character(L)
+    allfreqs = unlist(freqlist)
+    col3[-cum] = format(allfreqs, scientifit=F, digits=6)
+      
+    freq = cbind(col1, col2, col3, deparse.level=0)
+    
+    merlindat = cbind(c("A", rep("M", nMark)), c("my_disease", markernames))
+	if(!is.null(write_to)) {
+        write.table(map, file=paste(write_to, "map", sep="."), row.names=F, col.names=F, quote=F)
+        write.table(merlindat, file=paste(write_to, "dat", sep="."), row.names=F, col.names=F, quote=F)
+        write.table(freq, file=paste(write_to, "freq", sep="."), row.names=F, col.names=F, quote=F)
+    }   
+	invisible(list(dat=merlindat, map=map, freq=freq))
+}
+
+.SNPfreq = function(markernames, Bfreq, allele1="1", allele2="2", file=NULL) {
+    # Create and write freq file in extended Merlin format.
+    # Bfreq numerical vector with same length as markernames (contains freqs for allele 2)
+    
+    stopifnot(length(markernames)==length(Bfreq))
+    n = length(markernames)
+    col1 = rep(c('M','A','A'), n)
+    col2 = as.character(rbind(markernames, allele1, allele2))
+    col3 = as.character(rbind("", 1-Bfreq, Bfreq))
+    res = cbind(col1, col2, col3)
+    if (!is.null(file)) write.table(res, file=file, col.names=F, row.names=F, quote=F)
+    invisible(res)
 }

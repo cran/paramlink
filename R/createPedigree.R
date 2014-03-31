@@ -30,3 +30,36 @@ halfCousinPed <- function(degree) {
 	}
 	linkdat(p, verbose=FALSE)
 }
+
+mergePed <- function(x, y) {
+    if(!is.null(x$markerdata) || !is.null(y$markerdata)) stop("Merging is only supported for pedigrees without marker data")
+    ids = intersect(x$orig.ids, y$orig.ids)
+    if(length(ids)==0) stop("Merging impossible: No common IDs")
+    del = list(x = numeric(), y = numeric())
+    for (i in ids) {
+        if(.getSex(x,i) != .getSex(y,i)) stop(paste("Gender mismatch for individual", i))
+        parx = parents(x, i)
+        pary = parents(y, i)
+        if(length(pary) == 0) del$y = c(del$y, i)
+        else if(length(parx) == 0) del$x = c(del$x, i)
+        else if(all(parx == pary)) del$y = c(del$y, i)
+        else stop(paste("Parent mismatch for individual", i))
+    }
+    xx = as.matrix(x)[!x$orig.ids %in% del$x, ]
+    yy = as.matrix(y)[!y$orig.ids %in% del$y, ]
+    z = rbind(xx, yy)
+    z[,'FAMID'] = x$famid # in case y$famid != x$famid
+    
+    # reorder to put parents above children (necessary when using IBDsim).
+    N = nrow(z)
+    i = 1
+    while(i < N) {
+        maxpar = max(match(z[i, c('FID','MID')], z[, 'ID'], nomatch=0))
+        if(maxpar > i) {
+            z = z[c(seq_len(i-1), (i+1):maxpar, i, seq_len(N-maxpar)+maxpar), ]
+        }
+        else i = i+1
+    }
+    
+    restore_linkdat(z, attrs = attributes(xx))
+}

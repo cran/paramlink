@@ -52,9 +52,9 @@ Magnus Dehli Vigeland
 \code{\link{print.linkdat}}, \code{\link{as.matrix.linkdat}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped)
 x
+
 # Printing x as above is equivalent to:
 as.data.frame(x, sep = "/", missing = "-", singleCol = TRUE)
 }

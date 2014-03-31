@@ -61,7 +61,6 @@ Magnus Dehli Vigeland
 \code{\link{linkdat}}, \code{\link{as.data.frame.linkdat}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped, model=1)
 y = restore_linkdat(as.matrix(x))
 stopifnot(all.equal(x,y))

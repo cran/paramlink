@@ -7,7 +7,7 @@ Toy pedigree for linkage analysis
 \description{
 Toy pedigree with 4 individuals typed at 1 SNP marker. Individual 1 is missing one allele.
 }
-\usage{data(toyped)}
+\usage{toyped}
 \format{
   A data frame with one row for each individual, and the following columns:
   \describe{
@@ -26,7 +26,7 @@ The format is standard LINKAGE (pre-makeped) format.
 }
 
 \examples{
-data(toyped)
 toyped
+linkdat(toyped)
 }
 \keyword{datasets}

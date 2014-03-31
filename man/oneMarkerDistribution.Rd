@@ -85,15 +85,14 @@ snp = marker(y, 9, c('a','a'), alleles=c('a', 'b'), afreq=c(0.01, 0.99))
 oneMarkerDistribution(y, ids=8, partialmarker=snp)
 
 #### X-linked example:
-data(Xped)
 z = linkdat(Xped, model=4) # X-linked recessive model
 z2 = swapAff(z, 1:z$nInd, 1) # disease free version of the same pedigree
 
 snpX = marker(z, c(5,15), c('A','A'), alleles=c('A', 'B'), chrom=23)
 
-r1 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0.5)	# results: A - 0.8; B - 0.2
-r2 = oneMarkerDistribution(z2, ids=13, partialmarker=snpX)	# should be same as above
-r3 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0)		# results: A - 0.667; B - 0.333
+r1 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0.5) # results: A - 0.8; B - 0.2
+r2 = oneMarkerDistribution(z2, ids=13, partialmarker=snpX)          # should be same as above
+r3 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0) # results: A - 0.67; B - 0.33
 
 stopifnot(all.equal(r1,r2), round(r1[1], 2)==0.8, round(r3[1], 2) == 0.67)
 }

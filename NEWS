@@ -1,5 +1,34 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+2014-03-31: Version 0.9-6
+   * Cleaned up merlin()
+   
+2013-09-26: Version 0.9-5
+   * New feature: Relatedness estimation. The function ibdEstimate() estimates pairwise IBD coefficients 
+     (maximum likelihood functionality imported from maxLik package). Checking for pedigree errors is
+     conveniently done with the examineKinships() function: This computes IBD coefficients for all pairs in 
+     the pedigree and produces a color-coded plot where wrong relationships are easy to spot.
+   
+2013-09-24: Version 0.9-4
+   * New pedigree utility functions: parents(), siblings(), grandparents(), nephews_nieces(), cousins() 
+     and unrelated(), similar to the existing functions offspring(), ancestors() and descendants().
+     All of these functions take one individual as input, and return a vector identifying all pedigree 
+     members with the corresponding relationship to him/her.
+   
+   * New function related.pairs(), accompanying the above functions: This finds *all* pairs of
+     pedigree members having the specified relationship.
+   
+   * New function branch() extracting the branch of a 'linkdat' object starting with a specified member.
+   
+   * Bug fix: likelihood.singleton() gave wrong result for genotypes with one missing allele.
+   
+   * Bug fix: .checkped() crashed when encountering parental IDs not found in the IID column.
+   
+2013-05-15: Version 0.9-2
+   * Added option 'skip.empty.genotypes' in plot.linkdat().
+   
+   * Changed the default bottom margin in pedigree plots from 4.1 to 0.6.
+   
 
 2013-04-15: Version 0.9-1
    * Improved pedigree checking in linkdat(), catching individuals being their own ancestor.

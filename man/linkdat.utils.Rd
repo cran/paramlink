@@ -1,9 +1,16 @@
 \name{linkdat.utils}
 \alias{linkdat.utils}
-\alias{spouses}
-\alias{offspring}
 \alias{ancestors}
 \alias{descendants}
+\alias{cousins}
+\alias{grandparents}
+\alias{nephews_nieces}
+\alias{offspring}
+\alias{parents}
+\alias{siblings}
+\alias{spouses}
+\alias{unrelated}
+\alias{related.pairs}
 \alias{pedigreeLoops}
 \alias{breakLoops}
 \alias{tieLoops}
@@ -15,25 +22,31 @@ linkdat utilities
 Utility functions for 'linkdat' objects
 }
 \usage{
-spouses(x, id, original.id)
-
-offspring(x, id, original.id)
-
 ancestors(x, id)
+descendants(x, id, original.id=TRUE)
 
-descendants(x, id, original.id)
+cousins(x, id, degree=1, removal=0, half=NA, original.id=TRUE)
+grandparents(x, id, degree=2, original.id=TRUE)
+nephews_nieces(x, id, removal=1, half=NA, original.id=TRUE)
+parents(x, id, original.id=TRUE)
+offspring(x, id, original.id=TRUE)
+siblings(x, id, half=NA, original.id=TRUE)
+spouses(x, id, original.id=TRUE)
+unrelated(x, id, original.id=TRUE)
+
+related.pairs(x, relation=c('parents', 'siblings', 'grandparents', 'nephews_nieces', 
+              'cousins', 'spouses', 'unrelated'), available=F, original.id=T, 
+              interfam=c("none", "founders", "all"), ...)
 
 pedigreeLoops(x)
-
 breakLoops(x, loop_breakers)
-
 tieLoops(x)
 
 \method{all.equal}{linkdat}(target, current, ...)
 }
 \arguments{
   \item{x}{
-a \code{\link{linkdat}} object.
+a \code{\link{linkdat}} object. In \code{related.pairs} possibly a list of \code{linkdat} objects.
 }
   \item{id}{
 a numerical ID label.
@@ -41,6 +54,27 @@ a numerical ID label.
  \item{original.id}{
 a logical indicating whether 'id' refers to the original ID label or the internal labeling.
 }
+ \item{degree}{
+a non-negative integer.
+}
+ \item{removal}{
+a non-negative integer
+}
+ \item{half}{
+a logical or NA. If TRUE (resp FALSE), only half (resp. full) siblings/cousins/nephews/nieces are returned. If NA, both categories are inclucded. 
+}
+ \item{relation}{
+one of the words (possibly truncated) \code{parents}, \code{siblings}, \code{grandparents}, \code{nephews_nieces}, \code{cousins}, \code{spouses}, \code{unrelated}.
+}
+\item{interfam}{
+one of the words (possibly truncated) \code{none}, \code{founders} or \code{all}, specifying which interfamiliar pairs should be included as unrelated in 
+the case where \code{x} is a list of several pedigrees. If \code{none}, only intrafamiliar pairs are considered; 
+if \code{founders} all interfamiliar pairs of (available) founders are included; if \code{all}, all interfamiliar (available) pairs are included.
+}
+ \item{available}{
+a logical, if TRUE only pairs of available individuals are returned. 
+}
+
  \item{loop_breakers}{
 A vector with IDs of the loop breaker individuals.
 }
@@ -52,13 +86,14 @@ Not used.
 }
 }
 \value{
-For \code{spouses(x, id)}, an integer vector containing the ID's of all pedigree members sharing offspring with \code{id}. 
-
-For \code{offspring(x,id)}, a vector containing the ID's of the offspring (i.e. children) of individual \code{id}. 
-
 For \code{ancestors(x,id)}, a vector containing the ID's of all ancestors of the individual \code{id}. 
-
 For \code{descendants(x,id)}, a vector containing the ID's of all descendants (i.e. children, grandchildren, a.s.o.) of individual \code{id}. 
+
+The functions \code{cousins}, \code{grandparents}, \code{nephews_nieces}, \code{offspring}, \code{parents}, \code{siblings}, \code{spouses}, \code{unrelated}, 
+each returns an integer vector containing the ID's of all pedigree members having the specified relationship with \code{id}. 
+
+For \code{related.pairs} a matrix with two columns. Each row gives of a pair of pedigree members with the specified relation. If the input is a list of multiple
+pedigrees, the matrix entries are characters of the form "X-Y" where X is the family ID and Y the individual ID of the person.
 
 For \code{pedigreeLoops}, a list containing all loops found in the pedigree. 
 Each loop is represented as a list with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a path from top to bottom) and 'pathB' 

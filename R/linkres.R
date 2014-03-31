@@ -97,8 +97,10 @@ lod.peaks = function(x, threshold, width=1) { # x et linkres objekt, eller data.
 plot.linkres=function(x, chrom=NULL, ylim=NULL, ...) {
 	analysis = attr(x, "analysis")
 	map = attr(x, 'map')
-	if(any(is.na(map$CHR))) stop("Incomplete or missing map.")
-	
+	if(any(is.na(map$CHR))) {
+        warning("Incomplete or missing map.")
+        map = map[!is.na(map$CHR), ]
+    }
 	map = map[map$MARKER %in% colnames(x), ,drop=FALSE]
 	map = map[order(map$CHR, map$POS), , drop=FALSE]
 	x = x[, match(map$MARKER, colnames(x)), drop=FALSE]
@@ -126,6 +128,6 @@ plot.linkres=function(x, chrom=NULL, ylim=NULL, ...) {
 		xlab=ifelse(multichr, "Chromosome", paste("Position (cM) on chromosome", map$CHR[1])), 
 		xaxt=ifelse(multichr, "n", par("xaxt")), 
 		ylab="LOD score", ...)
-	
+	abline(h=0, col=2, lwd=2)
 	if (multichr) axis(1, at=c(0,pos[chr_br]), labels = map$CHR[c(chr_br, nM)], lwd.ticks=2)
 }

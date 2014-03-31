@@ -7,7 +7,7 @@ Example pedigree with X-linked disease pattern.
 \description{
 A complex pedigree consistent with an X-linked recessive disease.
 }
-\usage{data(Xped)}
+\usage{Xped}
 \format{
   A data frame with one row for each individual, and the following columns:
   \describe{
@@ -24,7 +24,6 @@ The format is standard LINKAGE (pre-makeped) format.
 }
 
 \examples{
-data(Xped)
 Xped
 
 # Convert to a 'linkdat' object and set a recessive X-linked model:

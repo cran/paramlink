@@ -58,7 +58,6 @@ G. M. Lathrop, J.-M. Lalouel, C. Julier, and J. Ott, \emph{Strategies for Multil
 PNAS 81(1984), pp. 3443-3446.
 }
 \examples{
-data(toyped)
 x = linkdat(toyped, model=1)
 y = linkageSim(x, N=10, afreq=c(0.5, 0.5))
 stopifnot(length(mendelianCheck(y))==0)

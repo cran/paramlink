@@ -23,7 +23,7 @@ restore_linkdat = function(x, attrs=NULL) {
 		})
 		class(markerdata_list) = "markerdata"
 	}
-	setAvailable(setMarkers(y, markerdata_list), attrs$available)
+	setAvailable(setMarkers(y, markerdata_list), intersect(attrs$available, y$orig.ids))
 }
 
 #depreciated

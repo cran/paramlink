@@ -184,14 +184,17 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
 	nall = length(alleles)
 	if(missing(afreq)) 
 		afreq = rep(1, nall)/nall
-	if(missing(available)) 
+	if(variableSNPfreqs <- (nall==2 && length(afreq)!=2 && !Xchrom))
+        afreq = rep(afreq, length=N)
+    if(missing(available)) 
 		available = x$orig.ids
 		
 	if(verbose) {
 		cat(ifelse(!Xchrom, "Autosomal", "X-linked"), "marker locus\n")
 		cat("Unconditional simulating of genotypes for", ifelse(length(available)==1, "individual", "individuals"), .prettycat(available, "and"), "\n")
 		cat("\nAlleles and frequencies:\n")
-		print(structure(round(afreq,3), names=alleles))
+		if(variableSNPfreqs) cat("SNPs with allele 1 frequencies", paste(head(afreq, 5), collapse=", "), ifelse(N>5, '...\n','\n'))
+        else print(structure(round(afreq,3), names=alleles))
 	}
 	
 	ped = x$pedigree
@@ -212,8 +215,11 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
 		}
 	}
 	else {
-		m[x$founders, ] = sample.int(nall, size=2*N*length(x$founders), replace=TRUE, prob=afreq)
-		for(id in x$nonfounders) {
+        size = 2*length(x$founders)
+		allelsamp = if(variableSNPfreqs) unlist(lapply(afreq, function(f) sample.int(2, size, replace=TRUE, prob=c(f,1-f))))
+                    else sample.int(nall, size=N*size, replace=TRUE, prob=afreq)
+        m[x$founders, ] = allelsamp
+        for(id in x$nonfounders) {
 			fa = ped[id, 'FID']; mo = ped[id, 'MID']
 			m[id, odd] = m[fa, odd + .rand01(N)]
 			m[id, odd+1] = m[mo, odd + .rand01(N)]
@@ -221,9 +227,20 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
 	}
 
 	m[!x$orig.ids %in% available, ] = 0
-	attrib = attributes(marker(x, alleles=alleles, afreq=afreq, chrom=ifelse(Xchrom, 23, NA), missing=0))
-	markerdata_list = lapply(odd, function(k) {mk = m[, c(k, k+1)];	attributes(mk) = attrib; mk})
-	#print(markerdata_list)
+	if(variableSNPfreqs) {
+        attrib = attributes(marker(x, alleles=alleles, afreq=NULL, chrom=NA, missing=0))
+        frqs = as.vector(rbind(afreq,1-afreq))
+        markerdata_list = lapply(odd, function(k) {
+            mk = m[, c(k, k+1)]
+            atr = attrib; atr$afreq = frqs[c(k, k+1)]; 
+            attributes(mk) = atr
+            mk
+        })
+    }
+    else {
+        attrib = attributes(marker(x, alleles=alleles, afreq=afreq, chrom=ifelse(Xchrom, 23, NA), missing=0))
+        markerdata_list = lapply(odd, function(k) {mk = m[, c(k, k+1)];	attributes(mk) = attrib; mk})
+    }
 	x = setMarkers(x, structure(markerdata_list, class = "markerdata"))
 	if(verbose) cat("\n", x$nMark, " markers simulated.\nNumber of calls to the likelihood function: 0.\nTotal time used: ", (proc.time() - starttime)[["elapsed"]], " seconds.\n", sep="")
 	x

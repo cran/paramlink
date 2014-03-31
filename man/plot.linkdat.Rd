@@ -10,9 +10,10 @@ Most of the work is done by the plotting functionality in the 'kinship2' package
 }
 \usage{
 \method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
-     id.labels = x$orig.ids, title = paste("Family", x$famid), 
-     available = FALSE, col = 1, deceased = numeric(0), starred = numeric(0), 
-     aff2 = NULL, margins = c(4.1, 1, 4.1, 1), ...)
+     skip.empty.genotypes = FALSE, id.labels = x$orig.ids, 
+     title = paste("Family", x$famid), available = FALSE, col = 1, 
+     deceased = numeric(0), starred = numeric(0), aff2 = NULL, 
+     margins = c(0.6, 1, 4.1, 1), ...)
                        
 \method{plot}{singleton}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
      id.labels = x$orig.ids, title = paste("Family", x$famid), 
@@ -38,6 +39,9 @@ a character of length 1 separating alleles for diploid markers.
 }
   \item{missing}{
 the symbol (integer or character) for missing alleles.
+}
+  \item{skip.empty.genotypes}{
+a logical. If TRUE, and \code{marker} is non-NULL, empty genotypes (which by default looks like "-/-") are not printed.
 }
   \item{id.labels}{
 a vector with labels/names of the pedigree members.

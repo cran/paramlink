@@ -141,7 +141,6 @@ Magnus Dehli Vigeland
 \code{\link{setModel}}, \code{\link{modifyPedigree}}, \code{\link{linkdat.utils}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped, model=1)
 x
 summary(x)
@@ -163,8 +162,8 @@ T4 = all.equal(w, swapAff(swapAff(w, 3), 3))
 stopifnot(T1, T2, T3, T4)
 
 #### several ways of creating the same linkdat object:
-alleles=c(157,160,163)
-afreq=c(0.3, 0.3, 0.4)
+alleles = c(157,160,163)
+afreq = c(0.3, 0.3, 0.4)
 gt10 = c(160, 160)
 gt14 = c(160, 163)
 

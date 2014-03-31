@@ -35,7 +35,6 @@ MAgnus Dehli Vigeland
 }
 \examples{
 ## minimal example
-data(toyped)
 x = linkdat(toyped, model=1)
 res = lod(x)
 peak1 = lod.peaks(res, threshold=0)

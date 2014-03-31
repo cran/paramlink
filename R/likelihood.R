@@ -1,22 +1,24 @@
 likelihood = function(x, ...)  UseMethod("likelihood", x)
 
 likelihood.singleton = function(x, locus1, logbase=NULL, ...) {
-   if(is.null(locus1) || all(locus1==0)) 
-      return(if (is.numeric(logbase)) 0 else 1)
+    if(is.null(locus1) || all(locus1==0)) 
+        return(if (is.numeric(logbase)) 0 else 1)
    
-   m = locus1
-   chrom = as.integer(attr(m, 'chrom'))
-   afreq = attr(m, 'afreq') 
-   if(identical(chrom, 23L) && x$pedigree[, 'SEX']==1) {# X chrom and male
-      if(all(m>0) && m[1]!=m[2]) stop("Heterozygous genotype detected for X-linked marker in male individual.")
-      res = afreq[m[1]]
-   }
-   else 
-      if (0 %in% m) 
-         res = afreq[m[m!=0]]
-      else 
-         res = prod(afreq[m]) * ifelse(m[1]!=m[2], 2, 1)  # assumes HWE
-   return(if (is.numeric(logbase)) log(res, logbase) else res)
+    m = locus1
+    chrom = as.integer(attr(m, 'chrom'))
+    afreq = attr(m, 'afreq') 
+    if(identical(chrom, 23L) && x$pedigree[, 'SEX']==1) {# X chrom and male
+        if(all(m>0) && m[1]!=m[2]) stop("Heterozygous genotype detected for X-linked marker in male individual.")
+        res = afreq[m[1]]
+    }
+    else 
+        if (0 %in% m) {
+            p = afreq[m[m!=0]]
+            res = p^2 + 2*p*(1-p)
+        }
+        else 
+            res = prod(afreq[m]) * ifelse(m[1]!=m[2], 2, 1)  # assumes HWE
+    return(if (is.numeric(logbase)) log(res, logbase) else res)
 }
 
 

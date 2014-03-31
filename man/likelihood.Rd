@@ -85,13 +85,13 @@ Magnus Dehli Vigeland
 \code{\link{lod}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped, model=1) #dominant model
 
 lod1 = likelihood_LINKAGE(x, marker=1, theta=0, logbase=10) - 
        likelihood_LINKAGE(x, marker=1, theta=0.5, logbase=10)
 lod2 = lod(x, markers=1, theta=0)
-# should be the same:
+
+# these should be the same:
 stopifnot(identical(lod1, as.numeric(lod2)), round(lod1, 2)==0.3)
 }
 

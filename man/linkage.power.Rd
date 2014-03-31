@@ -75,16 +75,15 @@ Magnus Dehli Vigeland
 \code{\link{linkdat}}, \code{\link{linkageSim}}
 }
 \examples{
-# Note: In the examples below N is set very low in order to reduce time consumption. Increase N to get more interesting results.
+# Note: In the examples below N is set very low in order to reduce time consumption. 
+# Increase N to get more interesting results.
+
 x = nuclearPed(3)
 x = swapAff(x, c(1,3,4))
 x = setModel(x, 1) # Autosomal dominant
 linkage.power(x, N=1)
 
-%power.varyPar(x, N=5, varyPar="f1", values=seq(0,1,length=11))
-
 # X-linked recessive example:
-data(Xped)
 y = linkdat(Xped, model=4)
 linkage.power(y, N=1)
 

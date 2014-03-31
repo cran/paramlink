@@ -1,88 +1,74 @@
-merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="", verbose=FALSE, generate.files=TRUE, cleanup=generate.files, outputfile="") {
+merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="", verbose=FALSE, generate.files=TRUE, cleanup=generate.files, logfile="") {
 	
 	clean = function(cleanup, verbose, files) if (cleanup) {unlink(files); if(verbose) cat("Files successfully removed\n")}
 	
 	if (x$nMark == 0) stop("No markers exist for this linkdat object.")
 	if(model && is.null(x$model)) stop("No model is set for this object")
-   x = removeMarkers(x, seq_len(x$nMark)[-markers])
+    x = removeMarkers(x, seq_len(x$nMark)[-markers])
 	map = .getMap(x, na.action=1, verbose=F)
 	mNames = map$MARKER
 	
 	extensions = c("ped", "dat", "map", "freq", if(model) "model")
 	
 	if (generate.files) {
-		files = write.linkdat(x, prefix="merlin", what=extensions, merlin=TRUE)
+		files = write.linkdat(x, prefix="_merlin", what=extensions, merlin=TRUE)
 		if (verbose) {cat("Files successfully generated:\n");  print(files)}
 	}	
 	
-	options = paste(options, "--markerNames --quiet")
+	options = paste(options, "--markerNames --quiet ")
 	
 	if (nonz_theta <- any(theta > 0)) {
 		if (length(markers) > 1) {
 			clean(cleanup, verbose, files)
 			stop("Nonzero 'theta' values are possible only with a single marker.")
 		}
+        if (any(theta > 0.5)) {
+			clean(cleanup, verbose, files)
+			stop("Recombination fractions cannot exceed 0.5.")
+		}
 		pos = as.numeric(map[1, 3]) - 50 * log(1 - 2 * theta) #Haldane's map: Converting rec.fractions to cM positions.
 		options = paste(options, " --positions:", paste(pos, collapse=","), sep="")
 	}
 	
 	program = if(identical(x$model$chrom, "X")) "minx" else "merlin"
-   command = paste(program, " -p merlin.ped -d merlin.dat -m merlin.map -f merlin.freq ", 
-					if(model) "--model merlin.model ", options, sep="")
+    command = paste(program, " -p _merlin.ped -d _merlin.dat -m _merlin.map -f _merlin.freq ", 
+					if(model) "--model _merlin.model --tabulate ", options, sep="")
 					
 	if (verbose) cat("\nExecuting the following command:\n", command, "\n\n", sep="")
 
-	merlinout = system(command, intern=T)
+	merlinout = suppressWarnings(system(command, intern=T))
 	clean(cleanup, verbose, files)
-	if (nzchar(outputfile))		write(merlinout, outputfile)
-	if (any(substr(merlinout,1,11) == "FATAL ERROR")) stop(paste(merlinout, collapse="\n"))
+	if (nzchar(logfile))		write(merlinout, logfile)
+	if (any(substr(merlinout,1,11) == "FATAL ERROR")) {
+        cat("\n====================================\n", paste(merlinout[-(2:10)], collapse="\n"), 
+        '====================================\n\n'); return(invisible())}
 	if(verbose) {cat("Merlin run completed\n"); print(merlinout)}
 	if (!is.na(skipped <- which(substr(merlinout,3,9) == "SKIPPED")[1])) stop(paste(merlinout[c(skipped-1, skipped)], collapse="\n"))
 	
 	if(!model) return(merlinout)
 
 	##Extract LOD scores
-	nchars = nchar(merlinout)
-	chromStarts = which(substr(merlinout, 1, 20) == "Analysing Chromosome")
-	chroms = as.numeric(substr(merlinout[chromStarts], 22, nchars[chromStarts]))
-	if(length(chromStarts)==0) {
-		chromStarts = match("Parametric Analysis", substr(merlinout, 1, 19))
-		chroms = map$CHR[1]
-	}
-	
-	lods.list = list()
-	for(i in seq_along(chromStarts)) {
-		outp = merlinout[-(1:chromStarts[i])]
-		LODstart = 1 + match("POSITION", substr(outp,8,15))
-		LODstop = LODstart -1 + match("", outp[-(1:LODstart)])
-		
-		lods.list = c(lods.list, lapply(outp[LODstart:LODstop], function(char) 
-			c(chroms[i], scan(textConnection(char), what = "", quiet=TRUE)[1:2])))
-	}
-	lods.df = do.call(rbind, lods.list)
-	
-	mlods = lods.df[, 3]
-	mlods[mlods == "-INFINITY"] = -Inf
-
-	if(nonz_theta) {
+    res = read.table("merlin-parametric.tbl", sep="\t", header=T, colClasses=c('numeric','numeric','character','NULL','numeric','NULL','NULL')) # chrom, pos, marker names and LOD.
+    if (cleanup) unlink("merlin-parametric.tbl")
+    
+    if(nonz_theta) {
 		mlodsdim = c(length(theta), 1)
 		dimnam = list(theta, mNames)
 	}
 	else {
-		if(lods.df[1,2] %in% mNames) 
-			markernames = lods.df[, 2]
-		else {
-			markernames = paste(lods.df[, 1], lods.df[, 2], sep="_") #if first "POSITION" entry is not a marker name, create new map with markernames formed as "chr_pos".
-			map = data.frame(CHR=as.numeric(lods.df[, 1]), MARKER = markernames, POS = as.numeric(lods.df[, 2]))
-		}
-		mlodsdim = c(1, length(mlods))
-		dimnam = list(0, markernames)
-	}
-
-	res = structure(as.numeric(mlods), dim=mlodsdim, dimnames=dimnam, analysis="mlink", map=map, class="linkres")
-	res
+        markernames = res$LABEL
+        if(!all(markernames %in% mNames)) {
+            markernames = paste(res$CHR, res$POS*100, sep="_") # create new map with markernames formed as "chr_pos". Merlin weirdness: POS is in Morgans??
+            map = data.frame(CHR=res$CHR, MARKER = markernames, POS = res$POS*100)
+        }
+        mlodsdim = c(1, nrow(res))
+        dimnam = list(0, markernames)
+    }
+    
+    lodres = structure(res$LOD, dim=mlodsdim, dimnames=dimnam, analysis="mlink", map=map, class="linkres")
+    return(lodres)
 }
-
+    
 # .superlink = function(x, theta=0) {
 	# write.table(as.data.frame(x, famid=TRUE, missing=0), file="superlink.preR", col.names=F, row.names=F, quote=F)
 	# gap:::makeped("superlink.preR", "superlink.pedR", 1)

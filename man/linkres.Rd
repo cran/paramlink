@@ -45,7 +45,6 @@ Magnus Dehli Vigeland
 \code{\link{lod}}, \code{\link{merlin}}
 }
 \examples{
-data(toyped)
 x = linkdat(toyped, model=1)
 lods = lod(x, theta="max")
 summary(lods)
