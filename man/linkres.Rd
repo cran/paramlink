@@ -4,6 +4,7 @@
 \alias{print.linkres}
 \alias{summary.linkres}
 \alias{plot.linkres}
+\alias{peakSummary}
 \title{
 S3 methods for class 'linkres'.
 }
@@ -18,6 +19,8 @@ Functions for printing, summarizing and plotting the results of a linkage analys
 \method{print}{linkres}(x, ...)
 
 \method{summary}{linkres}(object, ...)
+
+peakSummary(x, threshold, width=1, physmap=NULL)
 }
 \arguments{
   \item{x, object}{
@@ -29,9 +32,18 @@ a logical, indicating if the data frame should be sorted according to map positi
   \item{chrom}{
 NULL, or a numeric containing chromosome numbers. In the latter case only results for the markers on the indicated chromosomes will be plotted.
 }
- \item{ylim}{
+  \item{ylim}{
 NULL, or a numeric of length 2: to be passed on to plot.default.
 }
+ \item{threshold}{
+a single numeric. A peak is defined as a regions of at least \code{width} consecutive markers LOD score above \code{threshold}.
+} 
+  \item{width}{
+a single numeric.
+} 
+  \item{physmap}{
+a matrix or data frame with three columns: Marker name, chromosome and physical position. This argument is optional.
+} 
   \item{\dots}{
 further arguments.
 }

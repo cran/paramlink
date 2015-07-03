@@ -1,16 +1,19 @@
 \name{merlin}
 \alias{merlin}
+\alias{merlinUnlikely}
 \title{
-MERLIN wrapper function
+MERLIN wrappers
 }
 \description{
-This function requires MERLIN to be installed and correctly pointed to in the PATH environment variable. 
+These functions require MERLIN to be installed and correctly pointed to in the PATH environment variable. 
 The required input files are automatically created (in the working directory) and deleted afterwards. The MERLIN command is executed via a call to system().  
 }
 \usage{
 merlin(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, 
        options="", verbose=FALSE, generate.files=TRUE, 
        cleanup=generate.files, logfile="")
+
+merlinUnlikely(x, remove=FALSE, verbose=!remove)
 }
 
 \arguments{
@@ -42,9 +45,13 @@ a logical: Should the files be deleted automatically after the MERLIN run?
   \item{logfile}{
 a character. If this is given, the MERLIN screen output will be written to a file with this name.
 }
+  \item{remove}{
+a logical. If FALSE, the function returns the indices of markers found to unlikely. 
+If TRUE, a new \code{linkdat} object is returned, where the unlikely markers have been deleted.
+}
 }
 \details{
-For this function to work, MERLIN must be installed and the path to merlin.exe included in the PATH variable. The function is first and foremost a wrapper to the parametric linkage functionality of MERLIN. By default the following MERLIN command is run (via a call to \code{\link{system}}) after creating appropriate files in the current working directory:
+For these functions to work, MERLIN must be installed and the path to merlin.exe included in the PATH variable. The \code{merlin} function is first and foremost a wrapper to the parametric linkage functionality of MERLIN. By default the following MERLIN command is run (via a call to \code{\link{system}}) after creating appropriate files in the current working directory:
 
 \code{merlin -p _merlin.ped -d _merlin.dat -m _merlin.map -f _merlin.freq --model _merlin.model --tabulate --markerNames --quiet}
 
@@ -53,9 +60,13 @@ The resulting multipoint LOD scores are extracted from the output and returned i
 Additional command parameters can be passed on using the \code{options} argument (this is simply pasted onto the MERLIN command, so dashes must be included). For example, to obtain singlepoint LOD scores instead of multipoint, set \code{options="--singlepoint"}. (The singlepoint scores should agree with the results of \code{lod(x)}, except in cases where some individuals have partial genotypes (see Examples).)
 
 If \code{model=FALSE} the \code{--model merlin.model} part is removed from the MERLIN command above. This is necessary for some calculations, e.g. likelihoods (see Examples).
+
+The \code{merlinUnlikely} function is a wrapper for MERLIN's "--error" command. The syntax is similar to that of \code{\link{mendelianCheck}}.
 }
 \value{
 If \code{model=TRUE}, a \code{\link{linkres}} object. Otherwise a character containing the complete MERLIN output.
+
+For \code{merlinUnlikely}, a numeric containing the indices of the unlikely, or (if \code{remove=TRUE}) a new \code{linkdat} object where the unlikely markers are removed.
 }
 \references{
 \url{http://www.sph.umich.edu/csg/abecasis/Merlin/}

@@ -189,7 +189,8 @@ marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chr
     .createMarkerObject(m, missing=missing, alleles=alleles, afreq=afreq, chrom=chrom, name=name, pos=pos)
 }
 
-removeMarkers <- function(x, markers) {
+removeMarkers <- function(x, markers=NULL, markernames=NULL, chroms=NULL, from=NULL, to=NULL) {
+    if(is.null(markers)) markers = getMarkers(x, markernames, chroms, from, to)
     if(is.null(markers) || length(markers)==0) return(x)
     m = x$markerdata
     m[markers] = NULL
@@ -291,12 +292,16 @@ modifyMarker = function(x, marker, ids, genotype, alleles, afreq, chrom, name, p
     }
 }
 
-getMarkers = function(x, markernames=NULL, chrom=NULL, from=NULL, to=NULL) {
+getMarkers = function(x, markernames=NULL, chroms=NULL, from=NULL, to=NULL) {
     mnos = seq_len(x$nMark)
-    if(!is.null(markernames)) 
+    if(!is.null(markernames)) {
+        if(length(markernames)==0) return(numeric(0))
         mnos = mnos[match(markernames, unlist(lapply(x$markerdata, function(m) attr(m, 'name'))), nomatch=0)]
-    if(!is.null(chrom)) 
-        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'chrom'))) %in% chrom]
+    }
+    if(!is.null(chroms)) {
+        if(length(chroms)==0) return(numeric(0))
+        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'chrom'))) %in% chroms]
+    }
     if(!is.null(from)) 
         mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'pos'))) >= from]
     if(!is.null(to)) 
@@ -453,9 +458,13 @@ mendelianCheck = function(x, remove=FALSE, verbose=!remove) {
     else return(err_index)
 }
 
-.merlin.unlikely <- function(x, verbose=F) {
+merlinUnlikely <- function(x, remove=FALSE, verbose=!remove) {
     merlin(x, model=F, options="--error --prefix _merlinerror", verbose=verbose)
     err = read.table("_merlinerror.err", header=T, as.is=T)
     unlink("_merlinerror.err")
-    getMarkers(x, markernames=err$MARKER)
+    if(verbose) print(err)
+    if(remove) return(removeMarkers(x, markernames=err$MARKER))
+    else return(getMarkers(x, markernames=err$MARKER))
 }
+
+.merlin.unlikely = merlinUnlikely

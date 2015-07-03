@@ -16,7 +16,9 @@ relabel <- function(x, new, old) {
     ped[, c('FID','MID')][parents %in% old]   <- new[match(parents, old, nomatch=0)] #relabeling parents
     
     if(islinkdat) {
-        attr(ped, "available") = new[match(avail, old)]
+        oldavail = avail[avail %in% old]
+        avail[avail %in% old] = new[match(oldavail, old)]
+        attr(ped, "available") = avail
         return(restore_linkdat(ped))
     }
     else return(ped)

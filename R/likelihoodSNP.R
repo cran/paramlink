@@ -92,7 +92,7 @@
     else {
         origs = match(dups[, 1], x$orig.ids)
         copies = match(dups[, 2], x$orig.ids)
-        sumover = .my.grid(lapply(seq_along(origs), function(i) intersect(hap_list[[origs[i]]], hap_list[[copies[i]]])))
+        sumover = fast.grid(lapply(seq_along(origs), function(i) intersect(hap_list[[origs[i]]], hap_list[[copies[i]]])))
         sumoverlist = lapply(seq_len(nrow(sumover)), function(ri) sumover[ri, ])
         likelihood = 0
         for (r in sumoverlist) {

@@ -1,5 +1,8 @@
-importFrom(kinship2, pedigree, plot.pedigree, kinship)
-importFrom(maxLik, maxLik)
+importFrom("graphics", "abline", "axis", "contour", "grconvertX", "grconvertY", "layout", "legend", "mtext", "par", "plot", "points", "rect", "text")
+importFrom("stats", "optimize", "rpois", "runif")
+importFrom("utils", "combn", "head", "read.table", "write.table")
+importFrom("kinship2", "kinship", "pedigree", "plot.pedigree")
+importFrom("maxLik", "maxLik")
 
 exportPattern("^[[:alpha:]]+")
 

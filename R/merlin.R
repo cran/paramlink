@@ -68,19 +68,3 @@ merlin = function(x, markers=seq_len(x$nMark), model=TRUE, theta=NULL, options="
     lodres = structure(res$LOD, dim=mlodsdim, dimnames=dimnam, analysis="mlink", map=map, class="linkres")
     return(lodres)
 }
-    
-# .superlink = function(x, theta=0) {
-	# write.table(as.data.frame(x, famid=TRUE, missing=0), file="superlink.preR", col.names=F, row.names=F, quote=F)
-	# gap:::makeped("superlink.preR", "superlink.pedR", 1)
-	
-	# cat("2 0 0 5 0 \n0 0.0 0.0 0 \n1 2 \n1 2\n", 
-	# paste(format(c(1-x$model$dfreq, x$model$dfreq), scientific=F, decimal.mark="."), collapse=" "),
-	# "\n1\n", paste(format(x$model$penetrances, scientific=F, decimal.mark="."), collapse=" "),
-	# "\n3 ", x$model$nallel, "\n", paste(format(as.numeric(x$model$afreq), scientific=F, decimal.mark="."), collapse=" "),
-	# "\n0 0\n", paste(format(theta, scientific=F, decimal.mark="."), collapse=" "),
-	# "\n1 .51 0.5\n", sep="", file="superlink.datR")
-	
-	# super = system("superlink superlink.datR superlink.pedR", intern=T)
-	# file.remove(c("superlink.preR","superlink.datR","superlink.pedR"))
-	# super
-# }

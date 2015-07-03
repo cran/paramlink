@@ -74,7 +74,7 @@ power.varyPar <- function(x, N=100, varyPar, values, all=FALSE, loop_breakers=NU
 	if(missing(theta)) theta=0
 	
 	arglist = list(f0,f1,f2,dfreq,afreq1,theta)
-	arglength = sapply(arglist, length)
+	arglength = lengths(arglist)
 	varyP = which(arglength > 1)
 	if(any(arglength < 1) || length(varyP) == 0 || length(varyP) > 2) stop("Something is wrong with the input parameters: See ?lod.varyParam")
 	

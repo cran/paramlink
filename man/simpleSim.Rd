@@ -46,7 +46,7 @@ a \code{linkdat} object equal to \code{x} in all respects except its \code{marke
 Magnus Dehli Vigeland
 }
 \seealso{
-\code{\link{markerSim}},\code{\link{linkageSim}}
+\code{\link{markerSim}}, \code{\link{linkageSim}}
 }
 \examples{
 x = nuclearPed(1)

@@ -22,11 +22,11 @@ marker(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0,
 
 addMarker(x, m, alleles=NULL, afreq=NULL, missing=0)
 
-setMarkers(x, m, annotations=NULL, missing = 0)
+setMarkers(x, m, annotations=NULL, missing=0)
 
-getMarkers(x, markernames=NULL, chrom=NULL, from=NULL, to=NULL)
+getMarkers(x, markernames=NULL, chroms=NULL, from=NULL, to=NULL)
 
-removeMarkers(x, markers)
+removeMarkers(x, markers, markernames=NULL, chroms=NULL, from=NULL, to=NULL)
 
 modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
 
@@ -67,6 +67,9 @@ a list of marker annotations.
   \item{markernames}{
 NULL or a character vector.
 }
+  \item{chroms}{
+NULL or a numeric vector of chromosome numbers.
+}
   \item{from}{
 NULL or a single numeric.
 }
@@ -106,8 +109,8 @@ The \code{marker} function returns an object of class \code{marker}: This is a n
 For \code{addMarker}, \code{setMarkers}, \code{removeMarkers}, \code{modifyMarker}, \code{modifyMarkerMatrix} and \code{swapGenotypes}, a \code{linkdat} object is returned, whose \code{markerdata} element has been set/modified. 
 
 For \code{getMarkers} a numeric vector containing marker numbers (i.e. their indices in \code{x$markerdata}) for the markers whose
-"name" attribute is contained in \code{markernames}, "chrom" attribute is contained in \code{chrom}, and "pos" attribute is between
-\code{from} and \code{to}. NULL arguments are skipped, so \code{getMarkers(x)} will return \code{1:x$nMark} (i.e. all markers).
+"name" attribute is contained in \code{markernames}, "chrom" attribute is contained in \code{chroms}, and "pos" attribute is between
+\code{from} and \code{to}. NULL arguments are skipped, so \code{getMarkers(x)} will return \code{seq_len(x$nMark)} (i.e. all markers).
 
 For \code{mendelianCheck}, a numeric containing the indices of the markers that did not pass the tests, or (if \code{remove=TRUE}) a new \code{linkdat} object where the failing markers are removed.
 }
@@ -119,7 +122,6 @@ Magnus Dehli Vigeland}
 }
 \examples{
 x = linkdat(toyped)
-x
 x = removeMarkers(x,1) # removing the only marker of x.
 x
 

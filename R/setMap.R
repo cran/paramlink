@@ -58,7 +58,7 @@ readDatfile = function(datfile, chrom, write_to=NULL) {
 	map = data.frame(CHR=chrom, MARKER=markernames, POS=pos, stringsAsFactors=F)
 	
 	freqlist = lapply(dat[7 + xlinked + (1:nMark)*2], function(r) as.numeric(r))
-    nalls = sapply(freqlist, length)
+    nalls = lengths(freqlist, use.names=F)
     L = sum(nalls) + length(nalls)
     cum = cumsum(c(1, nalls+1))
     length(cum) = length(nalls) #remove last

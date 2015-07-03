@@ -35,38 +35,74 @@ as.data.frame.linkres = function(x, ..., sort=TRUE) {
 
 lod.peaks = function(x, threshold, width=1) { # x et linkres objekt, eller data.frame med CHR, POS, LOD
    
-   peak1chr = function(xchr, threshold, width) { # x must be sorted!
-      rl = rle(xchr$LOD >= threshold)
-      while(1) {
-         short = rl$values & (rl$lengths < width)
-         if(any(short)) {
-            rl$values[short] <- FALSE
-            rl = rle(inverse.rle(rl))
-         } else break
-      }
-      
-      xchr_nrow = nrow(xchr)
-      if(!any(rl$values)) return(NULL)
-      start_ind = c(0, cumsum(rl$lengths))[which(rl$values)]
-      stop_ind = start_ind + rl$lengths[rl$values] + 1 # plus 1 to compensaate for endpoint[1]
-      L = length(start_ind)
-      if(start_ind[1]==0)       stop_ind[1] = stop_ind[1]-1
-      if(stop_ind[L] > xchr_nrow) stop_ind[L] = xchr_nrow
-      lapply(1:L, function(i) {p = xchr[start_ind[i]:stop_ind[i], ,drop=F]; rownames(p)=NULL; p})
-   }
-   
-   
-   df = as.data.frame(x)
-   df = df[!is.na(df$LOD), ]
-   chrs = unique.default(df$CHR)
-   res = list()
-   for(chr in chrs) {
-      dfchr = df[df$CHR==chr, ]
-      res = c(res, peak1chr(dfchr, threshold=threshold, width=width))
-   }
-   res
+    peak1chr = function(xchr, threshold, width) { # x must be sorted!
+        rl = rle(xchr$LOD >= threshold)
+        while(1) {
+            short = rl$values & (rl$lengths < width)
+            if(any(short)) {
+                rl$values[short] <- FALSE
+                rl = rle(inverse.rle(rl))
+            } else break
+        }
+        xchr_nrow = nrow(xchr)
+        if(!any(rl$values)) 
+            return(NULL)
+        start_ind = c(0, cumsum(rl$lengths))[which(rl$values)]
+        stop_ind = start_ind + rl$lengths[rl$values] + 1 # plus 1 to compensate for endpoint[1]
+        lapply(1:length(start_ind), function(i) {
+            strt = start_ind[i]
+            stp = stop_ind[i]
+            telomeric = c(if(strt == 0) "start", if(stp > xchr_nrow) "end")
+            if(length(telomeric) == 0) telomeric="no"
+            strt = max(strt, 1)
+            stp = min(stp, xchr_nrow)
+            structure(xchr[strt:stp, ,drop=F], rownames=NULL, telomeric=telomeric)
+        })
+    }
+    df = as.data.frame(x)
+    df = df[!is.na(df$LOD), ]
+    chrs = unique.default(df$CHR)
+    res = list()
+    for(chr in chrs) {
+        dfchr = df[df$CHR==chr, ]
+        res = c(res, peak1chr(dfchr, threshold=threshold, width=width))
+    }
+    res
 }    
 
+peakSummary = function(x, threshold, width=1, physmap=NULL) {
+    if (inherits(x, 'linkres')) {
+        if(is.null(threshold)) stop('argument "threshold" is missing, with no default') 
+        x = lod.peaks(x, threshold, width)
+    }
+    dat = lapply(x, function(df) {
+        n = nrow(df)
+        chr = df$CHR[1]
+        from_marker = df$MARKER[1]
+        from_cm = df$POS[1]
+        to_marker = df$MARKER[n]
+        to_cm = df$POS[n]
+        from_lod = df$LOD[1]
+        max_lod = max(df$LOD)
+        to_lod =df$LOD[n]
+        L_cm = to_cm - from_cm
+        telom = attr(df, 'telomeric')
+        data.frame(CHR=chr, FROM_MARKER=from_marker, TO_MARKER=to_marker, FROM_CM=from_cm, 
+                   TO_CM=to_cm, TELOMERIC=telom, L_CM=L_cm, N=n, FROM_LOD=from_lod, MAX_LOD=max_lod, TO_LOD=to_lod, stringsAsFactors=F)
+    })
+    a = do.call(rbind, dat)
+    if(!is.null(physmap)) {
+        if(is.matrix(physmap)) physmap=as.data.frame(physmap)
+        if(is.character(physmap)) physmap = read.table(physmap, header=T, as.is=T)
+        if(is.data.frame(physmap)) {
+            from_bp = physmap[match(a$FROM_MARKER, physmap[,1]), 3]
+            to_bp = physmap[match(a$TO_MARKER, physmap[,1]), 3]
+            a = cbind(a, FROM_BP=from_bp, TO_BP=to_bp)
+            a = a[,c(1:5,12:13,6:11)]
+        }
+    }
+    a
+}
 
 
 .getMap = function(x, markers=seq_len(x$nMark), na.action=0, verbose=TRUE) {

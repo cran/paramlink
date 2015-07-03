@@ -80,7 +80,7 @@
    N = length(afreq)
    G = N*(N+1)/2 # number of marker genotypes
    Ghet = N*(N-1)/2  # number of heterozygous genotypes
-   gtMatr = .allGenotypes(N)  # matrix with 2 columns and G rows
+   gtMatr = allGenotypes(N)  # matrix with 2 columns and G rows
 	
    gtnames = paste(letters[gtMatr[,1]], letters[gtMatr[,2]], sep="")
    haplonames = paste(rep(gtnames[1:N], each=3), c('DD','DN','NN'), sep="")
@@ -175,7 +175,7 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
     else {
         origs = match(dups[, 1], x$orig.ids)
         copies = match(dups[, 2], x$orig.ids)
-        loopgrid = .my.grid(lapply(seq_along(origs), function(i)  { 
+        loopgrid = fast.grid(lapply(seq_along(origs), function(i)  { 
                   seq_along(hap_list[[origs[i]]])[hap_list[[origs[i]]] %in% hap_list[[copies[i]]]] 
         }), as.list=TRUE)
         likelihood = 0
@@ -201,22 +201,22 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
 }
 
 .haplonames = function(n) { # TODO Unngaa paste.....tar mye tid i lod().
-   gtMatr = .allGenotypes(n)
-   gt = paste(letters[gtMatr[,1]], letters[gtMatr[,2]], sep="")
+   gtMatr = allGenotypes(n)
+   gt = paste0(letters[gtMatr[,1]], letters[gtMatr[,2]])
    dishom = c('DD','DN','NN'); dishet = c('DD','DN','ND','NN')
-   res = paste(rep(gt[1:n], each=3), dishom, sep="")
+   res = paste0(rep(gt[1:n], each=3), dishom)
    if(n > 1) 
-      res = c(res, paste(rep(gt[-(1:n)], each=4), dishet, sep=""))
+      res = c(res, paste0(rep(gt[-(1:n)], each=4), dishet))
    res
 }
 
 .TRmatrNEW = function(theta, n, chrom=c('AUTOSOMAL', 'X')) { 
-	if(!is.numeric(theta)) cat('theta',theta,'hva var det?')
+   if(!is.numeric(theta)) cat('theta',theta,'hva var det?')
    stopifnot(is.numeric(theta), length(theta)==1, theta >= 0, is.numeric(n), length(n)==1, n > 0)
    # n = #marker alleles
    k = n*(2*n + 1) # = number of haplotype pairs with marker and disease locus.
-   haplo.single = paste(rep(letters[1:n], each=2), c('D','N'), sep="")
-	haplo.allpairs = .haplonames(n) 
+   haplo.single = paste0(rep(letters[1:n], each=2), c('D','N'))
+   haplo.allpairs = .haplonames(n) 
    #n=3 --> c('AADD','AADN','AANN','BBDD','BBDN','BBNN', 'CCDD','CCDN','CCNN', 'ABDD','ABDN','ABND','ABNN', 'ACDD','ACDN','ACND','ACNN', 'BCDD','BCDN','BCND','BCNN') 
    homD = c(1, .5, 0); homN = c(0, .5, 1); hom0 = c(0,0,0)
    het1D = c(.5, .5*(1-theta), .5*theta, 0)# e.g. ABDD, ABDN, ABND, ABNN -> AD 
@@ -258,12 +258,12 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
    
    chrom = match.arg(chrom)
    switch(chrom, 
-	AUTOSOMAL = {
+   AUTOSOMAL = {
       T <- numeric(k^3); dim(T) <- rep(k, 3); dimnames(T) <- list(haplo.allpairs, haplo.allpairs, haplo.allpairs)
-		T[,,'aaDD'] <- h[,'aD'] %*% t.default(h[,'aD'])
-		T[,,'aaDN'] <- h[,'aD'] %*% t.default(h[,'aN']) + h[,'aN'] %*% t.default(h[,'aD'])
-		T[,,'aaNN'] <- h[,'aN'] %*% t.default(h[,'aN'])
-		if(n >= 2) {
+      T[,,'aaDD'] <- h[,'aD'] %*% t.default(h[,'aD'])
+      T[,,'aaDN'] <- h[,'aD'] %*% t.default(h[,'aN']) + h[,'aN'] %*% t.default(h[,'aD'])
+      T[,,'aaNN'] <- h[,'aN'] %*% t.default(h[,'aN'])
+      if(n >= 2) {
          T[,,'bbDD'] <- h[,'bD'] %*% t.default(h[,'bD'])
          T[,,'bbDN'] <- h[,'bD'] %*% t.default(h[,'bN']) + h[,'bN'] %*% t.default(h[,'bD'])
          T[,,'bbNN'] <- h[,'bN'] %*% t.default(h[,'bN'])
@@ -271,7 +271,7 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
          T[,,'abDN'] <- h[,'aD'] %*% t.default(h[,'bN']) + h[,'bN'] %*% t.default(h[,'aD'])
          T[,,'abND'] <- h[,'aN'] %*% t.default(h[,'bD']) + h[,'bD'] %*% t.default(h[,'aN'])
          T[,,'abNN'] <- h[,'aN'] %*% t.default(h[,'bN']) + h[,'bN'] %*% t.default(h[,'aN'])
-		}
+      }
       if(n >= 3) {
          T[,,'ccDD'] <- h[,'cD'] %*% t.default(h[,'cD'])
          T[,,'ccDN'] <- h[,'cD'] %*% t.default(h[,'cN']) + h[,'cN'] %*% t.default(h[,'cD'])
@@ -303,10 +303,10 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
          T[,,'cdNN'] <- h[,'cN'] %*% t.default(h[,'dN']) + h[,'dN'] %*% t.default(h[,'cN'])
       }
       return(T)
-	}, 
+   }, 
    X = { 
       TR_f <- numeric(2*n*k^2); dim(TR_f) <- c(2*n,k,k); dimnames(TR_f) <- list(haplo.single, haplo.allpairs, haplo.allpairs)
-		if(n==1) {
+      if(n==1) {
          TR_f['aD', , c('aaDD', 'aaDN')] <- h
          TR_f['aN', , c('aaDN', 'aaNN')] <- h
       }
@@ -334,14 +334,14 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
          TR_f['dD', , c('adDD','adND','bdDD','bdND','cdDD','cdND','ddDD','ddDN')] <- h 
          TR_f['dN', , c('adDN','adNN','bdDN','bdNN','cdDN','cdNN','ddDN','ddNN')] <- h 
       }
-		return(list(male=h, female=TR_f))
-	})
+      return(list(male=h, female=TR_f))
+   })
 }
 
 
 
 .diallel2genoNEW <- function(marker, n) { #marker: a numerical nInd * 2 matrix   
-	# Coding genotypes as single integer by interpreting the allele pair as an integer written in base n+1.
+   # Coding genotypes as single integer by interpreting the allele pair as an integer written in base n+1.
    if (n == 1) {
       # Target code 00=0, 11=1, 01/10=2  
       # Base 2: 00=0, 01=1, 10=2, 11=3
@@ -363,10 +363,10 @@ likelihood_LINKAGE = function (x, marker, theta = NULL, afreq = NULL, logbase = 
 }
 
 .geno2diallelNEW <- function(codedgenos, n) { #input: matrix of single-numerical genotypes. 
-	codedgenos = as.matrix(codedgenos)
+   codedgenos = as.matrix(codedgenos)
    ncols = ncol(codedgenos)
    #Ouput: Matrix with twice the number of columns, decoded as 1 -> 1 1, 2 -> 1 2, 3 -> 2 2, 4 -> 1 0, 5 -> 2 0
-	if(n==1)
+   if(n==1)
       gt=matrix(c(0,0, 1,1, 1,0), nrow=2)
    else if(n==2)
       gt=matrix(c(0,0, 1,1, 2,2, 1,2, 1,0, 2,0), nrow=2)

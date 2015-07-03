@@ -56,7 +56,7 @@
 		
 		# pre-calculate probabilities for the first 'init' individuals (big time saver!)
 		init <- which.min(3^seq_along(sim_indivs) + 3*N*(length(sim_indivs)-seq_along(sim_indivs)))  #optimal 'init' minimizes the number of likelihood() calls
-		initg <- t(.my.grid( rep(list(1:3), init ) ))
+		initg <- t.default(fast.grid( rep(list(1:3), init ) ))
 		initp <- apply(initg, 2, function(g) { 
 			zgeno[ sim_indivs[1:init] ] <- g;   
 			.likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
@@ -81,7 +81,7 @@
 		init_m = calls.min[1]-1; init_f = calls.min[2]-1
 		init_indivs = c(males[seq_len(init_m)], females[seq_len(init_f)])
 		# pre-calculate probabilities for the first 'init' individuals
-		initg <- t(.my.grid( list(1:2, 1:3)[rep(1:2, c(init_m, init_f))] ))
+		initg <- t.default(fast.grid( list(1:2, 1:3)[rep(1:2, c(init_m, init_f))] ))
 		initp <- apply(initg, 2, function(g) { zgeno[ init_indivs ] <- g;   .likelihoodSNP(x, afreq=afreq, singleNum.geno=zgeno, TR.MATR=.TRzero) } )
 
 		# pre-fill the rows of the 'init_indivs' 

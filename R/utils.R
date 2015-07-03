@@ -17,22 +17,20 @@
         cbind(v1,v2, deparse.level=0)
 } 
 
-.allGenotypes = function(n)
-    rbind(cbind(seq_len(n),seq_len(n)), .comb2(n))
+allGenotypes = function(n)
+    rbind(cbind(seq_len(n), seq_len(n)), .comb2(n))
 
 .rand01 = function(n) sample.int(2, size=n, replace=T) - 1 #random 0/1 vector of length n.
     
 .prettycat = function(v, andor)
     switch(min(len <- length(v), 3), toString(v), paste(v, collapse=" and "), paste(paste(v[-len], collapse=", "), andor, v[len]))
     
-.my.grid = function (argslist, as.list=FALSE) {
+fast.grid = function(argslist, as.list=FALSE) {
     nargs <- length(argslist) 
-    if (nargs == 0L) return(matrix(ncol=0, nrow=0))
+    orep <- nr <- prod(lengths(argslist))
+    if (nargs == 0L || nr == 0L) return(matrix(ncol=0, nrow=0))
     
     rep.fac <- 1L
-    orep <- nr <- prod(unlist(lapply(argslist, length)))
-    if(nr==0) return(matrix(ncol=nargs, nrow=0))
-    
     res <- NULL
     for (x in argslist) {
         nx <- length(x)
@@ -44,6 +42,7 @@
     if(as.list) res = lapply(seq_len(nr), function(r) res[r,])
     res
 }
+.my.grid = fast.grid
 
 offspring = function(x, id, original.id=TRUE) {
     if(original.id) id = .internalID(x, id)
@@ -84,7 +83,7 @@ related.pairs = function(x, relation=c('parents', 'siblings', 'grandparents', 'n
                 if(length(ids)==0) NULL else paste(xx$famid, ids, sep="-")})
             avail = avail[!sapply(avail, is.null)]
             fampairs = data.frame(t(.comb2(length(avail)))) # enable use of lapply below
-            interfam = do.call(rbind, lapply(fampairs, function(p) .my.grid(avail[p])))
+            interfam = do.call(rbind, lapply(fampairs, function(p) fast.grid(avail[p])))
             res = rbind(res, interfam)
         }
         return(res)
@@ -102,8 +101,11 @@ related.pairs = function(x, relation=c('parents', 'siblings', 'grandparents', 'n
         avail = .internalID(x, x$available)
         res = res[res[,1] %in% avail & res[,2] %in% avail, , drop=F]
     }
-    if(original.id) res = matrix(x$orig.ids[res], ncol=2)
-    res
+    if(original.id) {
+        res = matrix(x$orig.ids[res], ncol=2)
+        res[res[,1] > res[,2],] = res[res[,1] > res[,2], 2:1]  # sort again
+    }
+    res[order(res[,1], res[,2]),]
 }
 
 unrelated = function(x, id, original.id=TRUE) {

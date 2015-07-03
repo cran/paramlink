@@ -1,5 +1,18 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+2014-08-08: Version 0.9-7
+   * New function: peakSummary() summarising lod score peaks
+   
+   * Fixed bug in related.pairs() causing erroneous classifications of "distant" relationships
+   
+   * Fixed bug in relabel() affecting the "available" attribute
+   
+   * Improved handling of endpoints in lod.peaks()
+   
+   * Improved handling of impossible genotype combinations (e.g. parent=1/1, child=2/2) in the internal function .startdata_MM()
+   
+   * New functions: allGenotypes(), fast.grid() and geno.grid.subset(). These are cleaned-up versions of previous internal functions, and are probably not important to most end users.
+   
 2014-03-31: Version 0.9-6
    * Cleaned up merlin()
    

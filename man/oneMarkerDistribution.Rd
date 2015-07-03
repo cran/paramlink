@@ -26,8 +26,8 @@ The recombination fraction between marker and disease locus. Only relevant if at
 }
  \item{grid.subset}{
 A numeric matrix describing a subset of all marker genotype combinations for the \code{ids} individuals. The matrix should have one column for each of the \code{ids} individuals, 
-and one row for each combination: The genotypes are described in terms of the matrix \code{M = paramlink:::.allGenotypes(n)}, where \code{n} is the number of alleles for the marker. 
-If the entry in column \code{j} is the integer \code{k}, this means that the genotype of individual \code{ids[j]} is row \code{k} of\code{M}.
+and one row for each combination: The genotypes are described in terms of the matrix \code{M = allGenotypes(n)}, where \code{n} is the number of alleles for the marker. 
+If the entry in column \code{j} is the integer \code{k}, this means that the genotype of individual \code{ids[j]} is row \code{k} of \code{M}.
 }
   \item{loop_breakers}{
 A numeric containing IDs of individuals to be used as loop breakers. Relevant only if the pedigree has loops. See \code{\link{breakLoops}}.
@@ -48,7 +48,7 @@ Magnus Dehli Vigeland
 }
 
 \seealso{
-\code{\link{twoMarkerDistribution}}
+\code{\link{twoMarkerDistribution}}, \code{\link{allGenotypes}} 
 }
 \examples{
 x = nuclearPed(2)
@@ -67,7 +67,7 @@ m2 = marker(x, 3:4, c('C','D'), alleles=LETTERS[1:4])
 oneMarkerDistribution(x, ids=1, partialmarker=m2)
 
 # Same as above, but computing only the cases where individual 1 is heterozygous.
-# (The numbers 5:10 refer to the 6 last rows of paramlink:::.allGenotypes(4), 
+# (The numbers 5:10 refer to the 6 last rows of allGenotypes(4), 
 # which contain the heterozygous genotypes.)
 oneMarkerDistribution(x, ids=1, partialmarker=m2, grid.subset=matrix(5:10, ncol=1)) 
 

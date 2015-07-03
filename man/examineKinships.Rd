@@ -64,7 +64,7 @@ An integer: 2 = make new triangle and draw points; 1 = add points to existing tr
 A single numeric or character: Color specification for the points in the plot.
 }
   \item{cex}{
-A single numeric: Point size. (See\code{\link{par}})
+A single numeric: Point size. (See \code{\link{par}})
 }
   \item{\dots}{
 Other arguments.

@@ -75,7 +75,7 @@ linkageSim <- function(x, N=1, available=x$available, afreq=NULL, partialmarker=
 		if(init==0) stop("init = 0")
       init_int = sim_indivs[1:init]
       cost_int = sim_indivs[-(1:init)]
-      initgrid = .my.grid( rep(list(gt_values), init ) )
+      initgrid = fast.grid( rep(list(gt_values), init ) )
    },
 	X = {
 		SEX = x$pedigree[,'SEX']
@@ -92,7 +92,7 @@ linkageSim <- function(x, N=1, available=x$available, afreq=NULL, partialmarker=
 		init_m = calls.min[1] - 1 + loop_m; init_f = calls.min[2] - 1 + loop_f
 		init_int = c(males_int[seq_len(init_m)], females_int[seq_len(init_f)])
       cost_int = setdiff(sim_indivs, init_int)
-      initgrid = .my.grid( list(gt_values_m, gt_values)[rep(1:2, c(init_m, init_f))] )
+      initgrid = fast.grid( list(gt_values_m, gt_values)[rep(1:2, c(init_m, init_f))] )
 	})
    
    if(verbose) cat("\nSimulation order:\n   Precomputing joint probabilities:", .prettycat(x$orig.ids[init_int], 'and'),
