@@ -1,5 +1,13 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+
+2016-04-27: Version 0.9-8
+   * The version of likelihood() for two linked markers previously handled only autosomal markers. This is now extended to X chromosomal markers.
+   
+   * As a result of the above, twoMarkerDistribution() now works for X chromosomal markers.
+   
+   * New utility functions addDaughter() and addSon(). These are wrappers for addOffspring() for the simple case of adding a single child to a single pedigree member. The other parent will be created as a founder.
+
 2014-08-08: Version 0.9-7
    * New function: peakSummary() summarising lod score peaks
    

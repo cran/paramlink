@@ -60,12 +60,12 @@ swapAff <- function(x, ids, newval=NULL) {
 }
 
 
-addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1, verbose=TRUE) {
+addOffspring <- function(x, father, mother, noffs, ids=NULL, sex=1, aff=1, verbose=TRUE) {
     p = as.matrix(x); attrs = attributes(p); nm = x$nMark
     taken <- oldids <- p[,'ID']
     if(!missing(father)) taken = c(taken, father)
     if(!missing(mother)) taken = c(taken, mother)
-    if(!missing(ids)) taken = c(taken, ids)
+    if(!is.null(ids)) taken = c(taken, ids)
     max_id = max(taken)
     
     if(missing(father) && missing(mother)) stop("At least one parent must be an existing pedigree member.")
@@ -75,9 +75,9 @@ addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1, verbose=TR
     if(any(!is.numeric(mother), length(mother)!=1))     stop("Argument 'mother' must be a single integer.")
     if(!any(c(father,mother) %in% oldids))    stop("At least one parent must be an existing pedigree member.")
 
-    if (missing(noffs) && missing(ids)) stop("Number of offspring not indicated.")
+    if (missing(noffs) && is.null(ids)) stop("Number of offspring not indicated.")
     if (missing(noffs)) noffs = length(ids)
-    if (missing(ids)) ids = (max_id+1):(max_id+noffs)
+    if (is.null(ids)) ids = (max_id+1):(max_id+noffs)
     if (length(ids)!=noffs) stop("Length of 'id' vector must equal number of offspring.")
     if (any(ids %in% oldids))    stop(paste("Individual(s)", ids[ids %in% oldids], "already exist(s)."))
 
@@ -92,6 +92,20 @@ addOffspring <- function(x, father, mother, noffs, ids, sex=1, aff=1, verbose=TR
     p = rbind(p, cbind(x$famid, ids, father, mother, sex, aff, matrix(0, ncol=nm*2, nrow=length(ids))))
 
     restore_linkdat(p, attrs=attrs)
+}
+
+addSon = function(x, parent, id=NULL, aff=1, verbose=TRUE) {
+    if(.getSex(x, parent) == 1) 
+        addOffspring(x, father=parent, noffs=1, sex=1, aff=aff, ids=id, verbose=verbose)
+    else 
+        addOffspring(x, mother=parent, noffs=1, sex=1, aff=aff, ids=id, verbose=verbose)    
+}
+
+addDaughter = function(x, parent, id=NULL, aff=1, verbose=TRUE) {
+    if(.getSex(x, parent) == 1) 
+        addOffspring(x, father=parent, noffs=1, sex=2, aff=aff, ids=id, verbose=verbose)
+    else 
+        addOffspring(x, mother=parent, noffs=1, sex=2, aff=aff, ids=id, verbose=verbose)    
 }
 
 addParents <- function(x, id, father, mother, verbose=TRUE) {
@@ -178,3 +192,12 @@ trim <- function(x, keep=c("available", "affected"), return.ids=FALSE, verbose=T
 
     restore_linkdat(trimmed, attrs=attributes(store))
 }
+
+.merge.linkdat = function(x) {# list of linkdats
+    if(!is.list(x) || !all(vapply(x, function(xx) inherits(xx, 'linkdat'), logical(1)))) stop("Input must be a list of linkdat objects")
+    if(length(x)==1) return(x)
+    mnames = lapply(x, function(xx) unlist(lapply(xx$markerdata, attr, 'name')))
+    common = Reduce(intersect, mnames)
+    lapply(x, function(xx) setMarkers(xx, xx$markerdata[getMarkers(xx, common)])) 
+}
+

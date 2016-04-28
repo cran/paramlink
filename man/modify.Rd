@@ -3,6 +3,8 @@
 \alias{swapSex}
 \alias{swapAff}
 \alias{addOffspring}
+\alias{addDaughter}
+\alias{addSon}
 \alias{addParents}
 \alias{removeIndividuals}
 \alias{branch}
@@ -19,6 +21,10 @@ swapAff(x, ids, newval=NULL)
 
 addOffspring(x, father, mother, noffs, ids, sex=1, aff=1, verbose=TRUE) 
 
+addDaughter(x, parent, id=NULL, aff=1, verbose=TRUE) 
+
+addSon(x, parent, id=NULL, aff=1, verbose=TRUE) 
+
 addParents(x, id, father, mother, verbose=TRUE)
 
 removeIndividuals(x, ids, verbose=TRUE)
@@ -31,25 +37,28 @@ relabel(x, new, old)
 }
 \arguments{
   \item{x}{
-a \code{\link{linkdat}} object
+A \code{\link{linkdat}} object
 }
   \item{id, ids}{
-individual ID label(s). In \code{addOffspring} the (optional) \code{ids} argument is used to specify ID labels for the offspring to be created.
+Individual ID label(s). In \code{addOffspring} the (optional) \code{ids} argument is used to specify ID labels for the offspring to be created.
 }
   \item{newval}{
-a numeric, indicating affection status values for the \code{ids} individuals: 1=unaffected, 2=affected, 0=unknown. If NULL, the affection statuses are swapped 1 <-> 2, hence the main use of the \code{newval} argument is to assign 0's.
+A numeric, indicating affection status values for the \code{ids} individuals: 1=unaffected, 2=affected, 0=unknown. If NULL, the affection statuses are swapped 1 <-> 2, hence the main use of the \code{newval} argument is to assign 0's.
 }
   \item{father, mother}{
-integers indicating the IDs of parents. If missing, a new founder individual is created (whose ID will be 1+the largest ID already in the pedigree).
+Integers indicating the IDs of parents. If missing, a new founder individual is created (whose ID will be 1+the largest ID already in the pedigree).
 }
  \item{noffs}{
-a single integer indicating the number of offspring to be created.
+A single integer indicating the number of offspring to be created.
 }
    \item{sex, aff}{
-integer vectors indicating the gender and affection statuses of the offspring to be created (recycled if less than \code{noffs} elements).
+Integer vectors indicating the gender and affection statuses of the offspring to be created (recycled if less than \code{noffs} elements).
 }
   \item{verbose}{
 A logical: Verbose output or not.
+}
+  \item{parent}{
+Integer ID of any pedigree member, which will be the father or mother (depending on its gender) of the new child.
 }
  \item{keep}{
 A character, either "available" (trimming the pedigree for unavailable members) or "affected" (trimming for unaffected members).

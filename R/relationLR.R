@@ -1,35 +1,37 @@
-relationLR=function (ped_numerator, ped_denominator, ids, alleles, afreq = NULL, known_genotypes = list(), 
-    loop_breakers = NULL, Xchrom = FALSE, plot = TRUE, title1 = "", title2 = "") 
-{   
-    if(!is.null(loop_breakers)) return("Loops not yet implemented")
-	ped_claim=ped_numerator 
-	ped_true=ped_denominator
+relationLR = function(ped_numerator, ped_denominator, ids, alleles, afreq=NULL, 
+                     known_genotypes=list(), loop_breakers=NULL, Xchrom=FALSE, 
+                     plot=TRUE, title1="", title2="") {   
+    
+    ped_claim = ped_numerator 
+    ped_true = ped_denominator
     if (inherits(ped_claim, "linkdat")) 
         ped_claim = list(ped_claim)
     if (inherits(ped_true, "linkdat")) 
         ped_true = list(ped_true)
     ids_claim = lapply(ped_claim, function(x) ids[ids %in% x$orig.ids])
     ids_true = lapply(ped_true, function(x) ids[ids %in% x$orig.ids])
-    loops_claim = lapply(ped_claim, function(x) {
-        lb = x$orig.ids[x$orig.ids %in% loop_breakers]
-        if (length(lb) == 0) 
-            lb = NULL
-        lb
-    })
-    loops_true = lapply(ped_true, function(x) {
-        lb = x$orig.ids[x$orig.ids %in% loop_breakers]
-        if (length(lb) == 0) 
-            lb = NULL
-        lb
-    })
+    
+    if(!is.null(loop_breakers)) 
+        return("Loops not yet implemented")
+        #loops_claim = lapply(ped_claim, function(x) {
+        #    lb = x$orig.ids[x$orig.ids %in% loop_breakers]
+        #    if (length(lb) == 0) 
+        #        lb = NULL
+        #    lb
+        #})
+        #loops_true = lapply(ped_true, function(x) {
+        #    lb = x$orig.ids[x$orig.ids %in% loop_breakers]
+        #    if (length(lb) == 0) 
+        #        lb = NULL
+        #    lb
+        #})
+        
     N_claim = length(ped_claim)
     N_true = length(ped_true)
     N = N_claim + N_true
     if (length(alleles) == 1) 
-        alleles = 1:alleles
-    if (Xchrom) 
-        chrom = 23
-    else chrom = NA
+        alleles = seq_len(alleles)
+    chrom = if (Xchrom) 23 else NA
     partial_claim = lapply(1:N_claim, function(i) {
         x = ped_claim[[i]]
         m = marker(x, alleles = alleles, afreq = afreq, chrom = chrom)
@@ -55,20 +57,15 @@ relationLR=function (ped_numerator, ped_denominator, ids, alleles, afreq = NULL,
             if (i <= N_claim) {
                 x = ped_claim[[i]]
                 avail = ids_claim[[i]]
-                mm = if (has_genotypes) 
-                  partial_claim[[i]]
-                else NULL
+                mm = if (has_genotypes) partial_claim[[i]] else NULL
             }
             else {
                 x = ped_true[[i - N_claim]]
                 avail = ids_true[[i - N_claim]]
-                mm = if (has_genotypes) 
-                  partial_true[[i - N_claim]]
-                else NULL
+                mm = if (has_genotypes) partial_true[[i - N_claim]] else NULL
             }
             cols = ifelse(x$orig.ids %in% avail, 2, 1)
-            plot(x, marker = mm, col = cols, margin = c(2, 4, 
-                2, 4), title = "")
+            plot(x, marker = mm, col = cols, margin = c(2, 4, 2, 4), title = "")
         }
         mtext(title1, outer = TRUE, at = claim_ratio/2)
         mtext(title2, outer = TRUE, at = 0.5 + claim_ratio/2)

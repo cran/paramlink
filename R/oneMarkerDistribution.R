@@ -4,7 +4,7 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
     if (!inherits(m <- partialmarker, "marker"))
         if(is.numeric(m) && length(m)==1 && m <= x$nMark) 
             m = x$markerdata[[m]] 
-        else stop("The 'partialmarker' must be a 'marker' object.")
+        else stop("The 'partialmarker' must be a 'marker' object, or a single integer indicating an existing marker of 'x'.")
     markerchrom = as.integer(attr(m, 'chrom'))
     alleles = attr(m, "alleles")
     
@@ -22,14 +22,14 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
         
     SEX = x$pedigree[,'SEX']
     if(verbose) {
-        cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker with partial data:\n")
+        cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker with the following partial data:\n")
         print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(list(m), missing="-", singleCol=TRUE, sex=SEX)), row.names=FALSE)
         cat("\nMarker allele frequencies:\n")
         print(structure(attr(m, 'afreq'), names=alleles))
         if(affped) {cat("\nDisease model:\n"); print(x$model);    cat("\nRecombination rate between marker and disease locus: ", theta,".\n", sep="")}
     }
     
-    allgenos = allGenotypes(nall <- attr(m, 'nalleles'))
+    allgenos = allGenotypes(attr(m, 'nalleles'))
     
     if(is.null(grid.subset)) grid.subset = geno.grid.subset(x, m, ids, chrom) #Do this before loop breaking, works better with eliminate2.
     else grid.subset = as.matrix(grid.subset) 
@@ -41,10 +41,12 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
         m = x$markerdata[[1]]
         SEX = x$pedigree[,'SEX']
     }
+    
     int.ids = .internalID(x, ids)
+    gt.strings = paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="/")
     geno.names = switch(chrom, 
-        AUTOSOMAL = rep(list(paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="/")), length(ids)),
-        X = list(alleles, paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep="/"))[SEX[int.ids]]
+        AUTOSOMAL = rep(list(gt.strings), length(ids)),
+        X = list(alleles, gt.strings)[SEX[int.ids]]
     )
     
     marginal = likelihood(x, locus1=m, locus2=locus2, theta=theta, eliminate=eliminate)

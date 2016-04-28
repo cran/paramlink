@@ -39,7 +39,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         if(is.null(startdata)) {
             inform = .informative(x, locus1)
             inform_subnucs = inform$subnucs 
-            x$founders = c(x$founders, inform$newfounders); 
+            x$founders = c(x$founders, inform$newfounders) 
             x$nonfounders = .mysetdiff(x$nonfounders, inform$newfounders)
             dat = .startdata_M(x, marker=locus1, eliminate=eliminate)
         }
@@ -59,7 +59,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
             dat = .startdata_MM(x, marker1=locus1, marker2=locus2, eliminate=eliminate)
         }
         else dat = startdata
-        peelFUN = function(dat, sub) .peel_MM(dat, sub, theta)
+        peelFUN = function(dat, sub) .peel_MM(dat, sub, theta, chrom, SEX)
     }
     
     if (attr(dat, 'impossible')) return(ifelse(is.numeric(logbase), -Inf, 0))
@@ -84,10 +84,12 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         for(r in loopgrid) { #r a vector of indices: r[i] gives a column number of the hap matrix of orig[i].
             dat1 = dat; attr(dat1, 'impossible') = FALSE
             for(i in seq_along(origs)) {
-                orig.int = origs[i]; copy.int = copies[i]
-                origdat = dat[[orig.int]]
-                hap = if(chrom=='X' && SEX[orig.int]==1) origdat[[1]][r[i]] else origdat[[1]][, r[i], drop=F]
-                prob = origdat[[2]][r[i]]; if(sum(prob)==0) print("Loop-loekke: Alle sannsynligheter er null. Magnus lurer paa om dette kan gi feilmelding.")
+                orig.int = origs[i]
+                copy.int = copies[i]
+                orighap = dat[[orig.int]]$hap
+                origprob = dat[[orig.int]]$prob
+                hap = if(is.matrix(orighap)) orighap[, r[i], drop=F] else orighap[r[i]]
+                prob = origprob[r[i]]; if(sum(prob)==0) print("Loop-loekke: Alle sannsynligheter er null. Magnus lurer paa om dette kan gi feilmelding.")
                 dat1[[orig.int]] = list(hap = hap, prob = prob)
                 dat1[[copy.int]] = list(hap = hap, prob = 1)
             }
@@ -161,7 +163,8 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
             prob <- switch(aff+1, rep.int(1, length(d.no)), (1 - model$penetrances$male)[d.no+1], model$penetrances$male[d.no+1])
             if (founder)  
                 prob <- prob * afreq[abs(mat)] * c(1-model$dfreq, model$dfreq)[d.no+1]
-        }, {pat = h[1,]; mat = h[2,]
+        }, {
+            pat = h[1,]; mat = h[2,]
             al1 = abs(pat); al2 = abs(mat)
             d.no = (pat<0) + (mat<0)
             prob <- switch(aff+1, rep.int(1, length(d.no)), (1 - model$penetrances$female)[d.no+1], model$penetrances$female[d.no+1])
@@ -186,12 +189,12 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         dat = lapply(1:x$nInd, function(i) {
             switch(SEX[i], 
             { hap = c(glist[[i]], -glist[[i]])
-              prob = startprob_X(hap, model=x$model, afreq=attr(marker, 'afreq'), sex=1, aff=AFF[i], founder=FOU[i])
+              prob = startprob_X(hap, model=x$model, afreq=afreq, sex=1, aff=AFF[i], founder=FOU[i])
               list(hap = hap[prob > 0], prob = prob[prob > 0])},
             { gl = ncol(glist[[i]])  
               hap = glist[[i]][, rep(1:gl, each=4), drop=F ] *  dlist[, rep(1:4, times=gl), drop=F]
-              prob = startprob_X(hap, model=x$model, afreq=attr(marker, 'afreq'), sex=2, aff=AFF[i], founder=FOU[i])
-              if (all(prob==0)) impossible = TRUE
+              prob = startprob_X(hap, model=x$model, afreq=afreq, sex=2, aff=AFF[i], founder=FOU[i])
+              if (sum(prob)==0) impossible = TRUE
               list(hap = hap[, prob > 0, drop=F], prob = as.numeric(prob[prob > 0]))
             })
         })    
@@ -203,7 +206,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         dat = lapply(1:x$nInd, function(i) {
             gl = ncol(glist[[i]])  
             hap = glist[[i]][, rep(1:gl, each=4), drop=F ] *  dlist[, rep(1:4, times=gl), drop=F ]
-            prob = startprob(hap, model=x$model, afreq=attr(marker, 'afreq'), aff=AFF[i], founder=FOU[i])
+            prob = startprob(hap, model=x$model, afreq=afreq, aff=AFF[i], founder=FOU[i])
             if(sum(prob)==0) impossible=TRUE
             list(hap = hap[, prob > 0, drop=F], prob = as.numeric(prob[prob > 0]))
         })
@@ -214,34 +217,77 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 
 
 .startdata_MM = function(x, marker1, marker2, eliminate=0) {
+    
     startprob <- function(h, afreq1, afreq2, founder) {
-        prob = rep.int(1, ncol(h))
         if (founder) {
             m1_1 = h[1,]; m1_2 = h[2,]; m2_1 = h[3,]; m2_2 = h[4,]
-            prob = prob * afreq1[m1_1] * afreq1[m1_2] * afreq2[m2_1] * afreq2[m2_2] * (((m1_1 != m1_2) | (m2_1 != m2_2)) + 1) #multiply with two if heteroz for at least 1 marker. If heteroz for both, then both phases are included in h, hence the factor 2 (not 4) in this case as well.
+            hetfact = ((m1_1 != m1_2 | m2_1 != m2_2) + 1) #multiply with two if heteroz for at least 1 marker. If heteroz for both, then both phases are included in h, hence the factor 2 (not 4) in this case as well.
+            prob = afreq1[m1_1] * afreq1[m1_2] * afreq2[m2_1] * afreq2[m2_2] * hetfact
+            return(as.numeric(prob))
         }
-        as.numeric(prob)
+        return(rep.int(1, ncol(h)))
     }
 
+    startprob_X <- function(h, afreq1, afreq2, sex, founder) {
+        if (founder && sex ==1)
+            return(as.numeric(afreq1[h[1,]] * afreq2[h[2,]]))
+        startprob(h, afreq1, afreq2, founder)
+    }
+    
     marker1 = .reduce_alleles(marker1)
     marker2 = .reduce_alleles(marker2)
-    m1_list = .build_genolist(x, marker1, eliminate)
-    m2_list = .build_genolist(x, marker2, eliminate)
+    afreq1 = attr(marker1, 'afreq')
+    afreq2 = attr(marker2, 'afreq')
+    chromX = identical(attr(marker1, 'chrom'), 23)
     impossible = FALSE
     
-    if (attr(m1_list, 'impossible') || attr(m2_list, 'impossible')) {dat=list(); attr(dat, 'impossible')=TRUE; return(dat)}
-    
-    dat = lapply(1:x$nInd, function(i) {
-        gl1 = ncol(m1_list[[i]]); gl2 = ncol(m2_list[[i]])
-        hap = rbind(m1_list[[i]][, rep(1:gl1, each=gl2), drop=F ], m2_list[[i]][, rep(1:gl2, times=gl1), drop=FALSE]) #matrix with four rows: m1_1, m1_2, m2_1, m2_2
-        if(i %in% x$founders) {  #doubly heterozygous founders: Include the other phase as well. (This is necessary since .build_genolist returns unordered genotypes for founders.)
-            doublyhet = hap[, hap[1,]!=hap[2,] & hap[3,]!=hap[4,], drop=FALSE]
-            hap = cbind(hap, doublyhet[c(1,2,4,3),]) 
-        }
-        prob = startprob(hap, afreq1=attr(marker1, 'afreq'), afreq2=attr(marker2, 'afreq'), founder=(i %in% x$founders))
-        if(sum(prob)==0) impossible=TRUE
-        list(hap = hap[, prob > 0, drop=F], prob = as.numeric(prob[prob > 0]))
-    })
+    if(chromX) {
+        sex = x$pedigree[, 'SEX']
+        m1_list = .build_genolist_X(x, marker1, eliminate)
+        m2_list = .build_genolist_X(x, marker2, eliminate)
+        if (attr(m1_list, 'impossible') || attr(m2_list, 'impossible')) {dat=list(); attr(dat, 'impossible') = TRUE; return(dat)}
+        
+        dat = lapply(1:x$nInd, function(i) {
+            sexi = sex[i]
+            founder = i %in% x$founders
+            h1 = m1_list[[i]]; h2 = m2_list[[i]]
+            if(sexi == 1) 
+                hap = rbind(rep(h1, each=length(h2)), rep(h2, times=length(h1))) #matrix with two rows: m1, m2
+            else {
+                hl1 = dim(h1)[2]
+                hl2 = dim(h2)[2]
+                hap = rbind(h1[, rep(seq_len(hl1), each=hl2), drop=F], h2[, rep(seq_len(hl2),, times=hl1), drop=FALSE]) #matrix with four rows: m1_1, m1_2, m2_1, m2_2
+                if(founder) {  #doubly heterozygous founders: Include the other phase as well. (This is necessary since .build_genolist returns unordered genotypes for founders.)
+                    doublyhet = hap[1,]!=hap[2,] & hap[3,]!=hap[4,]
+                    if(any(doublyhet))
+                        hap = cbind(hap, hap[c(1,2,4,3), doublyhet, drop=FALSE])
+                }
+            }
+            prob = startprob_X(hap, afreq1=afreq1, afreq2=afreq2, sex=sexi, founder=founder)
+            keep = prob > 0
+            if(!any(keep)) impossible=TRUE
+            list(hap = hap[, keep, drop=F], prob = as.numeric(prob[keep]))
+        })
+    } else {
+        m1_list = .build_genolist(x, marker1, eliminate)
+        m2_list = .build_genolist(x, marker2, eliminate)
+        if (attr(m1_list, 'impossible') || attr(m2_list, 'impossible')) {dat=list(); attr(dat, 'impossible') = TRUE; return(dat)}
+        
+        dat = lapply(1:x$nInd, function(i) {
+            h1 = m1_list[[i]]; hl1 = dim(h1)[2]
+            h2 = m2_list[[i]]; hl2 = dim(h2)[2]
+            hap = rbind(h1[, rep(seq_len(hl1), each=hl2), drop=F], h2[, rep(seq_len(hl2),, times=hl1), drop=FALSE]) #matrix with four rows: m1_1, m1_2, m2_1, m2_2
+            if(i %in% x$founders) {  #doubly heterozygous founders: Include the other phase as well. (This is necessary since .build_genolist returns unordered genotypes for founders.)
+                doublyhet = hap[1,]!=hap[2,] & hap[3,]!=hap[4,]
+                if(any(doublyhet))
+                    hap = cbind(hap, hap[c(1,2,4,3), doublyhet, drop=FALSE])
+            }
+            prob = startprob(hap, afreq1=afreq1, afreq2=afreq2, founder=(i %in% x$founders))
+            keep = prob > 0
+            if(!any(keep)) impossible=TRUE
+            list(hap = hap[, keep, drop=F], prob = as.numeric(prob[keep]))
+        })
+    }
     attr(dat, 'impossible') = impossible
     dat
 }
@@ -413,7 +459,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         
         res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
             {   pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
-                T = numeric(fa_len * mo_len * pi_len);    dim(T) = c(fa_len, mo_len, pi_len)
+                T = numeric(fa_len * mo_len * pi_len); dim(T) = c(fa_len, mo_len, pi_len)
                 trans_pats = .trans_M(farh, pivh[1, ]); dim(trans_pats) = c(pi_len, fa_len);
                 trans_mats = .trans_M(morh, pivh[2, ]); dim(trans_mats) = c(pi_len, mo_len);
                 for(i in seq_len(fa_len)) {
@@ -435,7 +481,8 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
             },
             { trans_pats = unlist(lapply(farh, function(fh) as.numeric(fh == bh[1, ])))
               trans_mats = .trans_M(morh, bh[2, ])
-              dim(trans_mats) = c(bl, mo_len); trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len))) #TODO: improve with 'rep'?
+              dim(trans_mats) = c(bl, mo_len)
+              trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len))) #TODO: improve with 'rep'?
               mm = .colSums((trans_pats * bp) * trans_mats_rep, bl, fa_len*mo_len)
             })
             likel = likel * mm 
@@ -466,16 +513,20 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 
 
 .peel_MD <- function(dat, sub, theta, chrom, SEX) {
-    far = sub[['father']]; mor = sub[['mother']]; offs = nonpiv.offs = sub[['offspring']]; piv = sub[['pivot']]; pivtype = sub[['pivtype']]
+    far = sub[['father']]; mor = sub[['mother']]
+    offs = nonpiv.offs = sub[['offspring']]
+    piv = sub[['pivot']]
+    pivtype = sub[['pivtype']]
     if(pivtype==3) non.pivoffs = offs[offs != piv]
     farh = dat[[c(far, 1)]]; morh = dat[[c(mor, 1)]]
     likel = dat[[c(far, 2)]] %*% t.default(dat[[c(mor, 2)]])
-    dims = dim(likel);    fa_len = dims[1L];  mo_len = dims[2L]        
+    dims = dim(likel); fa_len = dims[1L]; mo_len = dims[2L]        
     
     .trans_MD <- function(parent_ph, child_haplo, theta) {
-        if (theta==0)     return(((parent_ph[1] == child_haplo) + (parent_ph[2] == child_haplo))/2)
+        if (theta==0) 
+            return(((parent_ph[1] == child_haplo) + (parent_ph[2] == child_haplo))/2)
         parent_rec = abs(parent_ph) * sign(parent_ph[2:1])
-        ((parent_ph[1]==child_haplo) * (1-theta) + (parent_ph[2]==child_haplo) * (1-theta)     +  (parent_rec[1]==child_haplo) * theta + (parent_rec[2]==child_haplo) * theta)/2
+        ((parent_ph[1]==child_haplo) * (1-theta) + (parent_ph[2]==child_haplo) * (1-theta) +  (parent_rec[1]==child_haplo) * theta + (parent_rec[2]==child_haplo) * theta)/2
     }
 
     switch(chrom, AUTOSOMAL = {
@@ -489,8 +540,11 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
             mm = mm_init; 
             bh = dat[[c(b,1)]]; bp = dat[[c(b,2)]]
             b_pat = match(bh[1, ], alloffs_pat);    b_mat = match(bh[2, ], alloffs_mat)
-            for(i in seq_len(fa_len))  for (j in seq_len(mo_len))
-                    mm[i,j] = (fathertrans[b_pat, i] * mothertrans[b_mat, j]) %*% bp #TODO: make faster
+            for(i in seq_len(fa_len)) {
+                trans_pats = fathertrans[b_pat, i]
+                for (j in seq_len(mo_len))
+                    mm[i,j] = (trans_pats * mothertrans[b_mat, j]) %*% bp
+            }
             likel = likel * mm
         }
         if(pivtype==0) return(sum(likel))
@@ -498,10 +552,13 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
         {
             pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
-            piv_pat = match(pivh[1, ], alloffs_pat);    piv_mat = match(pivh[2, ], alloffs_mat)
-            T = numeric(fa_len * mo_len * pi_len);    dim(T) = c(fa_len, mo_len, pi_len)
-            for(i in seq_len(fa_len)) for(j in seq_len(mo_len)) #TODO: split up to make faster!
-                T[i,j,] <- fathertrans[piv_pat, i] * mothertrans[piv_mat, j]    
+            piv_pat = match(pivh[1, ], alloffs_pat); piv_mat = match(pivh[2, ], alloffs_mat)
+            T = numeric(fa_len * mo_len * pi_len); dim(T) = c(fa_len, mo_len, pi_len)
+            for(i in seq_len(fa_len)) {
+                trans_pats = fathertrans[piv_pat, i]
+                for(j in seq_len(mo_len))
+                    T[i,j,] <- trans_pats * mothertrans[piv_mat, j]    
+            }
             arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
             res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
             res = res * pivp
@@ -549,56 +606,96 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 }
 
 
-.peel_MM <- function(dat, sub, theta) { 
-    far = sub[['father']]; mor = sub[['mother']]; offs = sub[['offspring']]; piv = sub[['pivot']]; pivtype = sub[['pivtype']]
+.peel_MM <- function(dat, sub, theta, chrom, SEX) {
+    far = sub[['father']]; mor = sub[['mother']]
+    offs = sub[['offspring']]
+    piv = sub[['pivot']]; pivtype = sub[['pivtype']]
     if(pivtype==3) offs = offs[offs != piv]
     
-    farh = dat[[c(far, 1)]]; morh=dat[[c(mor, 1)]]
+    farh = dat[[c(far, 1)]]; morh = dat[[c(mor, 1)]]
     likel = dat[[c(far, 2)]] %*% t.default(dat[[c(mor, 2)]])
-    dims = dim(likel);    fa_len = dims[1L];  mo_len = dims[2L];    
-    mm_init = numeric(fa_len*mo_len); dim(mm_init) = dims
-
+    dims = dim(likel); fa_len = dims[1L];  mo_len = dims[2L];    
+    mm_init = numeric(length(likel)); dim(mm_init) = dims
+        
     .trans_MM <- function(parent.haps, gamete.hap, theta) { # parent.haps = c(M1_1, M1_2, M2_1, M2_2)
-        norechap1 = parent.haps[c(1,3)];    norechap2 = parent.haps[c(2,4)]
-        rechap1 = parent.haps[c(1,4)];      rechap2 = parent.haps[c(2,3)]
         if(is.matrix(gamete.hap)) 
-            unlist(lapply(seq_len(ncol(gamete.hap)), function(kol) {
-                gamhap = gamete.hap[,kol]
-                sum(c(all(norechap1 == gamhap), all(norechap2 == gamhap), all(rechap1 == gamhap), all(rechap2 == gamhap)) * c(1-theta, 1-theta, theta, theta))/2
-            }))
-        else {
-            gamhap = gamete.hap
-            sum(c(all(norechap1 == gamhap), all(norechap2 == gamhap), all(rechap1 == gamhap), all(rechap2 == gamhap)) * c(1-theta, 1-theta, theta, theta))/2
-        }
+            vapply(seq_len(ncol(gamete.hap)), function(kol) .trans_MM(parent.haps, gamete.hap[,kol], theta), 1)
+        else 
+            sum(c(all(parent.haps[c(1,3)] == gamete.hap), all(parent.haps[c(2,4)] == gamete.hap), 
+                   all(parent.haps[c(1,4)] == gamete.hap), all(parent.haps[c(2,3)] == gamete.hap)) * c(1-theta, 1-theta, theta, theta))/2
     }
 
-    for (b in offs) {
-        mm = mm_init
-        bh = dat[[c(b,1)]]; bp = dat[[c(b,2)]]
-        for(i in seq_len(fa_len)) {
-            transfather = .trans_MM(farh[, i], bh[c(1,3),,drop=F], theta)
-            for (j in seq_len(mo_len))
-                mm[i,j] = (transfather * .trans_MM(morh[, j], bh[c(2,4),,drop=F], theta)) %*% bp
+    switch(chrom, 
+    AUTOSOMAL = {
+        for (b in offs) {
+            mm = mm_init
+            bh = dat[[c(b,1)]]; bp = dat[[c(b,2)]]
+            for(i in seq_len(fa_len)) {
+                transfather = .trans_MM(farh[, i], bh[c(1,3),,drop=F], theta)
+                for (j in seq_len(mo_len))
+                    mm[i,j] = (transfather * .trans_MM(morh[, j], bh[c(2,4),,drop=F], theta)) %*% bp
+            }
+            likel <-  likel * mm
         }
-        likel <-  likel * mm
-    }
-    if(pivtype==0) return(sum(likel))
-    
-    res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
-    {   pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
-        T = numeric(fa_len * mo_len * pi_len);    dim(T) = c(fa_len, mo_len, pi_len)
-        for(i in seq_len(fa_len)) {
-            transfather = .trans_MM(farh[, i], pivh[c(1,3), ,drop=F], theta)
-            for(j in seq_len(mo_len))
-                T[i,j,] <- transfather * .trans_MM(morh[, j], pivh[c(2,4), ,drop=F], theta)
+        if(pivtype==0) return(sum(likel))
+        
+        res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
+        {   pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
+            T = numeric(fa_len * mo_len * pi_len); dim(T) = c(fa_len, mo_len, pi_len)
+            for(i in seq_len(fa_len)) {
+                transfather = .trans_MM(farh[, i], pivh[c(1,3), ,drop=F], theta)
+                for(j in seq_len(mo_len))
+                    T[i,j,] <- transfather * .trans_MM(morh[, j], pivh[c(2,4), ,drop=F], theta)
+            }
+            arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
+            res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
+            res = res * pivp
+        })
+        pivhap_update = dat[[c(piv, 1)]][, res>0, drop=F]
+    },
+    X = {  
+        for (b in offs) {
+            mm = mm_init
+            bh = dat[[c(b,1)]]; bp = dat[[c(b,2)]]
+            if(SEX[b] == 1)
+                for (j in seq_len(mo_len))  mm[, j] = .trans_MM(morh[, j], bh, theta) %*% bp
+            else
+                for (j in seq_len(mo_len)) {
+                    transmother = .trans_MM(morh[, j], bh[c(2,4),,drop=F], theta)
+                    for (i in seq_len(fa_len))
+                        mm[i,j] = (as.numeric(farh[1, i] == bh[1,] & farh[2, i] == bh[3,]) * transmother) %*% bp
+                }
+            likel = likel * mm
         }
-        arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
-        res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
-        res = res * pivp
+        if(pivtype==0) return(sum(likel))
+        
+        res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len), {
+            pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
+            T = numeric(fa_len * mo_len * pi_len);    dim(T) = c(fa_len, mo_len, pi_len)
+            if(SEX[piv]==1) {
+                for (j in seq_len(mo_len)) {
+                    transmother = .trans_MM(morh[, j], pivh, theta)
+                    for(i in seq_len(fa_len)) 
+                        T[i,j,] = transmother
+                }
+            } else { 
+                for (j in seq_len(mo_len)) {
+                    transmother = .trans_MM(morh[, j], pivh[c(2,4),], theta)
+                    for (i in seq_len(fa_len))
+                        T[i,j,] = (as.numeric(farh[1, i] == pivh[1,] & farh[2, i] == pivh[3,]) * transmother)
+                }
+            }
+            arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
+            res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
+            res * pivp
+        })
+        pivhap_update = dat[[c(piv, 1)]][, res>0, drop=F]
     })
-    dat[[piv]] = list(hap = dat[[c(piv, 1)]][, res>0, drop=F], prob = res[res>0])
+    dat[[piv]] = list(hap = pivhap_update, prob = res[res>0])
+    if(sum(res)==0) attr(dat, 'impossible') = TRUE
     return(dat)
 }
+
 
 
 ###### OTHER AUXILIARY FUNCTIONS

@@ -56,7 +56,7 @@ spouses = function(x, id, original.id=TRUE) { #returns a vector containing all i
     internal_id = ifelse(original.id, .internalID(x, id), id)
     p = x$pedigree
     offs_rows = p[, 1 + p[internal_id, 'SEX'] ] == internal_id
-    spou = unique(p[offs_rows, 4 - p[internal_id, 'SEX']])  #sex=1 -> column 3; sex=2 -> column 2.
+    spou = unique.default(p[offs_rows, 4 - p[internal_id, 'SEX']])  #sex=1 -> column 3; sex=2 -> column 2.
     if (original.id) return(x$orig.ids[spou]) else return(spou)
 }
 
@@ -111,7 +111,7 @@ related.pairs = function(x, relation=c('parents', 'siblings', 'grandparents', 'n
 unrelated = function(x, id, original.id=TRUE) {
     if(!original.id) id = x$orig.ids[id]
     ancs = c(id, ancestors(x, id))
-    rel = unique(unlist(lapply(ancs, function(a) c(a, descendants(x, a, original.id=TRUE)))))
+    rel = unique.default(unlist(lapply(ancs, function(a) c(a, descendants(x, a, original.id=TRUE)))))
     unrel = setdiff(x$orig.ids, rel)
     if(!original.id) unrel = .internalID(x, unrel)
     unrel
@@ -149,12 +149,11 @@ siblings = function(x, id, half = NA, original.id = TRUE) {
 
 cousins = function(x, id, degree=1, removal=0, half = NA, original.id = TRUE) {
     if (original.id) id = .internalID(x, id)
-    p = x$pedigree
     gp = grandparents(x, id, degree=degree, original.id=FALSE)
-    uncles = unique(unlist(lapply(gp, siblings, x=x, half=half, original.id=FALSE)))
+    uncles = unique.default(unlist(lapply(gp, siblings, x=x, half=half, original.id=FALSE)))
     cous = uncles
     for(i in seq_len(degree+removal)) 
-        cous = unique(unlist(lapply(cous, offspring, x=x, original.id=FALSE)))
+        cous = unique.default(unlist(lapply(cous, offspring, x=x, original.id=FALSE)))
     if (original.id) cous = x$orig.ids[cous]
     cous
 }
@@ -197,8 +196,12 @@ descendants = function(x, id, original.id=TRUE) {
         if (length(nextgen)==0) break
         desc <- c(desc, nextgen)
     }
-    desc = unique(sort.default(desc))
+    desc = unique.default(sort.default(desc))
     if (original.id) return(x$orig.ids[desc]) else return(desc)
+}
+
+.generations = function(x) {#linkdat object
+    max(vapply(unlist(.descentPaths(x, x$founders, original.ids=FALSE), recursive=F), length, 1))
 }
 
 .descentPaths = function(x, ids, original.ids = TRUE)  {
@@ -338,12 +341,12 @@ all.equal.linkdat = function(target, current, ...) {
 
 
 inbreeding = function(x) {
-	ped = x$pedigree
-	kin.coeff = kinship(id=ped[,'ID'], dadid=ped[,'FID'], momid=ped[,'MID'])
-	inb.coeff = numeric()
-	inb.coeff[x$founders] = 0
-	inb.coeff[x$nonfounders] = sapply(x$nonfounders, function(i) kin.coeff[ped[i, 'FID'], ped[i, 'MID']])
-	inb.coeff
+    ped = x$pedigree
+    kin.coeff = kinship(id=ped[,'ID'], dadid=ped[,'FID'], momid=ped[,'MID'])
+    inb.coeff = numeric()
+    inb.coeff[x$founders] = 0
+    inb.coeff[x$nonfounders] = sapply(x$nonfounders, function(i) kin.coeff[ped[i, 'FID'], ped[i, 'MID']])
+    inb.coeff
 }
 
 

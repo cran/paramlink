@@ -108,7 +108,6 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
     arrays = .make_arrays(f, extended=!is.null(error))
     if(plot.action==2) .plot_IBDtriangle()
     
-    ks=NULL; nms=NULL
     res = apply(pairs, 1, function(p) {
         k = round(.ibd_estim(p[1], p[2], dat, 'ml', arrays=arrays, error=error, ...), 4)
         if(plot.action > 0) points(k[1], k[2], pch=16, col=pointcol, cex=cex)
@@ -210,7 +209,7 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
         }
         mz_arr[i,i,] = gf[i,]
     }        
-    list(FRQ = f, UNREL=unrel_arr, PARKID=parkid_arr, MZ=mz_arr)
+    list(FRQ=f, UNREL=unrel_arr, PARKID=parkid_arr, MZ=mz_arr)
 }
 
 
@@ -223,49 +222,6 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
     if(verbose) {dimnames(ERR) = rep(list(c('AA','AB','BB')),2); cat('Error model:\n'); print(ERR)}
     return(ERR %o% ERR)
 }
-
-# make_errorArray = function(e, d1=NULL, d2=NULL, ID1=NULL, ID2=NULL, dat=NULL, verbose=T) {
-    # if(is.null(d1) || is.null(d2)) {
-        # if(length(e)==3) {d1=e[2];d2=e[3];e=e[1]}
-        # else {
-            # nvars = colSums(dat>0)/2
-            # delta = pmin(1, nvars[c(ID1,ID2)]/quantile(nvars, 0.95))
-            # d1=delta[1]; d2=delta[2]
-        # }
-    # }
-    # if(verbose) cat('Error model: e=',e,' d1=',d1,' d2=',d2,'\n', sep="")
-    # ERR = c(1-e-e^2,e,e^2,e,1-2*e,e,e^2,e,1-e-e^2)
-    # #ERR = c(1-2*e,e,e,e,1-2*e,e,e,e,1-2*e)
-    # #ERR = c(1-e,e,0,e,1-2*e,e,0,e,1-e)
-    # dim(ERR) = c(3,3)
-    # D = c(1,1,1,0,0,0,0,0,0)
-    # return((ERR*d1 + D*(1-d1)) %o% (ERR*d2 + D*(1-d2)))
-# }
-
-
-# loglik = function(k, G1, G2, f_G, transmitArr) {
-    # k0=k[1]; k2=k[2]; k1 = 1-k0-k2
-    # n = length(G1)
-    # A = c(c(G1,G2)+1, seq_len(n))
-    # dim(A) = c(n,3)
-    # pG1 = f_G[A[, c(1,3)]]
-    # pG2 = f_G[A[, c(2,3)]]
-    # kidpar = transmitArr[A]
-    # mz = G1==G2
-    # sum(log(pG1*(k0*pG2 + k1*kidpar + k2*mz)))
-# }
-
-#.loglikErr = function(k, G1, G2, f=NULL, arrays=NULL) {
-    # k0=k[1]; k2=k[2]; k1 = 1-k0-k2
-    # if(is.null(arrays)) arrays = arrays(f)
-    # sum(sapply(1:length(G1), function(n) {
-        # Ln = k0*arrays$UNREL[,,n] + k1*arrays$PARKID[,,n] + k2*arrays$MZ[,,n]
-        # errn = ERR2[, G1[n]+1, , G2[n]+1]
-        # log(sum(Ln * errn))
-        # }))
-# }
-
-
 
 
 # SKETCH
@@ -305,7 +261,6 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
 # }
 
 
-### new for paramlink?
 .ibdPrep = function(x, removebad=T) {
     ### if x is a list of linkdats
     if(!inherits(x, 'linkdat') && is.list(x) && all(sapply(x,inherits, 'linkdat'))) {
@@ -345,21 +300,10 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
 }
 
 
-.merge.linkdat = function(x) {# list of linkdats
-    if(!is.list(x) || !all(vapply(x, function(xx) inherits(xx, 'linkdat'), logical(1)))) stop("Input must be a list of linkdat objects")
-    if(length(x)==1) return(x)
-    mnames = lapply(x, function(xx) unlist(lapply(xx$markerdata, attr, 'name')))
-    common = Reduce(intersect, mnames)
-    lapply(x, function(xx) setMarkers(xx, xx$markerdata[getMarkers(xx, common)])) 
-}
 
 .setSNPfreqs = function(x, newfreqs) {
     stopifnot(all(vapply(x$markerdata, function(m) attr(m, 'nalleles'), numeric(1))==2))
     newfreqs = rep(newfreqs, length=x$nMark)
     for(i in seq_len(x$nMark)) attr(x$markerdata[[i]], 'afreq') = c(newfreqs[i], 1-newfreqs[i])
     x
-}
-
-.generations = function(x) {#linkdat object
-    max(vapply(unlist(.descentPaths(x, x$founders, original.ids=FALSE), recursive=F), length, numeric(1)))
 }

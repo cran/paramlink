@@ -20,8 +20,7 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
     if(all(m==0))  return(simpleSim(x, N, alleles=alleles, afreq=afreq, available=available, Xchrom=(chrom=='X'), seed=seed, verbose=verbose))
 
     allgenos = allGenotypes(nall <- attr(m, 'nalleles'))
-    al1 = allgenos[,1]; al2 = allgenos[,2]
-    nGeno = nrow(allgenos)
+    #al1 = allgenos[,1]; al2 = allgenos[,2]; nGeno = nrow(allgenos)
     
     if(verbose) {
         cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker locus\n")
