@@ -6,11 +6,14 @@ Merge two pedigrees
 \description{
 This function merges two linkdat objects, joining them at the individuals with equal ID labels. This is especially useful for building "top-heavy" pedigrees. Only linkdat objects without marker data are supported.}
 \usage{
-mergePed(x, y)
+mergePed(x, y, quick=FALSE)
 }
 \arguments{
   \item{x,y}{
 \code{\link{linkdat}} objects
+}
+\item{quick}{
+a logical. If TRUE, no pedigree checks are performed, and the individual ordering may be unfortunate.
 }
 }
 \value{

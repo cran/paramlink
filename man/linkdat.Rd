@@ -13,7 +13,7 @@ Functions to create and display 'linkdat' objects.
 }
 \usage{
 linkdat(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, annotations=NULL, 
-        missing=0, header=FALSE, verbose=TRUE, ...)
+        missing=0, header=FALSE, checkped=TRUE, verbose=TRUE, ...)
         
 singleton(id, sex=1, famid=1, verbose=FALSE, ...)
 
@@ -52,6 +52,9 @@ the character (of length 1) used for missing alleles. Defaults to "0".
 }
  \item{header}{
 a logical, relevant only if \code{ped} points to a ped file: If TRUE, the first line of the ped file is skipped.
+}
+ \item{checkped}{
+a logical. If FALSE, no checks for pedigree errors are performed.
 }
  \item{verbose}{
 a logical: verbose output or not.

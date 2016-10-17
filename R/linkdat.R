@@ -1,5 +1,5 @@
 linkdat <-
-function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, annotations=NULL, missing=0, header=FALSE, verbose=TRUE, ...) {  
+function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, annotations=NULL, missing=0, header=FALSE, checkped=TRUE, verbose=TRUE, ...) {  
 
 	subnucs <- function(ped) {  	# output: peeling order of nuclear subfamilies. Format for each nuc: c(pivot,father,mother,offsp1,..), where pivot=0 for the last nuc.
 		if (nrow(ped)==1) return(list())
@@ -76,7 +76,9 @@ function(ped, model=NULL, map=NULL, dat=NULL, freq=NULL, annotations=NULL, missi
         pedcols = as.numeric(pedcols)
     }
     pedigree = matrix(pedcols, ncol=5, dimnames = list(NULL, c('ID', 'FID', 'MID', 'SEX', 'AFF')))
-    .checkped(pedigree)
+    
+    if(checkped) .checkped(pedigree)
+    
 	orig.ids = as.vector(pedigree[, 1])
 	nInd = nrows
 	pedigree = relabel(pedigree, new=1:nInd)

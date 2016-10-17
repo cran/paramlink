@@ -3,6 +3,7 @@ importFrom("stats", "optimize", "rpois", "runif")
 importFrom("utils", "combn", "head", "read.table", "write.table")
 importFrom("kinship2", "kinship", "pedigree", "plot.pedigree")
 importFrom("maxLik", "maxLik")
+importFrom("assertthat", "assert_that", "on_failure<-")
 
 exportPattern("^[[:alpha:]]+")
 

@@ -11,6 +11,7 @@
 \alias{spouses}
 \alias{unrelated}
 \alias{related.pairs}
+\alias{leaves}
 \alias{pedigreeLoops}
 \alias{breakLoops}
 \alias{tieLoops}
@@ -19,7 +20,7 @@
 linkdat utilities
 }
 \description{
-Utility functions for 'linkdat' objects
+Utility functions for 'linkdat' objects, mainly for extracting various pedigree information.
 }
 \usage{
 ancestors(x, id)
@@ -33,11 +34,11 @@ offspring(x, id, original.id=TRUE)
 siblings(x, id, half=NA, original.id=TRUE)
 spouses(x, id, original.id=TRUE)
 unrelated(x, id, original.id=TRUE)
-
 related.pairs(x, relation=c('parents', 'siblings', 'grandparents', 'nephews_nieces', 
               'cousins', 'spouses', 'unrelated'), available=F, original.id=T, 
               interfam=c("none", "founders", "all"), ...)
 
+leaves(x)
 pedigreeLoops(x)
 breakLoops(x, loop_breakers)
 tieLoops(x)
@@ -89,16 +90,13 @@ Not used.
 For \code{ancestors(x,id)}, a vector containing the ID's of all ancestors of the individual \code{id}. 
 For \code{descendants(x,id)}, a vector containing the ID's of all descendants (i.e. children, grandchildren, a.s.o.) of individual \code{id}. 
 
-The functions \code{cousins}, \code{grandparents}, \code{nephews_nieces}, \code{offspring}, \code{parents}, \code{siblings}, \code{spouses}, \code{unrelated}, 
-each returns an integer vector containing the ID's of all pedigree members having the specified relationship with \code{id}. 
+The functions \code{cousins}, \code{grandparents}, \code{nephews_nieces}, \code{offspring}, \code{parents}, \code{siblings}, \code{spouses}, \code{unrelated}, each returns an integer vector containing the ID's of all pedigree members having the specified relationship with \code{id}. 
 
-For \code{related.pairs} a matrix with two columns. Each row gives of a pair of pedigree members with the specified relation. If the input is a list of multiple
-pedigrees, the matrix entries are characters of the form "X-Y" where X is the family ID and Y the individual ID of the person.
+For \code{related.pairs} a matrix with two columns. Each row gives of a pair of pedigree members with the specified relation. If the input is a list of multiple pedigrees, the matrix entries are characters of the form "X-Y" where X is the family ID and Y the individual ID of the person.
 
-For \code{pedigreeLoops}, a list containing all loops found in the pedigree. 
-Each loop is represented as a list with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a path from top to bottom) and 'pathB' 
-(creating a different path from top to bottom, with no individuals in common with pathA). Note that the number of loops reported here
-counts all closed paths in the pedigree and will in general be larger than the genus of the underlying graph.
+For \code{leaves}, a vector of IDs containing all pedigree members without children.
+
+For \code{pedigreeLoops}, a list containing all loops found in the pedigree. Each loop is represented as a list with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a path from top to bottom) and 'pathB' (creating a different path from top to bottom, with no individuals in common with pathA). Note that the number of loops reported here counts all closed paths in the pedigree and will in general be larger than the genus of the underlying graph.
 
 For \code{breakLoops}, a \code{linkdat} object in which the indicated loop breakers are duplicated. The returned object will also have a non-null \code{loop_breakers} entry, namely a matrix with the IDs of the original loop breakers in the first column and the duplicates in the second.
 
@@ -112,12 +110,10 @@ Magnus Dehli Vigeland
 p = cbind(ID=2:9, FID=c(0,0,2,0,4,4,0,2), MID=c(0,0,3,0,5,5,0,8), 
         SEX=c(1,2,1,2,1,2,2,2), AFF=c(2,1,2,1,2,1,1,2))
 x = linkdat(p)
-
-desc = descendants(x, 2)
-spous = spouses(x, 2)
-offs = offspring(x, 2)
-
-stopifnot(setequal(spous, c(3,8)), setequal(offs, c(4,9)), setequal(desc, c(4,6,7,9)))
+stopifnot(setequal(spouses(x, 2), c(3,8)), 
+          setequal(offspring(x, 2), c(4,9)), 
+          setequal(descendants(x, 2), c(4,6,7,9)), 
+          setequal(leaves(x), c(6,7,9)))
 
 # Creating a loop and detecting it with 'pedigreeLoops' 
 # (note that we get two loops, one for each inbred child):

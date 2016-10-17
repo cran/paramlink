@@ -1,3 +1,25 @@
+jacquard = function(x, ids) {
+    if (!requireNamespace("identity", quietly = TRUE))
+        stop("Package 'identity' must be install for this function to work.", call. = FALSE)
+    assert_that(length(ids)==2, all(ids %in% x$orig.ids))
+    idsi = .internalID(x, ids)
+    ped = x$pedigree[, 1:3]
+    identity::identity.coefs(idsi, ped)[2, 3:11]
+}
+
+.is.natural <- function(x) 
+    length(x) == 1 && is.numeric(x) && x==as.integer(x) &&  x > 0
+
+.is.natural0 <- function(x) 
+    length(x) == 1 && is.numeric(x) && x==as.integer(x) &&  x >= 0
+
+on_failure(.is.natural) <- function(call, env) {
+  paste0(deparse(call$x), " is not a positive integer")
+}
+on_failure(.is.natural0) <- function(call, env) {
+  paste0(deparse(call$x), " is not a non-negative integer")
+}
+
 .mysetdiff = function(x,y) x[match(x,y,0L)==0L]
 .myintersect = function(x,y) y[match(x, y, 0L)]
 
@@ -117,7 +139,11 @@ unrelated = function(x, id, original.id=TRUE) {
     unrel
 }
     
-    
+leaves = function(x) {
+    p = as.matrix(x, FALSE)
+    .mysetdiff(p[, 'ID', drop=F], p[, c('FID','MID')])
+}
+
 parents = function(x, id, original.id = TRUE) {
     grandparents(x, id, degree=1, original.id=original.id)
 }

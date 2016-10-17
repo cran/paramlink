@@ -1,43 +1,72 @@
 \name{createPedigree}
 \alias{createPedigree}
 \alias{nuclearPed}
+\alias{cousinsPed}
+\alias{halfCousinsPed}
+\alias{doubleCousins}
+\alias{doubleFirstCousins}
+\alias{quadHalfFirstCousins}
+\alias{fullSibMating}
+\alias{halfSibStack}
 \alias{cousinPed}
 \alias{halfCousinPed}
 \title{
 Create simple pedigrees
 }
 \description{
-These are utility functions for creating rudimentary \code{linkdat} objects with common pedigree structures. 
-The function \code{nuclearPed} creates a nuclear family with a specified number of male/female offspring, while \code{cousinPed} and \code{halfCousinPed} create pedigrees linking two (half) cousins of a specified degree.
+These are utility functions for creating some common pedigree structures as \code{linkdat} objects. 
 }
 \usage{
 nuclearPed(noffs, sex)
+cousinsPed(degree, removal=0, degree2=NULL, child=FALSE)
+halfCousinsPed(degree, removal=0, degree2=NULL, child=FALSE)
+
+doubleCousins(degree1, degree2, removal1=0, removal2=0, child=FALSE)
+doubleFirstCousins()
+quadHalfFirstCousins()
+
+fullSibMating(generations)
+halfSibStack(generations)
 
 cousinPed(degree)
-
 halfCousinPed(degree)
 }
 \arguments{
   \item{noffs}{
-a positive integer, the number of offspring in the nuclear family.
+A positive integer, the number of offspring in the nuclear family.
 }
   \item{sex}{
-a vector of length \code{noffs}; indicating the gender (1=male, 2=female) of the offspring. If missing, all offspring are taken to be males.
+A vector of length \code{noffs}; indicating the genders (1=male, 2=female) of the offspring. If missing, all offspring are taken to be males.
 }
- \item{degree}{
-a non-negative integer: 0=siblings, 1=first cousins; 2=second cousins, a.s.o.
+ \item{degree, degree1, degree2}{
+Non-negative integers, indicating the degree of cousin-like relationships: 0=siblings, 1=first cousins; 2=second cousins, a.s.o. See Details and Examples.
+}
+ \item{removal, removal1, removal2}{
+Non-negative integers, indicating removals of cousin-like relationships. See Details and Examples.
+}
+ \item{child}{
+A logical: Should an inbred child be added to the two cousins?
+}
+\item{generations}{
+A positive integer indicating the number of crossings.
 }
 }
 \details{
 All individuals are created as unaffected. Use \code{\link{swapAff}} to edit this (see Examples).
-Use \code{\link{swapSex}} to change gender of pedigree members.
-The cousins created by \code{cousinPed} and \code{halfCousinPed} have zero removal. Removals are easily constructed using \code{\link{addOffspring}} or \code{\link{removeIndividuals}} (see Examples). 
-}
-\note{
-To make changes of sex/affection status, or to create cousin removals, it is often helpful to plot the pedigree.
+Use \code{\link{swapSex}} to change gender of pedigree members. 
+
+The call \code{cousinsPed(degree=n, removal=k)} creates a pedigree with two n'th cousins, k times removed. By default, removals are added on the right side. To override this, the parameter \code{degree2} can be used to indicate explicitly the number of generations on the right side of the pedigree. When \code{degree2} is given \code{removal} is ignored. (Similarly for \code{halfCousinsPed}.)
+
+The function \code{doubleCousins} creates two individuals whose fathers are cousins (\code{degree1}, \code{removal1}) as well as their mothers (\code{degree2}, \code{removal2}). For simplicity, a wrapper \code{doubleFirstCousins} is provided for the most common case, double first cousins. Finally \code{quadHalfFirstCousins} produces a pedigree with quadruple half first cousins.
+
+\code{fullSibMating} crosses full sibs continuously for the indicated number of generations. 
+ 
+\code{halfSibStack} produces a breeding scheme where the two individuals in the final generation are simultaneously half siblings and half n'th cousins, where \code{n=1,...,generations}. 
+
+\code{cousinPed} and \code{halfCousinPed} (written without the 's') are depreciated functions kept for backwards compatibility. They create cousin pedigrees, but without possibility for removals, and with a different ordering than their replacements \code{cousinsPed} and \code{halfCousinsPed}.
 }
 \value{
-a \code{\link{linkdat}} object.
+A \code{\link{linkdat}} object.
 }
 \author{
 Magnus Dehli Vigeland
@@ -51,21 +80,35 @@ Magnus Dehli Vigeland
 x = nuclearPed(noffs=5, sex=c(1,1,2,2,2))
 x = swapAff(x, ids=c(1,3,4))
 
-# A pedigree showing a pair of third cousins
-y = cousinPed(3)
-plot(y)
-
-# Adding a child on one side, to create third cousins once removed. 
-# The pedigree plot above helps identifying which individual 
-# should have the extra child
-y = addOffspring(y, father=15, noffs=1)
-
 # Half sibs:
-z = halfCousinPed(0)
+halfCousinsPed(degree=0)
 
-# Alternative construction:
-z2 = addOffspring(nuclearPed(1), father=1, noffs=1, sex=2)
-z2 = relabel(z2, new=3:4, old=4:3)
-stopifnot(all.equal(z,z2))
+# Grand aunt:
+cousinsPed(degree=0, removal=2)
+
+# Second cousins once removed.
+cousinsPed(degree=2, removal=1)
+
+# Again second cousins once removed, 
+# but with the "removal" on the left side.
+cousinsPed(degree=3, degree2=2)
+
+# A child of first cousin parents.
+cousinsPed(degree=1, child=TRUE)
+
+# Consecutive brother-sister matings.
+fullSibMating(3)
+
+# Simultaneous half siblings and half first cousins
+halfSibStack(2)
+
+# Double first cousins
+doubleFirstCousins()
+
+# Quadruple half first cousins
+# Weird plotting behaviour for this pedigree. 
+x = quadHalfFirstCousins()
+#plot(x)
+
 }
 \keyword{ manip }

@@ -13,7 +13,7 @@ with marker annotations and other info attached as attributes.
 \usage{
 \method{as.matrix}{linkdat}(x, include.attrs = TRUE, ...)
 
-restore_linkdat(x, attrs = NULL)
+restore_linkdat(x, attrs = NULL, checkped = TRUE)
 }
 \arguments{
  \item{x}{
@@ -25,6 +25,9 @@ a logical indicating if marker annotations and other info should be attached as 
  \item{attrs}{
 a list containing marker annotations and other \code{linkdat} info compatible with \code{x}, in the format produced by \code{as.matrix}.
 If NULL, the attributes of \code{x} itself are used.
+}
+ \item{checkped}{
+a logical, forwarded to \code{\link{linkdat}}. If FALSE, no checks for pedigree errors are performed.
 }
  \item{\dots}{
 not used.

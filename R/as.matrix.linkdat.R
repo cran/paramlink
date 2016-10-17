@@ -8,9 +8,9 @@ as.matrix.linkdat = function(x, include.attrs=TRUE, ...) {
    p
 }
 
-restore_linkdat = function(x, attrs=NULL) {
+restore_linkdat = function(x, attrs=NULL, checkped=TRUE) {
 	if(is.null(attrs)) attrs = attributes(x)
-	y = linkdat(x[, 1:6, drop=F], model = attrs$model, verbose=FALSE)
+	y = linkdat(x[, 1:6, drop=F], model = attrs$model, checkped=checkped, verbose=FALSE)
 	markers = x[, -(1:6), drop=F]
 	nMark = ncol(markers)/2
    if(nMark==0) markerdata_list = NULL

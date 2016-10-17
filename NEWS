@@ -1,12 +1,20 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
 
+2016-10-14: Version 0.9-9
+   * New functions: Several new utility functions for creating cousin-like pedigrees and sib-pair stacks. 
+     See ?createPedigree for details.
+   
+   * New function: jacquard() which is a simple wrapper for identity.coefs() in the identity package.
+   
 2016-04-27: Version 0.9-8
-   * The version of likelihood() for two linked markers previously handled only autosomal markers. This is now extended to X chromosomal markers.
+   * The version of likelihood() for two linked markers previously handled only autosomal markers. This is 
+     now extended to X chromosomal markers.
    
    * As a result of the above, twoMarkerDistribution() now works for X chromosomal markers.
    
-   * New utility functions addDaughter() and addSon(). These are wrappers for addOffspring() for the simple case of adding a single child to a single pedigree member. The other parent will be created as a founder.
+   * New utility functions addDaughter() and addSon(). These are wrappers for addOffspring() for the simple 
+     case of adding a single child to a single pedigree member. The other parent will be created as a founder.
 
 2014-08-08: Version 0.9-7
    * New function: peakSummary() summarising lod score peaks
@@ -17,9 +25,11 @@ NEWS FILE FOR PACKAGE PARAMLINK
    
    * Improved handling of endpoints in lod.peaks()
    
-   * Improved handling of impossible genotype combinations (e.g. parent=1/1, child=2/2) in the internal function .startdata_MM()
+   * Improved handling of impossible genotype combinations (e.g. parent=1/1, child=2/2) in the internal 
+     function .startdata_MM()
    
-   * New functions: allGenotypes(), fast.grid() and geno.grid.subset(). These are cleaned-up versions of previous internal functions, and are probably not important to most end users.
+   * New functions: allGenotypes(), fast.grid() and geno.grid.subset(). These are cleaned-up versions of 
+     previous internal functions, and are probably not important to most end users.
    
 2014-03-31: Version 0.9-6
    * Cleaned up merlin()
