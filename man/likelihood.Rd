@@ -13,14 +13,14 @@ Calculates various forms of pedigree likelihoods.
 likelihood(x, ...)
 
 \method{likelihood}{linkdat}(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, 
-           eliminate=0, logbase=NULL, ...)
+           eliminate=0, logbase=NULL, loop_breakers=NULL, ...)
            
 \method{likelihood}{singleton}(x, locus1, logbase=NULL, ...)
 
-\method{likelihood}{list}(x, locus1, ...)
+\method{likelihood}{list}(x, locus1, locus2=NULL, ..., returnprod=TRUE)
 
 likelihood_LINKAGE(x, marker, theta=NULL, afreq=NULL, logbase=NULL, TR.MATR=NULL, 
-                   initialCalc=NULL, singleNum.geno=NULL)
+                   initialCalc=NULL, singleNum.geno=NULL, loop_breakers=NULL)
 }
 \arguments{
   \item{x}{
@@ -44,6 +44,12 @@ Positive values can save time if \code{partialmarker} is non-empty and the numbe
 }
   \item{logbase}{
 a numeric, or NULL. If numeric the log-likelihood is returned, with \code{logbase} as basis for the logarithm.
+}
+  \item{loop_breakers}{
+a numeric containing IDs of individuals to be used as loop breakers. If NULL, automatic selection of loop breakers will be performed. See \code{\link{breakLoops}}.
+}
+  \item{returnprod}{
+a logical; if TRUE, the product of the likelihoods is returned, otherwise a vector with the likelihoods for each pedigree in the list.
 }
   \item{marker}{
 an integer between 0 and \code{x$nMark}, indicating which marker to use in the calculation.
@@ -93,6 +99,13 @@ lod2 = lod(x, markers=1, theta=0)
 
 # these should be the same:
 stopifnot(identical(lod1, as.numeric(lod2)), round(lod1, 2)==0.3)
+
+# likelihood of inbred pedigree (grandfather/granddaughter incest)
+y = addOffspring(addDaughter(nuclearPed(1, sex=2), 3), father=1, mother=5, 1)
+m = marker(y, 1, 1, 6, 1:2)
+l1 = likelihood(y, m)
+l2 = likelihood(y, m, loop_breaker=5) # manual specification of loop_breaker
+stopifnot(l1==0.09375, l2==l1)
 }
 
 \keyword{ math }

@@ -8,7 +8,8 @@ Computes the (joint) genotype probability distribution of one or several pedigre
 }
 \usage{
 oneMarkerDistribution(x, ids, partialmarker, theta=NULL, grid.subset=NULL, 
-                      loop_breakers=NULL, eliminate=0, verbose=TRUE)
+                      loop_breakers=NULL, eliminate=0, ignore.affection.status=FALSE, 
+                      verbose=TRUE)
 }
 
 \arguments{
@@ -19,7 +20,7 @@ A \code{\link{linkdat}} object.
 A numeric with ID labels of one or more pedigree members.
 }
   \item{partialmarker}{
-Either a single integer indicating the number of one of \code{x}'s existing markers, or a \code{\link{marker}} object.
+Either a \code{\link{marker}} object compatible with \code{x}, or the index (a single integer) of an existing marker of \code{x}.
 }
   \item{theta}{
 The recombination fraction between marker and disease locus. Only relevant if at least one individual is affected by disease. In that case an error is raised if \code{theta} is NULL, and if \code{x} does not have a disease model. 
@@ -34,6 +35,9 @@ A numeric containing IDs of individuals to be used as loop breakers. Relevant on
 }
   \item{eliminate}{
 A non-negative integer, indicating the number of iterations in the internal genotype-compatibility algorithm. Positive values can save time if \code{partialmarker} is non-empty and the number of alleles is large.
+}
+  \item{ignore.affection.status}{
+A logical indicating if the "AFF" column should be ignored (only relevant if some family members are marked as affected). 
 }
   \item{verbose}{
 A logical.

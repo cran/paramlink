@@ -16,8 +16,11 @@ are easy to spot.
 These functions work with SNP markers only.
 }
 \usage{
-examineKinships(x, who = "all", interfam = c("founders", "none", "all"), 
-                makeplot = T, ...)
+examineKinships(x, who = "all", 
+                interfam = c("founders", "none", "all"), 
+                makeplot = T, 
+                showRelationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC"), 
+                ...)
 
 IBDestimate(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, pointcol=2, cex=1, ...)
 }
@@ -36,6 +39,9 @@ should be included. Only relevant if \code{x} is a list of several \code{linkdat
 }
   \item{makeplot}{
 A logical.
+}
+  \item{showRelationships}{
+A character vector passed on to the \code{relationships} argument of \code{IBDtriangle}.
 }
   \item{g1, g2}{
 The pairs of individuals for which IBD estimates should be computed. Several formats are possible. 
@@ -90,11 +96,11 @@ Magnus Dehli Vigeland
 \code{\link{maxLik}}, \code{\link{linkdat}}, \code{\link{points}}
 }
 \examples{
-x = cousinPed(2)
+x = cousinsPed(2)
 x = simpleSim(x, 1000, 1:2) # 1000 equifrequent SNPs
 examineKinships(x, who=c("par", "sib"))
 
-\dontrun{
+#dontrun
 # comparing the founders with another unrelated person:
 y = singleton(1, famid=2)
 y = simpleSim(y, 1000, 1:2)
@@ -104,6 +110,6 @@ examineKinships(list(x, y), who="unrelated", interfam="founders")
 # unrelated singleton (famid=2, iid=1):
 ibd = IBDestimate(c("1-7", "1-8"), "2-1", list(x,y), error=0.005)
 ibd
-}
+
 }
 \keyword{math}

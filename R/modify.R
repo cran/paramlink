@@ -1,5 +1,5 @@
 relabel <- function(x, new, old) {
-    islinkdat = inherits(x,"linkdat")
+    islinkdat = is.linkdat(x)
     if(islinkdat) {
         if(length(new)==x$nInd && all(new==x$orig.ids)) return(x)
         ped = as.matrix(x)
@@ -163,7 +163,7 @@ trim <- function(x, keep=c("available", "affected"), return.ids=FALSE, verbose=T
     keep = match.arg(keep)
     if(verbose) 
         cat("Trimming pedigree, keeping", keep, "individuals.")
-    if(inherits(x, 'singleton') | (keep == "available" && length(x$available)==length(x$orig.ids))) {
+    if(is.singleton(x) | (keep == "available" && length(x$available)==length(x$orig.ids))) {
         if(verbose) cat(" Removed: None\n")
         return(x)
     }
@@ -194,7 +194,7 @@ trim <- function(x, keep=c("available", "affected"), return.ids=FALSE, verbose=T
 }
 
 .merge.linkdat = function(x) {# list of linkdats
-    if(!is.list(x) || !all(vapply(x, function(xx) inherits(xx, 'linkdat'), logical(1)))) stop("Input must be a list of linkdat objects")
+    if(!is.linkdat.list(x)) stop("Input must be a list of linkdat objects")
     if(length(x)==1) return(x)
     mnames = lapply(x, function(xx) unlist(lapply(xx$markerdata, attr, 'name')))
     common = Reduce(intersect, mnames)

@@ -64,8 +64,7 @@ stopifnot(length(mendelianCheck(y))==0)
 
 z = addOffspring(cousinPed(1), father=7, mother=8, noffs=1, aff=2)
 z = setModel(z, 2)
-linkageSim(z, N=1, afreq = c(0.1, 0.2, 0.7), loop_breakers=7)
-
+linkageSim(z, N=1, afreq = c(0.1, 0.2, 0.7))
 
 }
 \keyword{ datagen }

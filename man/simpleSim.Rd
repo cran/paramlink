@@ -7,7 +7,8 @@ Unconditional marker simulation
 Unconditional simulation of unlinked markers
 }
 \usage{
-simpleSim(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, verbose=T)
+simpleSim(x, N, alleles, afreq, available, Xchrom=FALSE, mutmat=NULL, seed=NULL, 
+          verbose=T)
 }
 \arguments{
   \item{x}{
@@ -27,6 +28,9 @@ a vector containing IDs of the available individuals, i.e. those whose genotypes
 }
   \item{Xchrom}{
 a logical: X linked markers or not?
+}
+  \item{mutmat}{
+a mutation matrix, or a list of two such matrices named "female" and "male". The matrix/matrices must be square, with the allele labels as dimnames, and each row must sum to 1 (after rounding to 3 decimals).
 }
   \item{seed}{
 NULL, or a numeric seed for the random number generator. 

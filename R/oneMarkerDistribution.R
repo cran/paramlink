@@ -1,20 +1,27 @@
 
-oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset=NULL, loop_breakers=NULL, eliminate=0, verbose=TRUE) {
+oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset=NULL, loop_breakers=NULL, eliminate=0, ignore.affection.status=FALSE, verbose=TRUE) {
     starttime = proc.time()
     if (!inherits(m <- partialmarker, "marker"))
         if(is.numeric(m) && length(m)==1 && m <= x$nMark) 
             m = x$markerdata[[m]] 
         else stop("The 'partialmarker' must be a 'marker' object, or a single integer indicating an existing marker of 'x'.")
+    
+    if(!is.null(x$loop_breakers)) 
+        stop("Linkdat objects with broken loops are not allowed as input to the `oneMarkerDistribution` function.")
+    
     markerchrom = as.integer(attr(m, 'chrom'))
     alleles = attr(m, "alleles")
+    mutmat = attr(m, 'mutmat')
+    mutations = !is.null(mutmat)
     
-    if (affped <- any(x$pedigree[, 'AFF'] == 2)) {
-        if(is.null(theta)) stop("The pedigree is affected with disease: Please spesify the recombination fraction ('theta') between the marker and disease loci.")
-        if(is.null(x$model)) stop("The pedigree is affected with disease: Please spesify a disease model, e.g. using 'setModel()'.")
+    affped = any(x$pedigree[, 'AFF'] == 2) && !ignore.affection.status
+    if (affped) {
+        if(is.null(theta)) stop("This is a disease pedigree, but recombination fraction ('theta') between the marker and disease loci is not indicated. \n(To ignore disease, use 'ignore.affecton.status=TRUE'")
+        if(is.null(x$model)) stop("This is a disease pedigree. Please spesify a disease model, e.g. using 'setModel()'.")
         locus2 = 'disease'
         chrom = x$model$chrom
         if(!is.na(markerchrom) && ((chrom == 'X') != (23L == markerchrom))) stop("Disease model and marker chromosome are not compatible.")
-    } 
+    }
     else {
         locus2 = NULL
         chrom = ifelse(identical(23L, markerchrom), 'X', 'AUTOSOMAL')
@@ -23,10 +30,11 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
     SEX = x$pedigree[,'SEX']
     if(verbose) {
         cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker with the following partial data:\n")
-        print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(list(m), missing="-", singleCol=TRUE, sex=SEX)), row.names=FALSE)
+        print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(list(m), missing="-", singleCol=TRUE, sep="/", sex=SEX)), row.names=FALSE)
         cat("\nMarker allele frequencies:\n")
         print(structure(attr(m, 'afreq'), names=alleles))
-        if(affped) {cat("\nDisease model:\n"); print(x$model);    cat("\nRecombination rate between marker and disease locus: ", theta,".\n", sep="")}
+        if(mutations) {cat('\nMutation matrices:\n'); print(mutmat)}
+        if(affped) {cat("\nDisease model:\n"); print(x$model); cat(sprintf("\nRecombination rate between marker and disease locus: %f.\n", theta))}
     }
     
     allgenos = allGenotypes(attr(m, 'nalleles'))
@@ -35,9 +43,7 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta=NULL, grid.subset
     else grid.subset = as.matrix(grid.subset) 
     
     if (x$hasLoops) {
-        if(is.null(lb <- loop_breakers))      stop("The pedigree has loops. Please indicate loop breakers.")
-        if(verbose) cat(ifelse(length(lb)==1, "\nBreaking loop at individual", "\nBreaking loops at individuals"), .prettycat(lb, "and"), "\n")
-        x = breakLoops(setMarkers(x, m), lb)
+        x = breakLoops(setMarkers(x, m), loop_breakers=loop_breakers, verbose=verbose)
         m = x$markerdata[[1]]
         SEX = x$pedigree[,'SEX']
     }

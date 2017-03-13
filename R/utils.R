@@ -1,3 +1,9 @@
+is.linkdat = function(x) inherits(x, 'linkdat')
+
+is.singleton = function(x) inherits(x, 'singleton')
+
+is.linkdat.list = function(x) isTRUE(is.list(x) && all(sapply(x, inherits, 'linkdat')))
+
 jacquard = function(x, ids) {
     if (!requireNamespace("identity", quietly = TRUE))
         stop("Package 'identity' must be install for this function to work.", call. = FALSE)
@@ -5,6 +11,21 @@ jacquard = function(x, ids) {
     idsi = .internalID(x, ids)
     ped = x$pedigree[, 1:3]
     identity::identity.coefs(idsi, ped)[2, 3:11]
+}
+
+jacquard2 = function(x, ids, verbose=FALSE, cleanup=TRUE) {
+    assert_that(length(ids)==2, all(ids %in% x$orig.ids))
+    x = .pedorder.parents.first(x)
+    ped = relabel(x$pedigree, x$orig.ids)[,1:3]
+    write.table(ped, file="__paramlink2idcoefs__.ped", quote=F, row.names=F, col.names=F)
+    write.table(ids, file="__paramlink2idcoefs__.sample", quote=F, row.names=F, col.names=F)
+    command = "idcoefs -p __paramlink2idcoefs__.ped -s __paramlink2idcoefs__.sample -o __paramlink2idcoefs__.output"
+    run = suppressWarnings(system(command, intern = T))
+    if(verbose) print(run)
+    res = read.table("__paramlink2idcoefs__.output", as.is=T)
+    if(cleanup)
+        unlink(dir(pattern="__paramlink2idcoefs__"))
+    as.numeric(res[2, 3:11])
 }
 
 .is.natural <- function(x) 
@@ -20,7 +41,7 @@ on_failure(.is.natural0) <- function(call, env) {
   paste0(deparse(call$x), " is not a non-negative integer")
 }
 
-.mysetdiff = function(x,y) x[match(x,y,0L)==0L]
+.mysetdiff = function(x,y) unique.default(x[match(x,y,0L)==0L])
 .myintersect = function(x,y) y[match(x, y, 0L)]
 
 .internalID = function(x, orig.ids) {
@@ -88,7 +109,7 @@ related.pairs = function(x, relation=c('parents', 'siblings', 'grandparents', 'n
     interfam = match.arg(interfam)
     func = function(...) get(relation)(...)
     
-    if(!inherits(x, 'linkdat') && length(x)>0 && all(unlist(lapply(x, inherits, 'linkdat')))) {
+    if(is.linkdat.list(x)) {
         res = do.call(rbind, lapply(x, function(xx) {
             pairs = related.pairs(xx, relation, available, original.id, ...)
             if(nrow(pairs) > 0) {
@@ -189,7 +210,7 @@ nephews_nieces = function(x, id, removal=1, half = NA, original.id = TRUE) {
 }
 
 ancestors = function(x, id) { #climbs up the pedigree storing parents iteratively. (Not documented: Accepts id of length > 1)
-    if (inherits(x, 'linkdat')) {
+    if (is.linkdat(x)) {
         p = x$pedigree
         orig_ids = x$orig.ids
         ids_int = .internalID(x, id)
@@ -234,78 +255,20 @@ descendants = function(x, id, original.id=TRUE) {
     if (original.ids) ids = .internalID(x, ids)
     offs = lapply(1:x$nInd, offspring, x=x, original.id=FALSE)
     lapply(ids, function(id) {
-        res=list(id)
+        res = list(id)
         while(TRUE) {
-            newoffs = offs[sapply(res, function(path) path[length(path)])]
-            if (length(unlist(newoffs))==0) break
-            nextstep = lapply(1:length(res), function(r) if (length(newoffs[[r]])==0) res[r] else lapply(newoffs[[r]], function(kid) c(res[[r]], kid) ))
+            newoffs = offs[vapply(res, function(path) path[length(path)], 1)]
+            if (length(unlist(newoffs))==0) 
+                break
+            nextstep = lapply(1:length(res), function(r) 
+                if (length(newoffs[[r]])==0) 
+                    res[r] 
+                else 
+                    lapply(newoffs[[r]], function(kid) c(res[[r]], kid) ))
             res = unlist(nextstep, recursive=FALSE)
         }
         if (original.ids) lapply(res, function(internal_vec) x$orig.ids[internal_vec]) else res
     })
-}
-
-pedigreeLoops = function(x) {
-    dls = .descentPaths(x, 1:x$nInd, original.ids=FALSE)
-    loops = list()
-    for (id in 1:x$nInd) {
-        if (length(dl <- dls[[id]])==1) next
-        pairs = .comb2(length(dl))
-        for (p in 1:nrow(pairs)) {
-            p1 = dl[[pairs[p,1]]]; p2 = dl[[pairs[p,2]]]
-            if (p1[2]==p2[2]) next
-            inters = p1[match(p2,p1,0L)][-1]  #intersecting path members, excluding id
-            if (length(inters)==0) next
-            else {
-                top=x$orig.ids[p1[1]]; bottom=x$orig.ids[inters[1]]
-                pathA = p1[ seq_len(which(p1==inters[1]) - 2) + 1 ] #without top and bottom. Seq_len to deal with the 1:0 problem.
-                pathB = p2[ seq_len(which(p2==inters[1]) - 2) + 1 ]
-                loops = c(loops, list(list(top=top, bottom=bottom, pathA = x$orig.ids[pathA], pathB=x$orig.ids[pathB])))
-            }
-        }
-    }
-    unique(loops)
-}
-
-
-breakLoops = function(x, loop_breakers) {
-    if(inherits(x,'singleton')) stop("This function does not apply to singleton objects.")
-   stopifnot(is.numeric(loop_breakers), length(loop_breakers)>0)
-    if(any(loop_breakers %in% x$orig.ids[x$founders])) stop("Pedigree founders cannot be loop breakers.")
-
-    pedm = as.matrix(x)#data.frame(x, famid=T, missing=0)
-    attrs = attributes(pedm) #all attributes except 'dim'
-    dup_pairs = x$loop_breakers #normally = NULL at this stage 
-    for(id in loop_breakers) {
-        dup_id = max(pedm[, 'ID']) + 1
-        dup_pairs = rbind(dup_pairs, c(id, dup_id))
-        intern = match(id, pedm[,'ID'])  #don't use .internalID here, since pedm changes all the time
-        sex_col = pedm[intern, 'SEX'] + 2 # FID column if 'intern' is male; MID if female
-        
-        pedm = pedm[c(1:intern, intern, (intern+1):nrow(pedm)), ]
-        pedm[intern+1, c('ID', 'FID','MID')] = c(dup_id, 0, 0)
-        pedm[pedm[, sex_col] == id, sex_col] = dup_id
-    }
-    newx = restore_linkdat(pedm, attrs=attrs) 
-    newx$loop_breakers = dup_pairs
-    newx
-}
-
-tieLoops = function(x) {
-    dups = x$loop_breakers
-    if(is.null(dups) || nrow(dups)==0) {cat("No loops to tie\n"); return(x)}
-    if(!all(dups %in% x$orig.ids)) stop("Something's wrong: Duplicated individuals no longer in pedigree.")
-    pedm = as.matrix(x)
-    attrs = attributes(pedm)
-
-    origs = dups[,1]; copies = dups[,2]
-    pedm = pedm[-match(copies, pedm[,'ID']), ]
-    for(i in 1:length(origs)) {
-        orig = origs[i]; copy = copies[i]
-        sex = pedm[pedm[,'ID']==orig, 'SEX']
-        pedm[pedm[, sex+2] == copy, sex+2] = orig 
-    }
-    restore_linkdat(pedm, attrs=attrs)
 }
 
 all.equal.linkdat = function(target, current, ...) {
@@ -327,12 +290,27 @@ all.equal.linkdat = function(target, current, ...) {
             cat("Missing slots in second object:", paste(sec_miss, sep=", "), "\n")
         res = FALSE
     }
+    
+    # ID labels
     if(!setequal(target$orig.ids, current$orig.ids)) {
         cat("ID labels are not equal\n")
         res = FALSE
     }
-   
     new_order = match(current$orig.ids, target$orig.ids)
+    
+    # Plot labels
+    pl = current$plot.labels
+    if(!is.null(pl) && !all(target$plot.labels[new_order] == pl)) {
+        cat("Plot labels are not equal\n")
+        res = FALSE
+    }
+    
+    # Availability
+    if(!setequal(target$available, current$available)) {
+        cat("Unequal vectors of availability\n")
+        res = FALSE
+    }
+    # Tree topologies
     ped_targ = relabel(target$pedigree, target$orig.ids)[new_order, , drop=F]
     ped_curr = relabel(current$pedigree, current$orig.ids)
     if(!identical(ped_curr, ped_targ)) {
@@ -340,10 +318,6 @@ all.equal.linkdat = function(target, current, ...) {
         res = FALSE
     }
    
-    if(!setequal(target$available, current$available)) {
-        cat("Unequal vectors of availability\n")
-        res = FALSE
-    }
     if(!res) return(res)
    
     if(target$nMark > 0) {
@@ -368,13 +342,23 @@ all.equal.linkdat = function(target, current, ...) {
 
 inbreeding = function(x) {
     ped = x$pedigree
-    kin.coeff = kinship(id=ped[,'ID'], dadid=ped[,'FID'], momid=ped[,'MID'])
+    kin.matrix = kinship(id=ped[,'ID'], dadid=ped[,'FID'], momid=ped[,'MID'])
     inb.coeff = numeric()
     inb.coeff[x$founders] = 0
-    inb.coeff[x$nonfounders] = sapply(x$nonfounders, function(i) kin.coeff[ped[i, 'FID'], ped[i, 'MID']])
+    inb.coeff[x$nonfounders] = sapply(x$nonfounders, function(i) kin.matrix[ped[i, 'FID'], ped[i, 'MID']])
+    names(inb.coeff) = x$orig.ids
     inb.coeff
 }
 
+kinship.coeff = function(x, ids=NULL) {
+    if(!is.null(ids))
+        assert_that(length(ids)==2, all(ids %in% x$orig.ids))
+    ped = x$pedigree
+    kin.matrix = kinship(id=ped[,'ID'], dadid=ped[,'FID'], momid=ped[,'MID'])
+    dimnames(kin.matrix) = list(x$orig.ids, x$orig.ids)
+    if(is.null(ids)) return(kin.matrix)
+    kin.matrix[as.character(ids[1]), as.character(ids[2])]
+}
 
 #pedDistMatrix(x) computes a symmetrix integer matrix (d_ij), where d_ij is the pedigree distance (i.e., the length of the shortest pedigree path) between i and j. For example, the following relations have the indicated pedigree distances: parent/offspring    1, siblings    2, parents    2, uncle/niece    3, first cousins 4.
 # .pedDistMatrix <- function(x) { 
@@ -394,23 +378,4 @@ inbreeding = function(x) {
         # }
     # }
     # d
-# }
-
-# .getpaths = function(obj, i, j) {
-    # if (inherits(obj, "linkdat")) d = .pedDistMatrix(obj)
-    # else if (is.matrix(obj)) d = obj
-    # else stop("'obj' must be either a matrix or a 'linkdat' object.")
-    # if (i==j) return(i)
-    # D = d[i,j]
-    # res = matrix(i)
-    # for (k in 1:D) {
-        # tmp = list()
-        # for (r in 1:nrow(res)) {
-            # laststep = res[r, k]
-            # newsteps = which( d[laststep, ] == 1 & d[, j] == D-k)
-            # tmp[[r]] = cbind( matrix(res[r, 1:k], ncol=k, nrow=length(newsteps),byrow=TRUE), newsteps, deparse.level=0)
-        # }
-        # res = do.call(rbind, tmp)
-    # }
-    # res
 # }

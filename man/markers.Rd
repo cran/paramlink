@@ -7,6 +7,7 @@
 \alias{modifyMarker}
 \alias{modifyMarkerMatrix}
 \alias{swapGenotypes}
+\alias{transferMarkerdata}
 \alias{mendelianCheck}
 \alias{setMap}
 
@@ -18,13 +19,13 @@ Functions for setting and manipulating marker genotypes for 'linkdat' objects.
 }
 \usage{
 marker(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0,
-       chrom=NA, name=NA, pos=NA)
+       chrom=NA, pos=NA, name=NA, mutmat=NULL)
 
-addMarker(x, m, alleles=NULL, afreq=NULL, missing=0)
+addMarker(x, m, ...)
 
 setMarkers(x, m, annotations=NULL, missing=0)
 
-getMarkers(x, markernames=NULL, chroms=NULL, from=NULL, to=NULL)
+getMarkers(x, markernames=NULL, chroms=NULL, fromPos=NULL, toPos=NULL)
 
 removeMarkers(x, markers, markernames=NULL, chroms=NULL, from=NULL, to=NULL)
 
@@ -33,6 +34,8 @@ modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
 modifyMarkerMatrix(x, ids, new.alleles)
 
 swapGenotypes(x, ids)
+
+transferMarkerdata(from, to)
 
 mendelianCheck(x, remove=FALSE, verbose=!remove)
 }
@@ -55,11 +58,14 @@ a numeric - or character - of length 1, indicating the code for missing alleles.
   \item{chrom}{
 NA or an integer (the chromosome number of the marker).
 }
+  \item{pos}{
+NA or a non-negative real number indicating the genetic position (in cM) of the marker.
+}
   \item{name}{
 NA or a character (the name of the marker).
 }
-  \item{pos}{
-NA or a non-negative real number indicating the genetic position (in cM) of the marker.
+  \item{mutmat}{
+a mutation matrix, or a list of two such matrices named "female" and "male". The matrix/matrices must be square, with the allele labels as dimnames, and each row must sum to 1 (after rounding to 3 decimals).
 }
   \item{annotations}{
 a list of marker annotations.
@@ -70,10 +76,7 @@ NULL or a character vector.
   \item{chroms}{
 NULL or a numeric vector of chromosome numbers.
 }
-  \item{from}{
-NULL or a single numeric.
-}
-  \item{to}{
+  \item{fromPos, toPos}{
 NULL or a single numeric.
 }
   \item{marker, markers}{
@@ -94,6 +97,9 @@ a numerical vector with allele frequencies. An error is given if they don't sum 
  \item{new.alleles}{
 a numerical matrix of dimensions \code{length(ids), 2*x$nMark}. Entries refer to the internal allele numbering.
 }
+  \item{from, to}{
+linkdat objects, or list of linkdat objects.
+}
  \item{remove}{
 a logical. If FALSE, the function returns the indices of markers found to incorrect. 
 If TRUE, a new \code{linkdat} object is returned, where the incorrect markers have been deleted.
@@ -112,6 +118,9 @@ For \code{getMarkers} a numeric vector containing marker numbers (i.e. their ind
 "name" attribute is contained in \code{markernames}, "chrom" attribute is contained in \code{chroms}, and "pos" attribute is between
 \code{from} and \code{to}. NULL arguments are skipped, so \code{getMarkers(x)} will return \code{seq_len(x$nMark)} (i.e. all markers).
 
+For \code{transferMarkerdata}, a \code{linkdat} object (or a list of such) similar to \code{to}, but where all individuals also present in \code{from} have marker genotypes copied over. 
+Any previous marker data is erased.
+
 For \code{mendelianCheck}, a numeric containing the indices of the markers that did not pass the tests, or (if \code{remove=TRUE}) a new \code{linkdat} object where the failing markers are removed.
 }
 \author{
@@ -125,27 +134,35 @@ x = linkdat(toyped)
 x = removeMarkers(x,1) # removing the only marker of x.
 x
 
-# creating a SNP with alleles 'a' and 'b', for which individual 1 is heterozygous, 
+# Creating a SNP with alleles 'a' and 'b', for which individual 1 is heterozygous, 
 # 2 and 4 are homozygous for the 'b' allele, and missing genotype for individual 3:
 m1 = marker(x, 1, c('a','b'), c(2,4), c('b','b')) 
 x = addMarker(x, m1)
 
-# a rare SNP for which all individuals are homozygous for the common allele.
+# A rare SNP for which all individuals are homozygous for the common allele.
 # The 'alleles' argument must be specified since only one allele is present.
 m2 = marker(x, 1:4, 1, alleles=1:2, afreq=c(0.99, 0.01))
 x = addMarker(x, m2)
-x
 
-# creating a Mendelian error!
+# Creating a Mendelian error in the first marker
 x = modifyMarker(x, marker=1, ids=3, genotype='a') 
 
-# making the second marker triallelic, with heterozygous parents.
+# Making the second marker triallelic, with heterozygous parents.
 x = modifyMarker(x, marker=2, ids=1:2, genotype=1:2, alleles=1:3)
-x
 
-plot(x, marker=1)
+# Testing mendelianCheck
 err_index = mendelianCheck(x, remove=FALSE)
+stopifnot(err_index==1)
+
 xnew = mendelianCheck(x, remove=TRUE)
-stopifnot(err_index==1, all.equal(xnew, removeMarkers(x, err_index)))
+stopifnot(all.equal(xnew, removeMarkers(x, 1)))
+
+### Testing transferMarkerdata
+x0 = list(singleton(id=5), nuclearPed(noffs=2))
+x = markerSim(x0, N=5, alleles=1:5, verbose=FALSE, available=4:5)
+y0 = nuclearPed(noffs=3)
+y = transferMarkerdata(x, y0)
+stopifnot(all.equal(x[[1]], branch(y,5)))
+stopifnot(all.equal(x[[2]], subset(y,1:4)))
 }
 \keyword{ manip }

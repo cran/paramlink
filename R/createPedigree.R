@@ -1,7 +1,11 @@
 nuclearPed <- function(noffs, sex) {
     assert_that(.is.natural(noffs))
-    if(missing(sex)) sex = rep.int(1, noffs)
-    if(length(sex) < noffs) sex = rep(sex, length.out=noffs)
+    if(missing(sex)) 
+        sex = rep.int(1, noffs)
+    else assert_that(length(sex) <= noffs)
+    if(length(sex) < noffs) 
+        sex = rep(sex, length.out=noffs)
+    
     p = cbind(ID=1:(2+noffs), FID=c(0, 0, rep.int(1, noffs)), MID=c(0, 0, rep.int(2, noffs)),
             SEX=c(1, 2, sex), AFF=1)
     linkdat(p, verbose=FALSE)
@@ -127,37 +131,6 @@ halfSibStack = function(generations) {
     x
 }
 
-#cousinCrossing = function(degrees, removals=0) {
-#    # Creates pedigree resulting from a cousin-crossing breeding scheme.
-#    # degrees: Vector of non-negative integers. (0 = siblings)
-#    assert_that(is.numeric(degrees), length(degrees)>=1, all(degrees>=0), all(removals>=0))
-#    removals = rep_len(removals, length(degrees))
-#    x = cousinsPed(degrees[1], removals[1])
-#    for(i in seq_along(degrees)[-1]) {
-#        xn = x$nInd
-#        xcousins = leaves(x)
-#        y = cousinsPed(degrees[i], removals[i])
-#        y = relabel(y, new = c(xcousins, seq.int(xn+1, length.out=y$nInd-2)))
-#        x = mergePed(x, y, quick=TRUE)
-#    }
-#    x   
-#}
-
-
-#halfCousinStack = function(degrees, removals=0) {
-#    # Creates pedigree by stacking layers of half cousins.
-#    assert_that(is.numeric(degrees), length(degrees)>=1, all(degrees>=0), all(removals>=0))
-#    removals = rep_len(removals, length(degrees))
-#    x = halfCousinsPed(degrees[1], removals[1])
-#    for(i in seq_along(degrees)[-1]) {
-#        xn = max(x$orig.ids)
-#        y = halfCousinsPed(degrees[i], removals[i])
-#        y = relabel(y, new = xn+1:y$nInd)
-#        xcousins = leaves(x)
-#        x = mergePed(x, y, quick=TRUE)
-#    }
-#    x   
-#}
 
 mergePed <- function(x, y, quick=FALSE) {
     if(!is.null(x$markerdata) || !is.null(y$markerdata)) stop("Merging is only supported for pedigrees without marker data")
@@ -182,44 +155,57 @@ mergePed <- function(x, y, quick=FALSE) {
         return(restore_linkdat(z, attrs = attributes(xx), checkped=FALSE))
     
     # reorder to put parents above children (necessary when using IBDsim).
-    N = nrow(z)
+    z = .pedorder.parents.first(z)
+    restore_linkdat(z, attrs = attributes(xx), checkped=TRUE)
+}
+
+.pedorder.parents.first = function(x) {
+    if(is.linkdat(x)) {
+        ped = as.matrix(x)
+        attrs = attributes(ped)
+    }
+    else if (all(c('ID', 'FID', 'MID') %in% colnames(x))) 
+        ped = x
+    
+    N = nrow(ped)
     i = 1
     while(i < N) {
-        maxpar = max(match(z[i, c('FID','MID')], z[, 'ID'], nomatch=0))
+        maxpar = max(match(ped[i, c('FID','MID')], ped[, 'ID'], nomatch=0))
         if(maxpar > i) {
-            print("reordering!")
-            z = z[c(seq_len(i-1), (i+1):maxpar, i, seq_len(N-maxpar)+maxpar), ]
+            ped = ped[c(seq_len(i-1), (i+1):maxpar, i, seq_len(N-maxpar)+maxpar), ]
         }
-        else i = i+1
+        else 
+            i = i+1
     }
-    
-    restore_linkdat(z, attrs = attributes(xx), checkped=TRUE)
+    if(is.linkdat(x))
+        return(restore_linkdat(ped, attrs=attrs))
+    else return(ped)
 }
 
 ######## DEPRECIATED ##########
 
 # Replaced by cousins()
 cousinPed <- function(degree) {
-	stopifnot(degree>=0)
-	if(degree==0) return(nuclearPed(noffs=2, sex=1:2))
-	p = cbind(ID=1:4, FID=c(0,0,1,1), MID=c(0,0,2,2), SEX=c(1,2,1,1), AFF=1)
-	for (n in 1:degree)
-		p = rbind(p, c(4*n+1,0,0,2,1), c(4*n+2,0,0,2,1), c(4*n+3,4*n-1,4*n+1,1,1), c(4*n+4,4*n,4*n+2,1,1))
-	p[nrow(p), 'SEX'] = 2
-	linkdat(p, verbose=FALSE)
+    stopifnot(degree>=0)
+    if(degree==0) return(nuclearPed(noffs=2, sex=1:2))
+    p = cbind(ID=1:4, FID=c(0,0,1,1), MID=c(0,0,2,2), SEX=c(1,2,1,1), AFF=1)
+    for (n in 1:degree)
+        p = rbind(p, c(4*n+1,0,0,2,1), c(4*n+2,0,0,2,1), c(4*n+3,4*n-1,4*n+1,1,1), c(4*n+4,4*n,4*n+2,1,1))
+    p[nrow(p), 'SEX'] = 2
+    linkdat(p, verbose=FALSE)
 }
 
 # Replaced by halfCousins()
 halfCousinPed <- function(degree) {
-	stopifnot(degree>=0)
-	if(degree==0) p = cbind(ID=1:5, FID=c(0,0,0,1,1), MID=c(0,0,0,2,3), SEX=c(1,2,2,1,2), AFF=1)
-	else {
-		p = cbind(ID=1:3, FID=c(0,0,0), MID=c(0,0,0), SEX=c(1,2,2), AFF=1)
-		for (n in seq_len(degree))
-			p = rbind(p, c(4*n,4*n-4,4*n-3,1,1), c(4*n+1,0,0,2,1), c(4*n+2,4*n-2,4*n-1,1,1), c(4*n+3,0,0,2,1)) #add 1 generation: son in line 1, his wife, son in line 2, his wife
-		dd = degree+1
-		p = rbind(p, c(4*dd,4*dd-4,4*dd-3,1,1), c(4*dd+1,4*dd-2,4*dd-1,2,1)) #last generation - one boy, one girl.
-		p[4,c(2,3)] = c(1,2); p[6,c(2,3)] = c(1,3) 
-	}
-	linkdat(p, verbose=FALSE)
+    stopifnot(degree>=0)
+    if(degree==0) p = cbind(ID=1:5, FID=c(0,0,0,1,1), MID=c(0,0,0,2,3), SEX=c(1,2,2,1,2), AFF=1)
+    else {
+        p = cbind(ID=1:3, FID=c(0,0,0), MID=c(0,0,0), SEX=c(1,2,2), AFF=1)
+        for (n in seq_len(degree))
+            p = rbind(p, c(4*n,4*n-4,4*n-3,1,1), c(4*n+1,0,0,2,1), c(4*n+2,4*n-2,4*n-1,1,1), c(4*n+3,0,0,2,1)) #add 1 generation: son in line 1, his wife, son in line 2, his wife
+        dd = degree+1
+        p = rbind(p, c(4*dd,4*dd-4,4*dd-3,1,1), c(4*dd+1,4*dd-2,4*dd-1,2,1)) #last generation - one boy, one girl.
+        p[4,c(2,3)] = c(1,2); p[6,c(2,3)] = c(1,3) 
+    }
+    linkdat(p, verbose=FALSE)
 }

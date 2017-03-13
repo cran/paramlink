@@ -4,9 +4,9 @@ relationLR = function(ped_numerator, ped_denominator, ids, alleles, afreq=NULL,
     
     ped_claim = ped_numerator 
     ped_true = ped_denominator
-    if (inherits(ped_claim, "linkdat")) 
+    if (is.linkdat(ped_claim)) 
         ped_claim = list(ped_claim)
-    if (inherits(ped_true, "linkdat")) 
+    if (is.linkdat(ped_true)) 
         ped_true = list(ped_true)
     ids_claim = lapply(ped_claim, function(x) ids[ids %in% x$orig.ids])
     ids_true = lapply(ped_true, function(x) ids[ids %in% x$orig.ids])
@@ -48,8 +48,7 @@ relationLR = function(ped_numerator, ped_denominator, ids, alleles, afreq=NULL,
     })
     if (isTRUE(plot) || plot == "plot_only") {
         op = par(oma = c(0, 0, 3, 0), xpd = NA)
-        widths = ifelse(sapply(c(ped_claim, ped_true), inherits, 
-            what = "singleton"), 1, 2)
+        widths = ifelse(sapply(c(ped_claim, ped_true), is.singleton), 1, 2)
         claim_ratio = sum(widths[1:N_claim])/sum(widths)
         layout(rbind(1:N), widths = widths)
         has_genotypes = length(known_genotypes) > 0

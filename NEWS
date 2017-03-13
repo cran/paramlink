@@ -1,6 +1,75 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
 
+2017-03-11: Version 1.1-0
+    * Rewritten the package title and "description", to reflect paramlink's recent features in forensic genetics.
+    
+    * Various clean-ups for CRAN release.
+    
+2017-02-28: Version 1.0-4
+    * New feature: Familias2linkdat() provides conversion from output files of the forensic software "Familias" into paramlink format.
+    
+    * plot.singleton() rewritten, allowing all features of plot.linkdat().
+    
+    * plot.linkdat() and plot.singleton(): id.labels can now be a named vector, e.g. plot(nuclearPed(1), id.labels=c(father=1, mother=2, child=3))
+    
+2017-02-01: Version 1.0-2
+    * Allele reduction ("lumping") was previously not done for markers with non-trivial mutation 
+      matrices. Lumping is now implemented for mutation matrices which always allow it (i.e. 
+      any subset of alleles).  This includes common Familias models like "Equal" and "Proportional".
+
+2017-01-10: Version 0.9-98
+    * New function IBDtriangle() replacing and improving the previous internal 
+      paramlink:::.plot_IBDtriangle().
+    
+    * Minor improvements of the plots in examineKinships().
+    
+2016-12-31: Version 0.9-97
+   * The default values for arguments "id.labels" and "title" in plot.linkdat() and 
+     plot.singleton() are now NULL. The default plotting labels will be taken from x$plot.labels 
+     if this is non-NULL, otherwise x$orig.ids.
+     
+2016-12-20: Version 0.9-96
+   * New feature: transferMarkerdata() for copying marker genotypes between (lists of) linkdat 
+     objects.
+   
+   * Made markerSim() more intelligent in choice of simulation strategy, making it much faster 
+     in many cases.
+     
+   * Stopped markerSim() from outputting "forced genotypes" of unavailable individuals.
+   
+   * Fixed bug in exclusionPower() which manifested when some component of true_ped or claim_ped 
+     did not contain any available individuals.
+   
+2016-12-11: Version 0.9-95
+   * New feature: likelihood with mutations for X-linked markers.
+   
+   * New feature: markerSim() accepts list of linkdat/singleton objects.
+   
+   * Bug fix: markerSim() and oneMarkerDistribution() sometimes gave erroneous results if 
+     loops where broken prior to calling them. Trying to do so now instead raises an error.
+   
+2016-12-08: Version 0.9-94
+   * Improved loop breaking using methods from the 'igraph' package. Automatic selection of loop breakers 
+     now works in pedigrees with (almost) any combination of marriage loops and inbreeding loops.
+   
+   * New function jacquard2() as an alternative to jacquard() which sometimes causes R to crash.
+   
+2016-12-04: Version 0.9-93
+   * Fixed bug in likelihood.singleton() affecting empty markers: In some cases an emtpty numeric() was 
+     returned instead of 1.
+
+2016-12-01: Version 0.9-92
+   * New feature: Loops are now automatically broken whenever applicable. Loop breakers can be supplied 
+     manually as before; otherwise they are autmatically selected.
+
+2016-11-30: Version 0.9-91
+   * New function: plotPedList, for plotting several pedigrees in the same window.
+   
+   * New feature: Likelihood with mutations. When creating marker objects, a mutation matrix 
+     (or a list of such for males and females respectively) can be supplied, which will be taken into 
+     account in likelihood computations involving the marker.
+
 2016-10-14: Version 0.9-9
    * New functions: Several new utility functions for creating cousin-like pedigrees and sib-pair stacks. 
      See ?createPedigree for details.

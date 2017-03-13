@@ -33,9 +33,7 @@ twoMarkerDistribution <- function(x, id, partialmarker1, partialmarker2, theta, 
                               geno.grid.subset(x, m2, id, chrom, make.grid=F)))
     
     if (x$hasLoops) {
-        if(is.null(lb <- loop_breakers))      stop("The pedigree has loops. Please indicate loop breakers.")
-        if(verbose) cat(ifelse(length(lb)==1, "\nBreaking loop at individual", "\nBreaking loops at individuals"), .prettycat(lb, "and"), "\n")
-        x = breakLoops(setMarkers(x, list(m1, m2)), lb)
+        x = breakLoops(setMarkers(x, list(m1, m2)), loop_breakers=loop_breakers, verbose=verbose)
         m1 = x$markerdata[[1]]
         m2 = x$markerdata[[2]]
         SEX = x$pedigree[,'SEX']

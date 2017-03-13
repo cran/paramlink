@@ -69,7 +69,7 @@ If \code{model=TRUE}, a \code{\link{linkres}} object. Otherwise a character cont
 For \code{merlinUnlikely}, a numeric containing the indices of the unlikely, or (if \code{remove=TRUE}) a new \code{linkdat} object where the unlikely markers are removed.
 }
 \references{
-\url{http://www.sph.umich.edu/csg/abecasis/Merlin/}
+\url{http://csg.sph.umich.edu/abecasis/Merlin/}
 }
 \author{
 Magnus Dehli Vigeland

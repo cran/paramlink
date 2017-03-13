@@ -1,162 +1,244 @@
 markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, partialmarker=NULL, 
-                     loop_breakers=NULL, eliminate=0, seed=NULL, method=3, verbose=TRUE) {
+                     loop_breakers=NULL, eliminate=0, seed=NULL, verbose=TRUE) {
+    
+    if (!is.linkdat(x) && !is.linkdat.list(x))
+        stop("x must be either a 'linkdat' object, a 'singleton' object, or a list of such")
+    
+    # if input is a list of linkdat objects: Apply markerSim recursively
+    if (is.linkdat.list(x)) 
+        return(lapply(x, function(xi) markerSim(xi, N=N, available=intersect(available, xi$orig.ids),
+            alleles=alleles, afreq=afreq, partialmarker=partialmarker, loop_breakers=loop_breakers, eliminate=eliminate, seed=seed, verbose=verbose)))
+    
     starttime = proc.time()
     likel_counter = 0
-    if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
+    assert_that(.is.natural(N))
+    if(!is.null(x$loop_breakers)) 
+        stop("Linkdat objects with broken loops are not allowed as input to the `markerSim` function.")
+    
     if (!is.null(partialmarker)) {
-        if (!inherits(partialmarker, "marker")) stop("Argument 'partialmarker' must be a 'marker' object.")
-        else if (nrow(partialmarker)!=x$nInd) stop("Partial marker does not fit the pedigree.")
-        if(!is.null(alleles) || !is.null(afreq)) stop("When 'partialmarker' is non-NULL, both 'alleles' and 'afreq' must be NULL.")
-        if(length(mendelianCheck(setMarkers(x, partialmarker), verbose=F)) > 0) stop("Mendelian error in the given partial marker.")
-    }
+        if(!is.null(alleles) || !is.null(afreq)) 
+            stop("When 'partialmarker' is non-NULL, both 'alleles' and 'afreq' must be NULL.")
+        
+        if(inherits(partialmarker, "marker")) {
+            if (nrow(partialmarker)!=x$nInd) 
+                stop("Partial marker does not fit the pedigree.")
+        } else if(.is.natural(partialmarker) && partialmarker <= x$nMark) {
+            partialmarker = x$markerdata[[partialmarker]] 
+        } else 
+            stop("The 'partialmarker' must be a 'marker' object, or a single integer indicating an existing marker of 'x'.")
+        
+        if(is.null(attr(partialmarker, 'mutmat'))) {
+            err = mendelianCheck(setMarkers(x, partialmarker), verbose=F)
+            if(length(err) > 0) stop("Mendelian error in the given partial marker.")
+        }
+    }   
     else {
         if(is.null(alleles)) stop("Please specify marker alleles.")
         if(is.numeric(alleles) && length(alleles)==1) alleles = seq_len(alleles)
         partialmarker = marker(x, alleles=alleles, afreq=afreq)
     }
-    m = partialmarker; alleles = attr(m, 'alleles'); afreq = attr(m, 'afreq')
-    chrom = if(identical(23L, as.integer(attr(m, 'chrom')))) 'X' else 'AUTOSOMAL'
+    m = partialmarker
+    alleles = attr(m, 'alleles')
+    afreq = attr(m, 'afreq')
+    mutmat = attr(m, 'mutmat')
+    chromattr = attr(m, 'chrom')
+    chrom = if(identical(23L, as.integer(chromattr))) 'X' else 'AUTOSOMAL'
 
-    if(all(m==0))  return(simpleSim(x, N, alleles=alleles, afreq=afreq, available=available, Xchrom=(chrom=='X'), seed=seed, verbose=verbose))
+    if(all(m==0)) return(simpleSim(x, N, alleles=alleles, afreq=afreq, available=available, Xchrom=(chrom=='X'), mutmat=mutmat, seed=seed, verbose=verbose))
 
     allgenos = allGenotypes(nall <- attr(m, 'nalleles'))
-    #al1 = allgenos[,1]; al2 = allgenos[,2]; nGeno = nrow(allgenos)
-    
-    if(verbose) {
-        cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker locus\n")
-        cat("Simulating genotypes for", ifelse(length(available)==1, "individual", "individuals"), .prettycat(available, "and"), "\n")
-        cat("\nAlleles and frequencies:\n")
-        print(structure(round(afreq,3), names=alleles))
-        cat("\nConditioning on the following genotypes:\n")
-        print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(m, missing="-", singleCol=TRUE, sep="/", sex=x$pedigree[, 'SEX'])))
-        cat("\n")
-    }
+    mutations = !is.null(mutmat)
     
     gridlist = geno.grid.subset(x, m, x$orig.ids, chrom, make.grid=F)
-    for(id in 1:x$nInd)
-        if(any(m[id, ]==0) && length(gridlist[[id]]) == 1) {
-            m[id,] =  allgenos[gridlist[[id]], ]
-            if(verbose) cat("Individual", x$orig.ids[id], "has forced genotype", ifelse(chrom=="X", alleles[m[id,1]], paste(alleles[m[id,]], collapse="/")), "\n")
-        }
-
-    preexisting = (m[,1]!=0 | m[,2]!=0)
-    preexist_orig = x$orig.ids[preexisting]
-    cost_orig = .mysetdiff(available, preexist_orig)
-    if(method == 3) {  # TODO: Make this (a lot) smarter! Often worse than method 2, e.g. in twoloops pedigree. 
-        sim_anc_orig = .mysetdiff(c(cost_orig, ancestors(x, id=cost_orig)), preexist_orig)
-        cost_orig = sim_anc_orig[inpreanc <- (sim_anc_orig %in% ancestors(x, id=preexist_orig))]
-        simpledrop_orig = sim_anc_orig[!inpreanc]
-    } 
     
-    if (loops <- x$hasLoops)    {        
-        if(is.null(lb <- loop_breakers))      stop("The pedigree has loops. Please indicate loop breakers.")
-        orig_ids = x$orig.ids
-        if(verbose) cat(ifelse(length(lb)==1, "Breaking loop at individual ", "\nBreaking loops at individuals "), .prettycat(lb, "and"), "\n", sep="")
-        x = breakLoops(setMarkers(x, partialmarker, missing=0), lb)
-        m = x$markerdata[[1]]
-        gridlist = gridlist[sort.int(match(c(orig_ids, lb), orig_ids))]
-        if(method > 1)     cost_orig = unique.default(c(cost_orig, lb)) # added c() here.
+    # Forced genotypes:
+    forcedTF = (m[, 1]==0 | m[, 2]==0) & (lengths(gridlist) == 1)
+    m.unforced = m # saving a copy for use in verbose output below
+    for(id in (1:x$nInd)[forcedTF]) 
+        m[id,] =  allgenos[gridlist[[id]], ]
+        
+    if(verbose) {
+        cat(ifelse(chrom=="AUTOSOMAL", "Autosomal", "X-linked"), "marker locus.\n")
+        cat(sprintf("Simulating genotypes for individual%s %s.\n", ifelse(length(available)==1, "", "s"), .prettycat(available, "and")))
+        cat("\nAlleles and frequencies:\n")
+        print(structure(round(afreq,3), names=alleles))
+        if(mutations) {
+            cat('\nMutation matrices:\n')
+            print(mutmat)
+        }
+        else cat("\n")
+        cat("Conditioning on the following genotypes:\n")
+        print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(m.unforced, missing="-", singleCol=TRUE, sep="/", sex=x$pedigree[, 'SEX'])))
+        if(any(forcedTF)) {
+            cat("\nForced genotypes:\n")
+            for(id in (1:x$nInd)[forcedTF]) {
+                allelchars = alleles[m[id, ]]
+                if(chrom=="X") allelchars = allelchars[1]
+                cat(sprintf("Individual %d: %s\n", x$orig.ids[id], paste(allelchars, collapse="/")))
+            }
+        }
     }
-
-    cost_orig = cost_orig[order(!cost_orig %in% x$loop_breakers[,1])] #place loop breakers first!
-    cost_int = .internalID(x, cost_orig)
+    
+    # Making copies of x and m before possible loop breaking (used to determine simulation strategy)
+    xorig = setMarkers(x, NULL)
+    morig = m
+    
+    if (loops <- x$hasLoops) {        
+        orig_ids = x$orig.ids
+        x = breakLoops(setMarkers(x, m), loop_breakers=loop_breakers, verbose=verbose)
+        m = x$markerdata[[1]]
+        loop_breakers = x$loop_breakers[,1]
+        gridlist = gridlist[sort.int(match(c(orig_ids, loop_breakers), orig_ids))]
+    }
+    
     ngrid = lengths(gridlist)
     ped = x$pedigree    
     SEX = ped[,'SEX']
+    
+    ##### Determine simulation strategy ####
+    # Note: Using original x and m in this section (i.e. before loop breaking)
+    
+    # Individuals that are typed (or forced - see above). Simulations condition on these.
+    typedTF = (morig[,1]!=0 | morig[,2]!=0)
+    typed = xorig$orig.ids[typedTF]
+    
+    # Target individuals: untyped individuals that we seek to simulate
+    targets = .mysetdiff(available, typed)
+    untyped_breakers = if(loops) .mysetdiff(loop_breakers, typed) else NULL
+    
+    # Method 2: Compute joint dist of some target individuals, brute force on the remaining
+    hardsim.method2 = unique.default(c(untyped_breakers, targets))
+    hardsim.method2_int = .internalID(x, hardsim.method2)
+    method2 = .optimal.precomputation(hardsim.method2_int, N, gridlist, chrom, SEX=SEX)
+    
+    ### Method 3: Extend target to ancestors of targets. 
+    targets.plus.ancestors = .mysetdiff(c(targets, ancestors(xorig, id=targets)), typed)
+    
+    # Only ancestors of typed individuals are hard; the others can be simple-dropped
+    ancestors.of.typed = ancestors(xorig, id=typed)
+    
+    hardsim.method3 = intersect(targets.plus.ancestors, ancestors.of.typed)
+    hardsim.method3 = unique.default(c(untyped_breakers, hardsim.method3))
+    
+    hardsim.method3_int = .internalID(x, hardsim.method3)
+    method3 = .optimal.precomputation(hardsim.method3_int, N, gridlist, chrom, SEX=SEX)
+    
+    if(method2$calls <= method3$calls) {
+        joint_int = method2$id_int
+        bruteforce_int = .mysetdiff(hardsim.method2_int, joint_int)
+        simpledrop = numeric()
+    } else {
+        joint_int = method3$id_int
+        bruteforce_int = .mysetdiff(hardsim.method3_int, joint_int)
+        simpledrop = .mysetdiff(targets.plus.ancestors, ancestors.of.typed)
+    }
+    
+    simpledrop_int = .internalID(x, simpledrop)
+    simple.founders_int = intersect(simpledrop_int, x$founders)
+    simple.nonfounders_int = intersect(simpledrop_int, x$nonfounders)
+        
+    if(length(simple.nonfounders_int)>0) {
+        # Ensure sensible ordering of nonfounders (for gene dropping)
+        done = c(.internalID(x, typed), joint_int, bruteforce_int, simple.founders_int)
+        v = simple.nonfounders_int
+        v.ordered = numeric()
+        while(length(v)>0) {
+            i = match(T, (ped[v, 'FID'] %in% done) & (ped[v, 'MID'] %in% done))
+            if(is.na(i)) stop("Could not determine sensible order for gene dropping. Bug report to magnusdv@medisin.uio.no is appreciated!")
+            v.ordered = c(v.ordered, v[i])
+            done = c(done, v[i])
+            v = v[-i]
+        }
+        simple.nonfounders_int = v.ordered
+    }
+    
+    if(verbose) {
+        cat("\nSimulation strategy:\n")
+        
+        .tostring = function(v) if (length(v)>0) .prettycat(x$orig.ids[v], 'and') else "None"
+        cat(sprintf("Pre-computed joint distribution: %s.\n", .tostring(joint_int)))
+        cat(sprintf("Brute force conditional simulation: %s.\n", .tostring(bruteforce_int)))
+        cat(sprintf("Hardy-Weinberg sampling (founders): %s.\n", .tostring(simple.founders_int)))
+        cat(sprintf("Simple gene dropping: %s.\n", .tostring(simple.nonfounders_int)))
+        cat(sprintf("Required likelihood computations: %d\n", min(method2$calls, method3$calls)))
+    }
     # create initial marker matrix: two columns per marker
     markers = rep.int(m, N); dim(markers)=c(x$nInd, 2*N)
     odd = seq_len(N)*2 - 1
     if (!is.null(seed)) set.seed(seed)
     
-    #Method = 2: pre-calculate probabilities for some individuals (big time saver!)
-    if (method >= 2 && length(cost_orig)>0) {  
-        init_int = switch(chrom,    
-        AUTOSOMAL = {
-            ngrid_cost = ngrid[cost_int]
-            initvec = sapply(seq_along(cost_int), function(ci) 
-                           prod(ngrid_cost[seq_len(ci)])  + N*sum(ngrid_cost[seq.int(ci+1, length.out=length(cost_int)-ci)]))
-            cost_int[seq_len(which.min(initvec))]
-        },
-        X = {                
-            males = cost_int[SEX[cost_int]==1]
-            females = cost_int[SEX[cost_int]==2]
-            ngrid_m = lengths(gridlist[males], use.names=F)
-            ngrid_f = lengths(gridlist[females], use.names=F)
-            n_males = length(males)
-            n_females = length(females)
-            # find optimal 'init' values for males/females
-            calls = matrix(nrow=n_males+1, ncol=n_females+1)
-            for(ma in 0:n_males) for(fe in 0:n_females)
-                calls[ma+1, fe+1] = prod(ngrid_m[seq_len(ma)]) * prod(ngrid_f[seq_len(fe)]) + N*sum(c(ngrid_m[seq.int(ma+1, length.out=n_males-ma)], ngrid_f[seq.int(fe+1, length.out=n_females-fe)] )) # = number of times likelihood is called.
-
-            calls.min = arrayInd(which.min(calls), dim(calls)) 
-            c(males[seq_len(calls.min[1]-1)], females[seq_len(calls.min[2]-1)])
-        })
-        
-        if(verbose) cat("\nTime saver: Pre-computing", ifelse(length(init_int)==1, "probabilities for individual", "joint probabilities for individuals"), .prettycat(sort(x$orig.ids[init_int]), 'and'), "\n")    
-        
-        allgenos_row_grid = t.default(fast.grid( gridlist[init_int] )) #Cartesian product. Each row contains 'init' row numbers of allgenos.
-        initp = apply(allgenos_row_grid, 2, function(rownrs) { 
+    if(length(joint_int)>0) {
+        allgenos_row_grid = t.default(fast.grid( gridlist[joint_int] )) #Cartesian product. Each row contains 'init' row numbers of allgenos.
+        jointp = apply(allgenos_row_grid, 2, function(rownrs) { 
             partial = m
-            partial[init_int, ] = allgenos[rownrs, ];   
+            partial[joint_int, ] = allgenos[rownrs, ];   
             likelihood.linkdat(x, locus1=partial, eliminate=eliminate) 
         })
-        likel_counter = likel_counter + length(initp)
-        if (identical(sum(initp), 0)) stop("When trying to pre-compute joint probabilities: All probabilities zero. Mendelian error?")
+        likel_counter = likel_counter + length(jointp)
+        if (identical(sum(jointp), 0)) stop("When trying to pre-compute joint probabilities: All probabilities zero. Mendelian error?")
         
-        # fill the rows of the 'init' individuals 
-        sample_rows = allgenos_row_grid[, suppressWarnings(sample.int(length(initp), size=N, replace=TRUE, prob=initp))]
-        markers[init_int, odd] = allgenos[sample_rows, 1]
-        markers[init_int, odd +1] = allgenos[sample_rows, 2]    
-        cost_int = .mysetdiff(cost_int, init_int)
+        # fill the rows of the 'joint' individuals 
+        sample_rows = allgenos_row_grid[, suppressWarnings(sample.int(length(jointp), size=N, replace=TRUE, prob=jointp))]
+        markers[joint_int, odd] = allgenos[sample_rows, 1]
+        markers[joint_int, odd +1] = allgenos[sample_rows, 2]    
     }
     
-    # The "costly" individuals. These require many likelihood calls: One call per marker per individual. (With 'method=1' everybody is treated this way.)
-    if(verbose) {
-        cat("\nBrute force (time consuming) conditional simulation ")
-        if((lc <- length(cost_int))==0) cat("not needed\n") else cat("for", ifelse(lc==1, "individual", "individuals"), .prettycat(sort(x$orig.ids[cost_int]), 'and'), '\n')
+    if(length(bruteforce_int)>0) {
+        for (i in bruteforce_int) {
+            gridi = gridlist[[i]]
+            rowsample = unlist(lapply(2*seq_len(N), function(mi) {
+                partial = m
+                partial[] = markers[, c(mi-1, mi)]  # preserves all attributes of the m.
+                probs = unlist(lapply(gridi, function(r) { 
+                    partial[i, ] = allgenos[r,]
+                    likelihood.linkdat(x, locus1=partial, eliminate=eliminate)
+                }))
+                if (sum(probs)==0) { print(cbind(ped, partial)); stop("\nIndividual ", x$orig.ids[i],": All genotype probabilities zero. Mendelian error?")}
+                sample(gridi, size=1, prob=probs)
+            }))
+            markers[i, odd] = allgenos[rowsample, 1]
+            markers[i, odd+1] = allgenos[rowsample, 2]  
+        }
+        likel_counter = likel_counter + N*sum(ngrid[bruteforce_int])
     }
-    for (i in cost_int) {
-        gridi = gridlist[[i]]
-        rowsample = unlist(lapply(2*seq_len(N), function(mi) {
-            partial = m
-            partial[] = markers[, c(mi-1, mi)]  # preserves all attributes of the m.
-            probs = unlist(lapply(gridi, function(r) { partial[i, ] = allgenos[r,];    likelihood.linkdat(x, locus1=partial, eliminate=eliminate)    }))
-            if (sum(probs)==0) { print(cbind(ped, partial)); stop("\nIndividual ", x$orig.ids[i],": All genotype probabilities zero. Mendelian error?")}
-            sample(gridi, size=1, prob=probs)
-        }))
-        markers[i, odd] = allgenos[rowsample, 1]; markers[i, odd+1] = allgenos[rowsample, 2]  
-    }
-    likel_counter = likel_counter + N*sum(ngrid[cost_int])
     
-    # Method=3: Simulate final individuals by sampling random founder alleles followed by gene dropping:
-    if(method == 3 && length(simpledrop_orig)>0) {
-        if(verbose) cat("\nTime saver: Simulation by gene dropping for individuals", .prettycat(sort(simpledrop_orig), 'and'), '\n')
-        
+    if(length(simpledrop)>0) {
         loopbr_int = .internalID(x, x$loop_breakers[, 1]) #integer(0) if no loops
         loopbr_dup_int = .internalID(x, x$loop_breakers[, 2])
         
-        simpledrop_int = .internalID(x, simpledrop_orig)
-        simple_founders = simpledrop_int[simple_is_founder <- simpledrop_int %in% x$founders]
-        simple_nonfounders = sort.int(simpledrop_int[!simple_is_founder]) #sorting is crucial here, to make sure genedropping goes down the pedigree.
-        
-        if(chrom=='AUTOSOMAL')     markers[simple_founders, ] = sample.int(nall, size=2*N*sum(simple_is_founder), replace=TRUE, prob=afreq)
-        else for (f in simple_founders)  
-            markers[f, ] = switch(SEX[f], rep(sample.int(nall, size=N, replace=TRUE, prob=afreq), each=2), sample.int(nall, size=2*N, replace=TRUE, prob=afreq))
+        if(chrom=='AUTOSOMAL')     
+            markers[simple.founders_int, ] = sample.int(nall, size=2*N*length(simple.founders_int), replace=TRUE, prob=afreq)
+        else for (f in simple.founders_int)  
+            markers[f, ] = switch(SEX[f], 
+                rep(sample.int(nall, size=N, replace=TRUE, prob=afreq), each=2), 
+                sample.int(nall, size=2*N, replace=TRUE, prob=afreq))
         
         markers[loopbr_dup_int,] = markers[loopbr_int, ] # Genotypes of the duplicated individuals. Some of these may be ungenotyped...save time by excluding these?
         
-        for(id in simple_nonfounders) {
+        for(id in simple.nonfounders_int) {
             fa = ped[id, 'FID']; mo = ped[id, 'MID']
             if(chrom=='AUTOSOMAL') {
-                markers[id, odd] = markers[fa, odd + .rand01(N)];    markers[id, odd+1] = markers[mo, odd + .rand01(N)]
+                paternal = markers[fa, odd + .rand01(N)]
+                maternal = markers[mo, odd + .rand01(N)]
+                if(mutations) {
+                    paternal = vapply(paternal, function(a) sample.int(nall, size=1, prob=mutmat$male[a,]), 1)
+                    maternal = vapply(maternal, function(a) sample.int(nall, size=1, prob=mutmat$female[a,]), 1)
+                }
             }
-            else {
-                switch(SEX[id], { markers[id, ] <- rep(markers[mo, odd + .rand01(N)], each=2) },
-                    {markers[id, odd] <- markers[fa, odd + .rand01(N)];        markers[id, odd+1] <- markers[mo, odd + .rand01(N)] }
-            )}    
-            if((indx <- match(id, loopbr_int, nomatch=0)) > 0)
-                markers[loopbr_dup_int[indx], ] = markers[id, ]                
+            else { 
+                maternal = markers[mo, odd + .rand01(N)]
+                if(mutations)
+                    maternal = vapply(maternal, function(a) sample.int(nall, size=1, prob=mutmat$female[a,]), 1)
+            
+                if(SEX[id]==1) paternal = maternal # if boy, only maternal
+                else {
+                    paternal = markers[fa, odd] # if girl, fathers allele is forced
+                    if(mutations)
+                        paternal = vapply(paternal, function(a) sample.int(nall, size=1, prob=mutmat$male[a,]), 1)
+                }
+            }
+            markers[id, odd] = paternal
+            markers[id, odd+1] = maternal
         }
     }
             
@@ -164,17 +246,57 @@ markerSim <- function(x, N=1, available=x$orig.ids, alleles=NULL, afreq=NULL, pa
         markers = markers[-match(x$loop_breakers[,2], x$orig.ids), ]
         x = tieLoops(x)
     }
-    markers[!preexisting & !(x$orig.ids %in% available), ] = 0
+    
+    # removing genotypes for individuals that are i) originally untyped and ii) unavailable
+    typedTF[forcedTF] = F
+    unavailable = !(x$orig.ids %in% available)
+    markers[!typedTF & unavailable, ] = 0
     attrib = attributes(partialmarker)
-    markerdata_list = lapply(seq_len(N), function(k) {mk = markers[, c(2*k-1,2*k)];    attributes(mk) = attrib; mk})
+    attrib$name = NA
+    markerdata_list = lapply(seq_len(N), function(k) {
+        mk = markers[, c(2*k-1,2*k)]
+        attributes(mk) = attrib
+        mk
+    })
     class(markerdata_list) = "markerdata"
     x = setMarkers(x, markerdata_list)
-    if(verbose) cat("\n",x$nMark, " markers simulated.\nNumber of calls to the likelihood function: ", likel_counter, ".\nTotal time used: ", (proc.time() - starttime)[["elapsed"]], " seconds.\n", sep="")
+    seconds = (proc.time() - starttime)[["elapsed"]]
+    if(verbose) cat(sprintf("\n%d markers simulated.\nNumber of calls to the likelihood function: %d.\nTotal time used: %f seconds.\n", x$nMark, likel_counter, seconds))
     x
 }
 
+.optimal.precomputation = function(target_int, Nsim, gridlist, chrom, SEX=NULL) {
+    if(length(target_int) == 0)
+        return(list(calls = 0, id_int=target_int))
+    if(chrom=="AUTOSOMAL") {
+        T = length(target_int)
+        ngrid_target = lengths(gridlist[target_int])
+        callsCum = sapply(1:T, function(ci) 
+            prod(ngrid_target[seq_len(ci)]) + Nsim*sum(ngrid_target[seq_len(T-ci) + ci]))
+        minimum_index = which.min(callsCum)
+        opt = list(calls = callsCum[minimum_index], id_int=target_int[seq_len(minimum_index)])
+    }
+    else if(chrom=="X") {                
+        males = target_int[SEX[target_int]==1]
+        females = target_int[SEX[target_int]==2]
+        ngrid_m = lengths(gridlist[males], use.names=F)
+        ngrid_f = lengths(gridlist[females], use.names=F)
+        M = length(males)
+        F = length(females)
+        # find optimal 'init' values for males/females
+        callsCum = matrix(nrow=M+1, ncol=F+1)
+        for(ma in 0:M) for(fe in 0:F) # = number of times likelihood is called.
+            callsCum[ma+1, fe+1] = prod(ngrid_m[seq_len(ma)]) * prod(ngrid_f[seq_len(fe)]) + Nsim*sum(c(ngrid_m[seq_len(M-ma) + ma], ngrid_f[seq_len(F-fe) + fe])) 
 
-simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, verbose=T) {
+        minimum_index = arrayInd(which.min(callsCum), dim(callsCum)) 
+        id_int = c(males[seq_len(minimum_index[1]-1)], females[seq_len(minimum_index[2]-1)])
+        opt = list(calls = callsCum[minimum_index], id_int=id_int)
+    }
+    return(opt)
+}
+
+
+simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, mutmat=NULL, seed=NULL, verbose=T) {
     starttime = proc.time()
     if(missing(alleles)) {
         if(missing(afreq)) stop("Both 'alleles' and 'afreq' cannot be missing")
@@ -187,13 +309,33 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
         afreq = rep(afreq, length=N)
     if(missing(available)) 
         available = x$orig.ids
-        
+    mutations = !is.null(mutmat)
+    if(mutations) {
+        stopifnot(is.list(mutmat) || is.matrix(mutmat))
+        # If single matrix given: make sex specific list
+        if(is.matrix(mutmat)) {
+            mutmat = .checkMutationMatrix(mutmat, alleles)
+            mutmat = list(male=mutmat, female=mutmat)
+        }
+        else {
+            stopifnot(length(mutmat)==2, setequal(names(mutmat), c('female', 'male')))
+            mutmat$female = .checkMutationMatrix(mutmat$female, alleles, label="female")
+            mutmat$male = .checkMutationMatrix(mutmat$male, alleles, label="male")
+        }
+    }
+    
     if(verbose) {
-        cat(ifelse(!Xchrom, "Autosomal", "X-linked"), "marker locus\n")
-        cat("Unconditional simulating of genotypes for", ifelse(length(available)==1, "individual", "individuals"), .prettycat(available, "and"), "\n")
+        plural.s = ifelse(length(available)==1, '', 's')
+        cat(ifelse(!Xchrom, "Autosomal", "X-linked"), "marker locus.\n")
+        cat(sprintf("Unconditional simulating of genotypes for individual%s %s.\n", plural.s, .prettycat(available, "and")))
         cat("\nAlleles and frequencies:\n")
         if(variableSNPfreqs) cat("SNPs with allele 1 frequencies", paste(head(afreq, 5), collapse=", "), ifelse(N>5, '...\n','\n'))
         else print(structure(round(afreq,3), names=alleles))
+        if(mutations) {
+            cat('\nMutation matrices:\n')
+            print(mutmat)
+        }
+        else cat("\n")
     }
     
     ped = x$pedigree
@@ -208,9 +350,19 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
         }
         for(id in x$nonfounders) {
             fa = ped[id, 'FID']; mo = ped[id, 'MID']
-            switch(ped[id, 'SEX'], 
-                {m[id, ] <- rep(m[mo, odd + .rand01(N)], each=2)},
-                {m[id, odd] <- m[fa, odd + .rand01(N)]; m[id, odd+1] = m[mo, odd + .rand01(N)]})
+            maternal = m[mo, odd + .rand01(N)]
+            if(mutations)
+                maternal = vapply(maternal, function(a) sample.int(nall, size=1, prob=mutmat$female[a,]), 1)
+            
+            if(ped[id, 'SEX']==1) 
+                paternal = maternal # if boy, only maternal
+            else {
+                paternal = m[fa, odd] # if girl, fathers allele is forced
+                if(mutations)
+                    paternal = vapply(paternal, function(a) sample.int(nall, size=1, prob=mutmat$male[a,]), 1)
+            }
+            m[id, odd] = paternal
+            m[id, odd+1] = maternal
         }
     }
     else {
@@ -220,14 +372,20 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
         m[x$founders, ] = allelsamp
         for(id in x$nonfounders) {
             fa = ped[id, 'FID']; mo = ped[id, 'MID']
-            m[id, odd] = m[fa, odd + .rand01(N)]
-            m[id, odd+1] = m[mo, odd + .rand01(N)]
+            paternal = m[fa, odd + .rand01(N)]
+            maternal = m[mo, odd + .rand01(N)]
+            if(!is.null(mutmat)) {
+                paternal = vapply(paternal, function(a) sample.int(nall, size=1, prob=mutmat$male[a,]), 1)
+                maternal = vapply(maternal, function(a) sample.int(nall, size=1, prob=mutmat$female[a,]), 1)
+            }
+            m[id, odd] = paternal
+            m[id, odd+1] = maternal
         }
     }
 
     m[!x$orig.ids %in% available, ] = 0
     if(variableSNPfreqs) {
-        attrib = attributes(marker(x, alleles=alleles, afreq=NULL, chrom=NA, missing=0))
+        attrib = attributes(marker(x, alleles=alleles, afreq=NULL, chrom=NA, mutmat=mutmat, missing=0))
         frqs = as.vector(rbind(afreq,1-afreq))
         markerdata_list = lapply(odd, function(k) {
             mk = m[, c(k, k+1)]
@@ -237,12 +395,16 @@ simpleSim = function(x, N, alleles, afreq, available, Xchrom=FALSE, seed=NULL, v
         })
     }
     else {
-        attrib = attributes(marker(x, alleles=alleles, afreq=afreq, chrom=ifelse(Xchrom, 23, NA), missing=0))
-        markerdata_list = lapply(odd, function(k) {mk = m[, c(k, k+1)];    attributes(mk) = attrib; mk})
+        attrib = attributes(marker(x, alleles=alleles, afreq=afreq, chrom=ifelse(Xchrom, 23, NA), mutmat=mutmat,  missing=0))
+        markerdata_list = lapply(odd, function(k) {
+            mk = m[, c(k, k+1)]
+            attributes(mk) = attrib; mk
+        })
     }
     x = setMarkers(x, structure(markerdata_list, class = "markerdata"))
-    if(verbose) cat("\n", x$nMark, " markers simulated.\nNumber of calls to the likelihood function: 0.\nTotal time used: ", (proc.time() - starttime)[["elapsed"]], " seconds.\n", sep="")
+    if(verbose) {
+        seconds = (proc.time() - starttime)[["elapsed"]]
+        cat(sprintf("%d markers simulated.\nNumber of calls to the likelihood function: 0.\nTotal time used: %f seconds.\n", x$nMark, seconds))
+    }
     x
 }
-
-

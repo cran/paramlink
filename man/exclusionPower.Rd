@@ -7,9 +7,8 @@ Power of exclusion
 Computes the power (of a single marker) of excluding a claimed relationship, given the true relationship. 
 }
 \usage{
-exclusionPower(ped_claim, ped_true, ids, alleles, afreq = NULL, 
-               known_genotypes = list(), loop_breakers = NULL, 
-               Xchrom = F, plot = T)
+exclusionPower(ped_claim, ped_true, ids, markerindex = NULL, alleles = NULL,
+               afreq = NULL, known_genotypes = list(), Xchrom = FALSE, plot = TRUE)
 }
 \arguments{
   \item{ped_claim}{
@@ -22,20 +21,20 @@ a \code{\link{linkdat}} object, or a list of several linkdat and/or singleton ob
   \item{ids}{
 individuals available for genotyping.
 }
+  \item{markerindex}{
+NULL, or a single numeric indicating the index of a marker of \code{ped_claim} from which \code{alleles}, \code{afreq} and \code{known_genotypes} will be extracted.
+}
   \item{alleles}{
-a numeric or character vector containing marker alleles names
+a numeric or character vector containing marker alleles names. Ignored if \code{markerindex} is non-NULL.
 }
   \item{afreq}{
-a numerical vector with allele frequencies. An error is given if they don't sum to 1 (rounded to 3 decimals).
+a numerical vector with allele frequencies. An error is given if they don't sum to 1 (rounded to 3 decimals). Ignored if \code{markerindex} is non-NULL.
 }
   \item{known_genotypes}{
-list of triplets \code{(a, b, c)}, indicating that individual \code{a} has genotype \code{b/c}.
-}
-  \item{loop_breakers}{
-a numeric containing IDs of individuals to be used as loop breakers. Relevant only if any of the pedigrees has loops. See \code{\link{breakLoops}}.
+list of triplets \code{(a, b, c)}, indicating that individual \code{a} has genotype \code{b/c}. Must be NULL if \code{markerindex} is non-NULL.
 }
   \item{Xchrom}{
-a logical: Is the marker on the X chromosome?
+a logical: Is the marker on the X chromosome? Ignored if \code{markerindex} is non-NULL.
 }
   \item{plot}{
 either a logical or the character "plot_only", controlling if a plot should be produced. If "plot_only", a plot is drawn, but no further computations 
@@ -101,29 +100,30 @@ PE4 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters, ids = c(2,
 
 stopifnot(round(c(PE1,PE2,PE3,PE4), 5) == c(0.03125, 0.00405, 0.08203, 0.03090))
 
-\dontrun{
 ####### How does the power change if the true pedigree is inbred?  
-
 sisters_LOOP = addParents(sisters, 101, father = 201, mother = 202)
 sisters_LOOP = addParents(sisters_LOOP, 102, father = 201, mother = 203)
 
 # Equifrequent SNP:
-PE5 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, loop = 101,
+PE5 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP,
                      ids = c(2, 3), alleles = 2)
 
 # SNP with MAF = 0.1:
-PE6 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, loop = 101,
+PE6 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP,
                      ids = c(2, 3), alleles = 2, afreq=c(0.9, 0.1))
 
+stopifnot(round(c(PE5,PE6), 5) == c(0.03125, 0.00765))
+
+\dontrun{
 # Equifrequent tetra-allelic marker:
-PE7 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, loop = 101,
+PE7 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP,
                      ids = c(2, 3), alleles = 4)
 
 # Tetra-allelic marker with one major allele:
-PE8 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, loop = 101, 
-                     ids = c(2, 3), alleles = 4, afreq=c(0.7, 0.1, 0.1, 0.1))   
+PE8 = exclusionPower(ped_claim = mother_daughter, ped_true = sisters_LOOP, 
+                     ids = c(2, 3), alleles = 4, afreq=c(0.7, 0.1, 0.1, 0.1))  
 
-stopifnot(round(c(PE5,PE6,PE7,PE8), 5) == c(0.03125, 0.00765, 0.07617, 0.03457))
+stopifnot(round(c(PE7,PE8), 5) == c(0.07617, 0.03457))
 }
 }
 \keyword{math}

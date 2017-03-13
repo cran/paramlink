@@ -1,12 +1,11 @@
 linkageSim <- function(x, N=1, available=x$available, afreq=NULL, partialmarker=NULL, 
                    loop_breakers=NULL, unique=FALSE, seed=NULL, verbose=TRUE) {
-    if (any(!is.numeric(N), length(N)>1, N%%1 != 0)) stop("N must be a positive integer.")
+    assert_that(.is.natural(N))
     if (is.null(x$model)) stop("No model set. Use setModel().")
-    if ((loops <- x$hasLoops) && is.null(loop_breakers))  stop("The pedigree has loops. Please indicate loop breakers.")
     if (!is.null(partialmarker)) {
-      stop("Not implemented yet")
-        if (!inherits(partialmarker, "marker")) stop("Argument 'partialmarker' must be a 'marker' object (or NULL).")
-        else if (nrow(partialmarker)!=x$nInd) stop("Partial marker does not fit the pedigree.")
+        stop("Not implemented yet")
+        assert_that(inherits(partialmarker, "marker"))
+        if (nrow(partialmarker)!=x$nInd) stop("Partial marker does not fit the pedigree.")
         if(!is.null(afreq)) stop("When 'partialmarker' is non-NULL, 'afreq' must be NULL.")
         if(length(mendelianCheck(setMarkers(x, partialmarker), verbose=F)) > 0) stop("Mendelian error in the given partial marker.")
     }
@@ -34,13 +33,10 @@ linkageSim <- function(x, N=1, available=x$available, afreq=NULL, partialmarker=
         print(data.frame(ID=x$orig.ids, GENO=.prettyMarkers(m, missing="-", singleCol=TRUE, sex=x$pedigree[, 'SEX'])), row.names=FALSE)
     }
 
-    if(loops) {        
-        lb = loop_breakers
-        x = breakLoops(setMarkers(x, m), lb)
-        #if(verbose) cat(ifelse(length(lb)==1, "Breaking loop at individual ", "\nBreaking loops at individuals "), 
-        #                .prettycat(lb, "and"), "\n", sep="")
+    if(loops <- x$hasLoops) {        
+        x = breakLoops(setMarkers(x, m), loop_breakers=loop_breakers, verbose=verbose)
         m = x$markerdata[[1]]    
-        sim_origs = unique.default(c(sim_origs, lb))
+        sim_origs = unique.default(c(sim_origs, loop_breakers))
     }
    
     initialCalc = .initialCalc(x, afreq, chrom)
@@ -81,7 +77,7 @@ linkageSim <- function(x, N=1, available=x$available, afreq=NULL, partialmarker=
         SEX = x$pedigree[,'SEX']
         males_int = sim_indivs[SEX[sim_indivs]==1]; females_int = sim_indivs[SEX[sim_indivs]==2]
         n_males=length(males_int); n_females=length(females_int)
-        loop_int = .internalID(x, loop_breakers); loop_m = sum(SEX[loop_int]==1); loop_f = sum(SEX[loop_int]==2)
+        loop_m = sum(SEX[loop_int]==1); loop_f = sum(SEX[loop_int]==2)
       
         # find optimal 'init' values for males/females
         gtM = nall;  gt_values_m = 1:nall; gtF = gt_L

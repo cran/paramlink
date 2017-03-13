@@ -1,9 +1,11 @@
 likelihood = function(x, ...)  UseMethod("likelihood", x)
 
 likelihood.singleton = function(x, locus1, logbase=NULL, ...) {
+    if (!inherits(locus1, "marker") && is.numeric(locus1))
+        locus1 = x$markerdata[[locus1]]
     if(is.null(locus1) || all(locus1==0)) 
         return(if (is.numeric(logbase)) 0 else 1)
-   
+    
     m = locus1
     chrom = as.integer(attr(m, 'chrom'))
     afreq = attr(m, 'afreq') 
@@ -22,46 +24,63 @@ likelihood.singleton = function(x, locus1, logbase=NULL, ...) {
 }
 
 
-likelihood.list = function(x, locus1, ...) {
-   if (all(sapply(x, inherits, what=c('singleton', 'linkdat'))))
-        prod(sapply(1:length(x), function(i) likelihood(x[[i]], locus1[[i]], ...)))
-   else stop("First argument must be either a 'linkdat' object, a 'singleton' object, or a list of such")
+likelihood.list = function(x, locus1, locus2=NULL, ..., returnprod=TRUE) {
+    if (!is.linkdat.list(x))
+        stop("x must be either a 'linkdat' object, a 'singleton' object, or a list of such")
+    if(is.atomic(locus1)) locus1 = rep(list(locus1), length=length(x))
+    if(is.atomic(locus2)) locus2 = rep(list(locus2), length=length(x)) # Note: NULL is atomic
+    liks = vapply(1:length(x), function(i) likelihood(x[[i]], locus1[[i]], locus2[[i]], ...), numeric(1))
+    
+    if(returnprod) return(prod(liks))
+    else liks
 }
 
-likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, eliminate=0, logbase=NULL, ...) {
-    if(x$hasLoops) stop("Unbroken loops in pedigree.")
+likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NULL, eliminate=0, logbase=NULL, loop_breakers=NULL, ...) {
+    if (!inherits(locus1, "marker") && is.numeric(locus1))
+        locus1 = x$markerdata[[locus1]]
+    if (!inherits(locus2, "marker") && is.numeric(locus2))
+        locus2 = x$markerdata[[locus2]]        
+    analysisType = switch(class(locus2), "NULL"=1, "character"=2, "marker"=3)
+    if(analysisType == 2) # "disease"
+        locus2 = NULL
     
-    inform_subnucs = x$subnucs
+    locus1 = .reduce_alleles(locus1)
+    locus2 = .reduce_alleles(locus2) # unchanged if NULL
+      
+    if (x$hasLoops) {
+        cat("Tip: To optimize speed consider breaking loops before calling 'likelihood'. See ?breakLoops.\n")
+        m = list(locus1)
+        m[[2]] = locus2 # no effect if NULL
+        x = breakLoops(setMarkers(x, m), loop_breakers=loop_breakers, verbose=TRUE)
+        locus1 = x$markerdata[[1]]
+        if (analysisType == 3)
+            locus2 = x$markerdata[[2]]
+    }
+    
     chrom = if(identical(attr(locus1, 'chrom'), 23)) 'X' else 'AUTOSOMAL'
     SEX = x$pedigree[, 'SEX']
+    mutmat = attr(locus1, 'mutmat')
+    inform_subnucs = x$subnucs
     
-    if(is.null(locus2)) {
-        if(is.null(startdata)) {
-            inform = .informative(x, locus1)
+    if(is.null(startdata)) {
+        if(analysisType != 2) {
+            inform = .informative(x, locus1, locus2)
             inform_subnucs = inform$subnucs 
             x$founders = c(x$founders, inform$newfounders) 
             x$nonfounders = .mysetdiff(x$nonfounders, inform$newfounders)
-            dat = .startdata_M(x, marker=locus1, eliminate=eliminate)
         }
-        else dat = startdata
-        peelFUN = function(dat, sub) .peel_M(dat, sub, chrom, SEX)    
+        dat = switch(analysisType,
+            .startdata_M(x, marker=locus1, eliminate=eliminate),
+            .startdata_MD(x, marker=locus1, eliminate=eliminate),
+            .startdata_MM(x, marker1=locus1, marker2=locus2, eliminate=eliminate))
     }
-    else if(is.character(locus2)) {
-        dat = if(is.null(startdata)) .startdata_MD(x, marker=locus1, eliminate=eliminate) else startdata
-        peelFUN = function(dat, sub) .peel_MD(dat, sub, theta, chrom, SEX)
-    }
-    else {
-        if(is.null(startdata)) {
-            inform = .informative(x, locus1, locus2); 
-            inform_subnucs = inform$subnucs; 
-            x$founders = c(x$founders, inform$newfounders); 
-            x$nonfounders = .mysetdiff(x$nonfounders, inform$newfounders)
-            dat = .startdata_MM(x, marker1=locus1, marker2=locus2, eliminate=eliminate)
-        }
-        else dat = startdata
-        peelFUN = function(dat, sub) .peel_MM(dat, sub, theta, chrom, SEX)
-    }
+    else dat = startdata
     
+    peelFUN = switch(analysisType,
+        function(dat, sub) .peel_M(dat, sub, chrom, SEX, mutmat=mutmat),
+        function(dat, sub) .peel_MD(dat, sub, theta, chrom, SEX),
+        function(dat, sub) .peel_MM(dat, sub, theta, chrom, SEX))
+        
     if (attr(dat, 'impossible')) return(ifelse(is.numeric(logbase), -Inf, 0))
     
     if(is.null(dups <- x$loop_breakers)) {
@@ -73,13 +92,15 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
     }
     else {
         two2one = function(matr) if(is.matrix(matr)) 1000 * matr[1, ] + matr[2, ] else matr  #if input is vector (i.e. X-linked male genotypes), return it unchanged
-        origs = match(dups[, 1], x$orig.ids); copies = match(dups[, 2], x$orig.ids)
+        origs = match(dups[, 1], x$orig.ids)
+        copies = match(dups[, 2], x$orig.ids)
 
         #For each orig, find the indices of its haplos (in orig$hap) that also occur in its copy. Then take cross product of these vectors.
         loopgrid = fast.grid(lapply(seq_along(origs), function(i) { 
             ori = two2one(dat[[c(origs[i], 1)]])
             seq_along(ori)[ori %in% two2one(dat[[c(copies[i], 1)]])]
         }), as.list=TRUE)
+        
         likelihood = 0
         for(r in loopgrid) { #r a vector of indices: r[i] gives a column number of the hap matrix of orig[i].
             dat1 = dat; attr(dat1, 'impossible') = FALSE
@@ -93,7 +114,6 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
                 dat1[[orig.int]] = list(hap = hap, prob = prob)
                 dat1[[copy.int]] = list(hap = hap, prob = 1)
             }
-            
             for (sub in inform_subnucs)     {
                 pivtype = sub$pivtype
                 dat1 = peelFUN(dat1, sub)
@@ -108,8 +128,6 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 #### FUNCTIONS FOR CREATING THE INTITIAL HAPLOTYPE COMBINATIONS W/PROBABILITIES.
 
 .startdata_M = function(x, marker, eliminate=0) {
-    marker = .reduce_alleles(marker)
-
     afreq = attr(marker, 'afreq')
     chromX = identical(attr(marker, 'chrom'), 23)
 
@@ -175,7 +193,6 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
     }
     
     ## MAIN ###
-    marker = .reduce_alleles(marker)
     afreq = attr(marker, 'afreq')
     chromX = identical(attr(marker, 'chrom'), 23)
     AFF = x$pedigree[, 'AFF']; FOU = (1:x$nInd) %in% x$founders
@@ -234,8 +251,6 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         startprob(h, afreq1, afreq2, founder)
     }
     
-    marker1 = .reduce_alleles(marker1)
-    marker2 = .reduce_alleles(marker2)
     afreq1 = attr(marker1, 'afreq')
     afreq2 = attr(marker2, 'afreq')
     chromX = identical(attr(marker1, 'chrom'), 23)
@@ -298,6 +313,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 .build_genolist <- function(x, marker, eliminate=0) {  #mm: marker matrix, dim = (nInd , 2)
     n = attr(marker, 'nalleles')
     nseq = seq_len(n)
+    
     .COMPLETE = { tmp1 = rep(nseq, each=n); tmp2 = rep.int(nseq, times=n);
         fath = c(tmp1, tmp2); moth = c(tmp2, tmp1)
         rbind(fath, moth, deparse.level=0)[, !duplicated.default(fath*1000 + moth), drop=F] #faster than unique(m, MARGIN=2)
@@ -313,6 +329,11 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         m
     })
     attr(genolist, 'impossible') = FALSE
+    
+    # If mutations, don't eliminate any genotypes
+    if(!is.null(attr(marker, 'mutmat'))) 
+        return(genolist)
+    
     .eliminate(x, genolist, n, repeats=eliminate)
 }
 
@@ -349,24 +370,75 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 
 
 .reduce_alleles = function(marker) {
-    if(all(marker!=0)) return(marker)
-    present = unique.default(as.numeric(marker))
-    if(length(present) >= attr(marker, 'nalleles')) return(marker)  # returns if at most one allele is not present
-    present_alleles = present[present > 0]
-    present_freq = attr(marker, 'afreq')[present_alleles]
-    new_marker = match(marker, present_alleles, nomatch=0)
-    attributes(new_marker) = attributes(marker)
-    attr(new_marker, 'alleles') = c(attr(marker, 'alleles')[present_alleles], "dummy")
-    attr(new_marker, 'nalleles') = length(present)
-    attr(new_marker, 'afreq') = c(present_freq, 1 - sum(present_freq))
+    if(all(marker!=0)) # no reduction needed (OK!)
+        return(marker)
+    attrs = attributes(marker)
+    
+    if(!is.null(attrs$mutmat)) {
+        malem = attrs$mutmat$male
+        femalem = attrs$mutmat$female
+        male_lump = identical(attr(malem, 'lumpability'), "always")
+        female_lump = identical(attr(femalem, 'lumpability'), "always")
+        if(!male_lump || !female_lump) return(marker)
+    }
+    orig_alleles = attrs$alleles
+    
+    # indices of observed alleles
+    present = sort.int(setdiff(unique.default(as.numeric(marker)), 0))
+    if(length(present) >= length(orig_alleles) -1)
+        return(marker)  # return unchanged if all, or all but one, are observed
+    
+    redund = setdiff(1:attrs$nalleles, present)
+    dummylab = paste(orig_alleles[redund], collapse="_")
+    
+    if(length(present)==0) {
+        new_marker = rep.int(0, length(marker))
+        attributes(new_marker) = modifyList(attrs, list(alleles=dummylab, nalleles=1, afreq=1))
+        if(!is.null(attrs$mutmat)) {
+            mm = matrix(1, dimnames=list(dummylab, dummylab))
+            attr(new_marker, 'mutmat') = list(male=mm, female=mm)
+        }
+        return(new_marker)
+    }
+    
+    new_marker = match(marker, present, nomatch=0)
+    new_alleles = c(orig_alleles[present], dummylab)
+    present_freq = attrs$afreq[present]
+    new_freq = c(present_freq, 1 - sum(present_freq))
+    n = length(present)+1
+    
+    attributes(new_marker) = modifyList(attrs, 
+        list(alleles=new_alleles, nalleles=n, afreq=new_freq))
+    
+    if(!is.null(attrs$mutmat)) {
+        if(male_lump) {
+            mm = malem[c(present, redund[1]), c(present, redund[1])]
+            mm[,n] = 1 - rowSums(mm[, -n, drop=F])
+        }
+        if(female_lump) {
+            mf = femalem[c(present, redund[1]), c(present, redund[1])]
+            mf[,n] = 1 - rowSums(mf[, -n, drop=F])
+        }
+        #for(i in 1:(n-1)) {
+        #    present_i = present[i]
+        #    #m_weight = f_weight = attrs$afreq[redund]
+        #    m_weight = malem[present_i, redund]
+        #    f_weight = femalem[present_i, redund]
+        #    mm[n, i] = (m_weight/sum(m_weight)) %*% malem[redund, present_i]
+        #    mf[n, i] = (f_weight/sum(f_weight)) %*% femalem[redund, present_i]
+        #}
+        attr(new_marker, 'mutmat') = list(male=mm, female=mf)
+    }
     new_marker
 }
+
 
 #------------X-linked-------------------
 
 .build_genolist_X <- function(x, marker, eliminate) {  #marker: marker matrix, dim = (nInd , 2). 
     n = attr(marker, 'nalleles')
     nseq = seq_len(n)
+    
     .COMPLETE = { tmp1 = rep(nseq, each=n); tmp2 = rep.int(nseq, times=n);
         fath = c(tmp1, tmp2); moth = c(tmp2, tmp1)
         rbind(fath, moth, deparse.level=0)[, !duplicated.default(fath*1000 + moth), drop=F] #faster than unique(m, MARGIN=2)
@@ -386,6 +458,11 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         m
     })
     attr(genolist, 'impossible') = FALSE
+    
+    # If mutations, don't eliminate any genotypes
+    if(!is.null(attr(marker, 'mutmat'))) 
+        return(genolist)
+        
     .eliminate_X(x, genolist, n, eliminate)
 }
 
@@ -435,23 +512,27 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 
 #### PEELING FUNCTIONS (one for each case: single Marker, Marker-Disease, Marker-Marker)
 
-
-.peel_M <- function(dat, sub, chrom, SEX) { 
+.peel_M <- function(dat, sub, chrom, SEX, mutmat=NULL) { 
     far = sub[['father']]; mor = sub[['mother']]; offs = sub[['offspring']]; piv = sub[['pivot']]; pivtype = sub[['pivtype']]
     if(pivtype==3) offs = offs[offs != piv] #pivtype indicates who is pivot: 0 = none; 1 = father; 2 = mother; 3 = an offspring
     farh = dat[[c(far, 1)]]; morh = dat[[c(mor, 1)]]
     likel = dat[[c(far, 2)]] %*% t.default(dat[[c(mor, 2)]])
     dims = dim(likel);    fa_len = dims[1L];  mo_len = dims[2L]        
     
-    .trans_M <- function(parent, childhap) unlist(lapply(seq_len(ncol(parent)), function(i) ((parent[1,i] == childhap) + (parent[2,i] == childhap))/2)) #parent = matrix with 2 rows; childhap = vector of any length (parental allele)
-
+    .trans_M <- function(parent, childhap, mutmat=NULL) {
+        #parent = matrix with 2 rows; childhap = vector of any length (parental allele); mutmat = mutation matrix
+        if(is.null(mutmat)) unlist(lapply(seq_len(ncol(parent)), function(i) ((parent[1,i] == childhap) + (parent[2,i] == childhap))/2))
+        else unlist(lapply(seq_len(ncol(parent)), function(i) (mutmat[parent[1,i], childhap] + mutmat[parent[2,i], childhap])/2))
+    }
+    
     switch(chrom, 
     AUTOSOMAL = {
         for (datb in dat[offs]) {
             bh = datb[[1]]; bp = datb[[2]]; bl = length(bp)
-            trans_pats = .trans_M(farh, bh[1, ])
-            trans_mats = .trans_M(morh, bh[2, ])
-            dim(trans_mats) = c(bl, mo_len); trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len)))
+            trans_pats = .trans_M(farh, bh[1, ], mutmat=mutmat$male)
+            trans_mats = .trans_M(morh, bh[2, ], mutmat=mutmat$female)
+            dim(trans_mats) = c(bl, mo_len)
+            trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len)))
             mm = .colSums((trans_pats * bp) * trans_mats_rep, bl, fa_len*mo_len)
             likel = likel * mm
         }
@@ -460,13 +541,16 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
             {   pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
                 T = numeric(fa_len * mo_len * pi_len); dim(T) = c(fa_len, mo_len, pi_len)
-                trans_pats = .trans_M(farh, pivh[1, ]); dim(trans_pats) = c(pi_len, fa_len);
-                trans_mats = .trans_M(morh, pivh[2, ]); dim(trans_mats) = c(pi_len, mo_len);
+                trans_pats = .trans_M(farh, pivh[1, ], mutmat=mutmat$male)
+                dim(trans_pats) = c(pi_len, fa_len)
+                trans_mats = .trans_M(morh, pivh[2, ], mutmat=mutmat$female)
+                dim(trans_mats) = c(pi_len, mo_len)
                 for(i in seq_len(fa_len)) {
                     transpat = trans_pats[, i]
                     for(j in seq_len(mo_len)) T[i,j,] = transpat * trans_mats[, j]
                 }
-                arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
+                arr = as.vector(T) * as.vector(likel)
+                dim(arr) = dim(T)
                 res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
                 res * pivp
             })
@@ -476,13 +560,17 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         for (b in offs) {
             datb = dat[[b]]; bh = datb[[1]]; bp = datb[[2]]; bl = length(bp)
             switch(SEX[b],
-            { trans_mats = .trans_M(morh, bh)
+            { trans_mats = .trans_M(morh, bh, mutmat=mutmat$female)
               mm = rep(.colSums(trans_mats * bp, bl, mo_len), each=fa_len); 
             },
-            { trans_pats = unlist(lapply(farh, function(fh) as.numeric(fh == bh[1, ])))
-              trans_mats = .trans_M(morh, bh[2, ])
+            { trans_pats = if(is.null(mutmat))
+                unlist(lapply(farh, function(fh) as.numeric(fh == bh[1, ]))) 
+              else 
+                unlist(lapply(farh, function(fh) mutmat$male[fh, bh[1, ]])) 
+              
+              trans_mats = .trans_M(morh, bh[2, ], mutmat=mutmat$female)
               dim(trans_mats) = c(bl, mo_len)
-              trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len))) #TODO: improve with 'rep'?
+              trans_mats_rep = as.numeric(do.call(rbind, rep(list(trans_mats), fa_len)))
               mm = .colSums((trans_pats * bp) * trans_mats_rep, bl, fa_len*mo_len)
             })
             likel = likel * mm 
@@ -492,15 +580,23 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
         res = switch(pivtype, .rowSums(likel, fa_len, mo_len), .colSums(likel, fa_len, mo_len),
             {    pivh = dat[[c(piv, 1)]]; pivp = dat[[c(piv, 2)]]; pi_len = length(pivp)
                 switch(SEX[piv],
-                {   trans_mats = .trans_M(morh, pivh)
+                {   trans_mats = .trans_M(morh, pivh, mutmat=mutmat$female)
                     T = rep(trans_mats, each=fa_len)
                 }, 
-                {   T = numeric(fa_len * mo_len * pi_len);    dim(T) = c(fa_len, mo_len, pi_len)
-                    trans_mats = .trans_M(morh, pivh[2, ]); dim(trans_mats) = c(pi_len, mo_len)
-                    for (i in seq_len(fa_len))
-                        T[i,,] = t.default(as.numeric(farh[i] == pivh[1,]) * trans_mats) #TODO:make faster?
+                {   T = numeric(fa_len * mo_len * pi_len)
+                    dim(T) = c(fa_len, mo_len, pi_len)
+                    trans_mats = .trans_M(morh, pivh[2, ], mutmat=mutmat$female)
+                    dim(trans_mats) = c(pi_len, mo_len)
+                    for (i in seq_len(fa_len)) {
+                        trans_pats = if(is.null(mutmat)) 
+                            as.numeric(farh[i] == pivh[1, ])
+                        else 
+                            mutmat$male[farh[i], pivh[1, ]]
+                        T[i,,] = t.default(trans_pats * trans_mats) #TODO:make faster?
+                    }
                 })
-                arr = as.vector(T) * as.vector(likel); dim(arr) = dim(T)
+                arr = as.vector(T) * as.vector(likel)
+                dim(arr) = dim(T)
                 res = .colSums(arr, fa_len*mo_len, pi_len) #sum for each entry of haps[[piv]]
                 res * pivp
             })
@@ -700,30 +796,11 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 
 ###### OTHER AUXILIARY FUNCTIONS
 
-.dropIndivs = function(x, marker, marker2=NULL, peel=FALSE, internal.ids=TRUE) { #NB: peelingen virker ikke for komplekse peds...   #outputs original IDs of indivs that can be skipped in the peeling
-    if(!is.null(marker2)) marker = marker + marker2
-    if(all(marker[,1] > 0)) return(numeric(0))
-    miss = seq_len(x$nInd)[marker[,1]==0 & marker[,2]==0]
-    p = x$pedigree
-    leaves = .mysetdiff(p[, "ID"], p[, c("FID", "MID")])
-    throw = .myintersect(leaves, miss)
-    if(peel) {stop("peel = T is not implemented yet") #TODO fix this for complex peds...
-        subs = x$subnucs
-        while (length(subs)>1) {
-            alloffs.uninf = unlist(lapply(subs, function(s) all(s[-c(1:3)] %in% throw)))
-            if (!any(alloffs.uninf)) break
-            throw = c(throw, unlist(lapply(subs[alloffs.uninf], function(s) switch(sum(parmis <- (s[2:3] %in% miss)) + 1, NULL, {mis = s[2:3][parmis]; if(s[1]!=mis) mis}, s[2:3]))))
-            subs = subs[!alloffs.uninf]
-        }
-    }
-    if(!is.null(lb <- x$loop_breakers)) throw = .mysetdiff(throw, .internalID(x, lb))
-    if(internal.ids) as.numeric(throw) else as.numeric(x$orig.ids[throw])
-}
-
-
 .informative = function(x, marker, marker2=NULL) {
+    # Trim pedigree by removing leaves without genotypes, and also remove completely uninformative subnucs.
     if(!is.null(marker2)) marker = marker + marker2
-    if(all(marker[,1] > 0)) return(list(subnucs=x$subnucs, newfounders=numeric(0)))
+    if(all(marker[,1] > 0)) 
+        return(list(subnucs=x$subnucs, newfounders=numeric(0)))
     newfounders = numeric(0)
     new_subnucs = list()
     p = x$pedigree
@@ -752,6 +829,7 @@ likelihood.linkdat <- function(x, locus1, locus2=NULL, theta=NULL, startdata=NUL
 geno.grid.subset = function(x, partialmarker, ids, chrom, make.grid=T) {
     int.ids = .internalID(x, ids)
     nall = attr(partialmarker, 'nalleles')
+    mutations = !is.null(attr(partialmarker, 'mutmat'))
     if(missing(chrom)) 
         chrom = if(identical(attr(partialmarker, 'chrom'), 23)) 'X' else 'AUTOSOMAL'
 
@@ -763,13 +841,13 @@ geno.grid.subset = function(x, partialmarker, ids, chrom, make.grid=T) {
    
    switch(chrom, 
     'AUTOSOMAL' = {
-        glist = .build_genolist(x, partialmarker, eliminate=100)
+        glist = .build_genolist(x, partialmarker, eliminate=ifelse(mutations, 0, 100))
         if (attr(glist, 'impossible')) stop("Impossible partial marker")
         rows = lapply(glist[int.ids], match_ref_rows)
     },
     'X' = {
         SEX = x$pedigree[, 'SEX']
-        glist = .build_genolist_X(x, partialmarker, eliminate=100)
+        glist = .build_genolist_X(x, partialmarker, eliminate=ifelse(mutations, 0, 100))
         if (attr(glist, 'impossible')) stop("Impossible partial marker")
         rows = lapply(int.ids, function(i) switch(SEX[i], glist[[i]], match_ref_rows(glist[[i]])))
     })

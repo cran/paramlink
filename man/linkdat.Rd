@@ -115,7 +115,7 @@ Only columns 2-6 are mandatory. The first column is automatically interpreted as
 
 Internally the individuals are relabeled as 1,2,..., but this should rarely be of concern to the end user. Some pedigree checking is done, but it is recommended to plot the pedigree before doing any analysis.
 
-Details on the formats of map, dat and frequency files can be found in the online MERLIN tutorial: \url{http://www.sph.umich.edu/csg/abecasis/Merlin/}
+Details on the formats of map, dat and frequency files can be found in the online MERLIN tutorial: \url{http://csg.sph.umich.edu/abecasis/Merlin/}
 
 A singleton is a special \code{linkdat} object whose pedigree contains 1 individual. The class attribute of a singleton is \code{c('singleton', 'linkdat')}
 }
@@ -175,7 +175,7 @@ z1 = addMarker(z1, marker(z1, 10, gt10, 14, gt14, alleles=alleles, afreq=afreq))
 z1 = setModel(z1, 2)
 
 z2 = addParents(relabel(nuclearPed(1), 12:14), 12, father=10, mother=11)
-z2 = addMarker(z2, rbind(gt10, 0, 0, 0, gt14), alleles, afreq)
+z2 = addMarker(z2, rbind(gt10, 0, 0, 0, gt14), alleles=alleles, afreq=afreq)
 z2 = setModel(swapAff(z2, 14), 2)
 
 z3 = linkdat(data.frame(ID=10:14, FID=c(0,0,10,0,12), MID=c(0,0,11,0,13), 

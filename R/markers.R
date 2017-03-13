@@ -1,4 +1,4 @@
-addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
+addMarker = function(x, m, ...) {
     if(is.matrix(m) || is.data.frame(m)) stopifnot(nrow(m)==x$nInd, ncol(m)==2)
     if(inherits(m, "marker"))
         m = list(m)
@@ -6,7 +6,7 @@ addMarker = function(x, m, alleles=NULL, afreq=NULL, missing=0) {
         return(setMarkers(x, structure(c(x$markerdata, m), class="markerdata")))
     if(!is.list(m) && length(m)==1)    
         m = matrix(m, ncol=2, nrow=x$nInd)  #gives a nice way of setting an empty or everywhere-homozygous marker, e.g.: x=addMarker(x,0)
-    mm = .createMarkerObject(m, alleles, afreq=afreq, missing=missing)
+    mm = .createMarkerObject(m, ...)
     setMarkers(x, structure(c(x$markerdata, list(mm)), class="markerdata"))
 }
 
@@ -52,13 +52,13 @@ setMarkers <- function(x, m, annotations = NULL, missing=0) {
     x
 }
 
-.createMarkerObject = function(matr, missing, alleles=NULL, afreq=NULL, chrom=NA, pos=NA, name=NA) {
+.createMarkerObject = function(matr, name=NA, chrom=NA, pos=NA, alleles=NULL, afreq=NULL, mutmat=NULL, missing=0) {
     if(is.null(alleles)) {
         vec = as.vector(matr)
         alleles = unique.default(vec[vec != missing])
         if (length(alleles)==0) alleles = 1
     }
-    if(!is.numeric(alleles) && !any(grepl("[^0-9]", alleles)))
+    if(!is.numeric(alleles) && !any(grepl("[^0-9\\.]", alleles)))
         alleles = as.numeric(alleles)
     all_ord = order(alleles)
     alleles = alleles[all_ord]
@@ -69,9 +69,74 @@ setMarkers <- function(x, m, annotations = NULL, missing=0) {
         if(round(sum(afreq),2) != 1) warning(paste("Allele frequencies for marker", name," do not sum to 1:", paste(afreq, collapse=", ")))
         afreq = afreq[all_ord]
     }
+    if(!is.null(mutmat)) {
+        stopifnot(is.list(mutmat) || is.matrix(mutmat))
+        # If single matrix given: make sex specific list
+        if(is.matrix(mutmat)) {
+            mutmat = .checkMutationMatrix(mutmat, alleles)
+            mutmat = list(male=mutmat, female=mutmat)
+        }
+        else {
+            stopifnot(length(mutmat)==2, setequal(names(mutmat), c('female', 'male')))
+            mutmat$female = .checkMutationMatrix(mutmat$female, alleles, label="female")
+            mutmat$male = .checkMutationMatrix(mutmat$male, alleles, label="male")
+        }
+    }
     m_obj = match(matr, alleles, nomatch=0)
-    attributes(m_obj) = list(dim=dim(matr), missing=missing, alleles=as.character(alleles), nalleles=nalleles, afreq = afreq, chrom=chrom, pos=pos, name=name, class="marker") 
+    attributes(m_obj) = list(dim=dim(matr), name=name, chrom=chrom, pos=pos, nalleles=nalleles,
+                             alleles=as.character(alleles), afreq=afreq, mutmat=mutmat, missing=missing, class="marker") 
     m_obj
+}
+
+.checkMutationMatrix = function(mutmat, alleles, label='') {
+    # Check that mutation matrix is compatible with allele number / names.
+    # Sort matrix according to the given allele order (this is important since dimnames are NOT used in calculations).
+    N = length(alleles)
+    if(label!='') label = sprintf("%s ", label)
+    if(any((dm <- dim(mutmat)) != N))
+        stop(sprintf("Dimension of %smutation matrix (%d x %d) inconsistent with number of alleles (%d).", label, dm[1], dm[2], N))
+    if(any(round(.rowSums(mutmat, N, N), 3) != 1))
+            stop(sprintf("Row sums of %smutation matrix are not 1.", label))
+    alleles.char = as.character(alleles)
+    if(!setequal(rownames(mutmat), alleles) || !setequal(colnames(mutmat), alleles))
+        stop(sprintf("Dimnames of %smutation do not match allele names.", label))
+    m = mutmat[alleles.char, alleles.char]
+    
+    # lumbability: always lumpable (any alleles) if rows are identical (except diagonal)
+    attr(m, 'lumpability') = NA
+    if(N>2) {
+        if (all(vapply(1:N, function(i) diff(range(m[-i,i]))==0, logical(1)))) # each column has 0 range
+            attr(m, 'lumpability') = 'always'
+    }
+    m
+}
+
+marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chrom=NA, pos=NA, name=NA, mutmat=NULL) {
+    arglist = list(...)
+    n = length(arglist)
+    if(n == 0) {
+        if(missing(allelematrix)) m = matrix(missing, ncol=2, nrow=x$nInd)
+        else {
+            m = as.matrix(allelematrix)
+            stopifnot(nrow(m)==x$nInd, ncol(m)==2)
+        }
+    }
+    if(n > 0) {
+        if(!missing(allelematrix)) stop("Individual genotypes ar not allowed when 'allelematrix' is given.")
+        if(n == 1 && length(arglist[[1]]) > 2) stop("Syntax error. See ?marker.")
+        if(n > 1 && n%%2 != 0) stop("Wrong number of arguments.")
+        
+        fill = {if(n==1) arglist[[1]] else missing}
+        m = matrix(fill, ncol=2, nrow=x$nInd, byrow=TRUE)  #create marker matrix with all individuals equal.
+        
+        for(i in (seq_len(n/2)*2 - 1)) {   # odd numbers up to n-1.
+            ids = arglist[[i]]
+            geno = arglist[[i+1]]
+            for(j in match(ids, x$orig.ids)) m[j, ] = geno
+        }
+    }
+    
+    .createMarkerObject(m, missing=missing, alleles=alleles, afreq=afreq, chrom=chrom, pos=pos, name=name, mutmat=mutmat)
 }
 
 
@@ -117,7 +182,7 @@ setMarkers <- function(x, m, annotations = NULL, missing=0) {
             indexmatr = cbind(rep(seq_len(nM), times=nalls), unlist(lapply(nalls, seq_len)))
             freqmatr[indexmatr] = as.numeric(rawfreq[-Mrow, 3])
 
-            allalleles = rawfreq[-Mrow, 2, drop=F]
+            allalleles = rawfreq[-Mrow, 2, drop=FALSE]
             numerical = !any(is.na(suppressWarnings(all_num <- as.numeric(allalleles))))
             if(numerical) {
                 allelmatr = matrix(numeric(), ncol=max(nalls), nrow=nM, dimnames=list(freqnames, NULL))
@@ -161,33 +226,6 @@ setMarkers <- function(x, m, annotations = NULL, missing=0) {
 }
 
 
-marker = function(x, ..., allelematrix, alleles=NULL, afreq=NULL, missing=0, chrom=NA, name=NA, pos=NA) {
-    arglist = list(...)
-    n = length(arglist)
-    if(n == 0) {
-        if(missing(allelematrix)) m = matrix(missing, ncol=2, nrow=x$nInd)
-        else {
-            m = as.matrix(allelematrix)
-            stopifnot(nrow(m)==x$nInd, ncol(m)==2)
-        }
-    }
-    if(n > 0) {
-        if(!missing(allelematrix)) stop("Syntax error. See ?marker.")
-        if(n == 1 && length(arglist[[1]]) > 2) stop("Syntax error. See ?marker.")
-        if(n > 1 && n%%2 != 0) stop("Wrong number of arguments.")
-        
-        fill = {if(n==1) arglist[[1]] else missing}
-        m = matrix(fill, ncol=2, nrow=x$nInd, byrow=TRUE)  #create marker matrix with all individuals equal.
-        
-        for(i in (seq_len(n/2)*2 - 1)) {   # odd numbers up to n-1.
-            ids = arglist[[i]]
-            geno = arglist[[i+1]]
-            for(j in match(ids, x$orig.ids)) m[j, ] = geno
-        }
-    }
-    
-    .createMarkerObject(m, missing=missing, alleles=alleles, afreq=afreq, chrom=chrom, name=name, pos=pos)
-}
 
 removeMarkers <- function(x, markers=NULL, markernames=NULL, chroms=NULL, from=NULL, to=NULL) {
     if(is.null(markers)) markers = getMarkers(x, markernames, chroms, from, to)
@@ -259,7 +297,8 @@ modifyMarker = function(x, marker, ids, genotype, alleles, afreq, chrom, name, p
             num_als = unique.default(as.vector(m[m!=0]))
             if(lena < length(num_als)) stop("Too few alleles.")
             pm = matrix(c(0, attr(m, 'alleles'))[m + 1], ncol=2)
-            m = .createMarkerObject(pm, missing=0, alleles=alleles, afreq=rep(1, lena)/lena, chrom=attr(m, 'chrom'), pos=attr(m, 'pos'), name=attr(m, 'name'))
+            m = .createMarkerObject(pm, missing=0, alleles=alleles, afreq=rep(1, lena)/lena, 
+                                    chrom=attr(m, 'chrom'), pos=attr(m, 'pos'), name=attr(m, 'name'), mutmat=attr(m, 'mutmat'))
         }
     }
     if(!missing(afreq)) {
@@ -292,7 +331,7 @@ modifyMarker = function(x, marker, ids, genotype, alleles, afreq, chrom, name, p
     }
 }
 
-getMarkers = function(x, markernames=NULL, chroms=NULL, from=NULL, to=NULL) {
+getMarkers = function(x, markernames=NULL, chroms=NULL, fromPos=NULL, toPos=NULL) {
     mnos = seq_len(x$nMark)
     if(!is.null(markernames)) {
         if(length(markernames)==0) return(numeric(0))
@@ -302,15 +341,15 @@ getMarkers = function(x, markernames=NULL, chroms=NULL, from=NULL, to=NULL) {
         if(length(chroms)==0) return(numeric(0))
         mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'chrom'))) %in% chroms]
     }
-    if(!is.null(from)) 
-        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'pos'))) >= from]
-    if(!is.null(to)) 
-        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'pos'))) <= to]
+    if(!is.null(fromPos)) 
+        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'pos'))) >= fromPos]
+    if(!is.null(toPos)) 
+        mnos = mnos[unlist(lapply(x$markerdata[mnos], function(m) attr(m, 'pos'))) <= toPos]
     mnos
 }
 
 swapGenotypes = function(x, ids){
-    stopifnot(length(ids)==2)
+    assert_that(length(ids)==2)
     ids = .internalID(x, ids)
     y = as.matrix(x)
     y[ids, -(1:6)] = y[ids[2:1], -(1:6)]
@@ -324,9 +363,57 @@ modifyMarkerMatrix = function(x, ids, new.alleles){
     restore_linkdat(y)
 }
 
+.transferMarkerdataSingle = function(from, to) {
+    assert_that(is.linkdat(from), is.linkdat(to))
+    if(from$nMark==0) {
+        warning("No markers to transfer.")
+        return(to)
+    }    
+    shared.ids = intersect(to$orig.ids, from$orig.ids)
+    
+    a = as.matrix(from)
+    b = as.matrix(removeMarkers(to))
+    allelematrix = a[, -(1:6), drop=FALSE]
+    
+    # create empty allele matrix, and copy rows of shared individuals
+    allelematrix.new = matrix(0, ncol=ncol(allelematrix), nrow=to$nInd)
+    allelematrix.new[match(shared.ids, b[,'ID']), ] = allelematrix[match(shared.ids, a[,'ID']), ] 
+   
+    restore_linkdat(cbind(b, allelematrix.new), attrs=attributes(a))
+}
+
+transferMarkerdata = function(from, to) {
+    assert_that(is.linkdat(from) || is.linkdat.list(from))
+    assert_that(is.linkdat(to) || is.linkdat.list(to))
+    
+    if(is.linkdat(from) && is.linkdat(to))
+        return(.transferMarkerdataSingle(from, to))
+    if(is.linkdat(from) && is.linkdat.list(to))
+        return(lapply(to, .transferMarkerdataSingle, from=from))
+    if(is.linkdat.list(from) && is.linkdat(to)) {
+        # start by transferring markers from the first in "from"
+        res = .transferMarkerdataSingle(from[[1]], to)
+        b = as.matrix(res)
+
+        # loop over the remaining and transfer
+        for(from in from[-1]) {
+            shared.ids = intersect(b[, 'ID'], from$orig.ids)
+            if(length(shared.ids)==0)
+                next
+            a = as.matrix(from, include.attr=FALSE)
+            b[match(shared.ids, b[, 'ID']), -(1:6)] = a[match(shared.ids, a[,'ID']), -(1:6)]
+        }
+        y = restore_linkdat(b)
+        available_int = rowSums(b[, -(1:6), drop=F]) > 0
+        y = setAvailable(y, y$orig.ids[available_int])
+        return(y)
+    }
+    if(is.linkdat.list(from) && is.linkdat.list(to))
+        return(lapply(to, transferMarkerdata, from=from))
+}
 
 mendelianCheck = function(x, remove=FALSE, verbose=!remove) {
-   if(inherits(x, 'singleton')) return(numeric(0))
+   if(is.singleton(x)) return(numeric(0))
     
     trioCheckFast = function(fa, mo, of) {
       even = 2*seq_len(length(fa)/2); odd = even - 1
@@ -398,16 +485,14 @@ mendelianCheck = function(x, remove=FALSE, verbose=!remove) {
                 new_errors = which_AUT[!trioCheckFast(fa, mo, mdat[of, ])]
                 if(length(new_errors) > 0) {
                     errorlist[[of]] = c(errorlist[[of]], new_errors)
-                    if(verbose) cat("Individual ", x$orig.ids[of], " incompatible with parents for ", length(new_errors), " markers: ",
-                               paste(new_errors, collapse=", "),"\n", sep="")
+                    if(verbose) cat(sprintf("Individual %d incompatible with parents for %d markers: %s\n", x$orig.ids[of], length(new_errors), paste(new_errors, collapse=", ")))
                 }
             }
             if (length(offs) > 1) {
                 new_errors = which_AUT[!nuclearAllelCheck(parents = mdat[sub[1:2], ], offs = mdat[sub[-(1:2)], ])]
                 if(length(new_errors) > 0) {
                     nuc_errors = c(nuc_errors, new_errors)
-                    if(verbose) cat("Offspring of ", x$orig.ids[sub[1]], " and ", x$orig.ids[sub[2]], " have too many alleles for ", length(new_errors), " markers: ", 
-                            paste(new_errors, collapse=", "),"\n", sep="")
+                    if(verbose) cat(sprintf("Offspring of %d and %d have too many alleles for %d markers: %s\n", x$orig.ids[sub[1]], x$orig.ids[sub[2]], length(new_errors), paste(new_errors, collapse=", ")))
                 }
             }
         }
@@ -446,8 +531,9 @@ mendelianCheck = function(x, remove=FALSE, verbose=!remove) {
                 new_errors = which_X[!nuclearAllelCheck(parents = mdat[sub[1:2], ], offs = mdat[offs, ])] #TODO: fix this for X-linked
                 if(length(new_errors) > 0) {
                     nuc_errors = c(nuc_errors, new_errors)
-                    if(verbose) cat("Offspring of ", x$orig.ids[sub[1]], " and ", x$orig.ids[sub[2]], " have too many alleles for ", length(new_errors), " markers: ", 
-                            paste(new_errors, collapse=", "),"\n", sep="")
+                    if(verbose) 
+                        cat(sprintf("Offspring of %d and %d have too many alleles for %d markers: %s\n", x$orig.ids[sub[1]], x$orig.ids[sub[2]], length(new_errors), paste(new_errors, collapse=", ")))
+                    
                 }
             }
         }

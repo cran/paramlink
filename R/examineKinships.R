@@ -1,13 +1,14 @@
-examineKinships = function(x, who='all', interfam=c('founders', 'none', 'all'), makeplot=T, ...) {
+examineKinships = function(x, who='all', interfam=c('founders', 'none', 'all'), makeplot=T, 
+        showRelationships=c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC"), ...) {
     
-    list_of_linkdats = !inherits(x, 'linkdat') && is.list(x) && all(sapply(x, inherits, 'linkdat'))
-    if(list_of_linkdats && any(duplicated(sapply(x, function(xx) xx$famid))))
+    linkdatList = is.linkdat.list(x)
+    if(linkdatList && any(duplicated(sapply(x, function(xx) xx$famid))))
         stop("When input is a list of linkdat objects, they must have different family ID (famid)")
     
     rel.groups = c('parents', 'siblings', 'grandparents', 'cousins', 'distant', 'unrelated')
     if(identical(who, 'all')) {
         groups = rel.groups
-        if(list_of_linkdats) groups = groups[groups != 'distant']
+        if(linkdatList) groups = groups[groups != 'distant']
     }    
     else if(identical(who, 'close'))
         groups = rel.groups[1:4]
@@ -17,11 +18,13 @@ examineKinships = function(x, who='all', interfam=c('founders', 'none', 'all'), 
     
     if(makeplot)  {
         #oldpar = par(no.readonly = TRUE)
-        if(!list_of_linkdats) {
+        if(is.linkdat(x)) {
+            g = .generations(x)
+            marg = max(1, 12-2*g)
             layout(rbind(1:2), widths=c(.4,.6))
-            plot(x, av=T, cex=.8, title="", margins=c(1,1,3.1,1))
+            plot(x, av=T, cex=.8, title="", margins=c(marg,1,marg,1))
         }
-        .plot_IBDtriangle(0.6, mar=c(4.1,4.1,3.1,.1))
+        IBDtriangle(relationships = showRelationships)
         leg_txt = c('Parent-offspring','Siblings', 'Halfsib/Uncle/Grand', '1st cousins', 'Distant', 'Unrelated')[rel.groups %in% groups]
         leg_col = c(2,4,3,6,"cyan","darkgray")[rel.groups %in% groups]
         legend("topright", title=" According to pedigree:", title.adj=0, legend=leg_txt, col=leg_col, pch=16)
@@ -88,7 +91,7 @@ examineKinships = function(x, who='all', interfam=c('founders', 'none', 'all'), 
 
 
 IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, pointcol=2, cex=1, ...) {
-    if(inherits(dat, 'linkdat') || (is.list(dat) && all(sapply(dat, inherits, 'linkdat')))) dat = .ibdPrep(dat)
+    if(is.linkdat(dat) || (is.linkdat.list(dat))) dat = .ibdPrep(dat)
     if(is.null(f)) f = attr(dat, 'frqs')
     nams = names(dat)
     if(is.matrix(g1)) {
@@ -106,7 +109,7 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
     if(nrow(pairs)==0) return()
     
     arrays = .make_arrays(f, extended=!is.null(error))
-    if(plot.action==2) .plot_IBDtriangle()
+    if(plot.action==2) IBDtriangle()
     
     res = apply(pairs, 1, function(p) {
         k = round(.ibd_estim(p[1], p[2], dat, 'ml', arrays=arrays, error=error, ...), 4)
@@ -119,7 +122,7 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
 
 
 .ibd_estim = function(x, y, dat, f, method=c('ml', 'discrete'), error=NULL, errormodel=1, arrays=NULL, start=c(0.99,0.001), constr=T, tol=1e-8, verbose=F) {
-    stopifnot(is.numeric(x) && length(x)==1, is.numeric(y) && length(y)==1) 
+    assert_that(is.numeric(x), length(x)==1, is.numeric(y), length(y)==1)
     G1 = dat[[x]]; G2 = dat[[y]]
     nonmissing = G1>=0 & G2>=0
     if(!all(nonmissing)) {
@@ -169,24 +172,57 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
             ML$estimate}
         )  
     k = c(k, len); names(k) = c('k0', 'k2', 'N')
-    if(verbose) cat("Estimate: k = (", paste(round(k[1:2],3),collapse=", "), ')\n', sep="")
+    if(verbose) cat(sprintf("Estimate: k = (%s)\n", paste(round(k[1:2], 3), collapse=", ")))
     k    
 }
 
 
-.plot_IBDtriangle = function(cex_text=1, mar) {
-    # plots the empty triangle with some precomputed points.
-    REL_LIST = list('U'=c(1,0),'Parent'=c(0,0),'MZ'=c(0,1),'HS/Gr/Unc'=c(.5,0),'Sib'=c(.25,.25),'FC'=c(.75,0),'SC'=c(15/16,0))
-    if(!missing(mar)) par(mar=mar)
-    plot(NULL, xlim=c(-.1,1.1), ylim=c(-.1,1.1), xlab="k0", ylab="k2", )        
-    fixed = do.call(rbind,REL_LIST)
-    points(fixed, pch=16, lwd=2)
-    text(fixed, labels=names(REL_LIST), pos=c(1,1,3,1,3,1,1), cex=cex_text)
-    abline(v=0);abline(h=0);abline(a=1,b=-1)
-    kk0 = seq(0,1,length=100); kk2 = 1+kk0-2*sqrt(kk0)
-    points(kk0,kk2,type='l', lty=2)
+IBDtriangle = function(relationships=c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC", "DFC", "Q"), 
+                       kinship.lines = numeric(), shading="lightgray", pch=16, cex_points=1.2, cex_text=1, 
+                       axes=FALSE) {
+    
+    par(xpd=T, mar=c(3.1, 3.1, 1, 1), pty="s")
+    
+    plot(NULL, xlim=c(0,1), ylim=c(0,1), axes=axes, ann=FALSE)        
+    mtext(mtext(text=c(expression(italic(kappa[0])), expression(italic(kappa[2]))), side=1:2, line=c(1,0.5), las=1))
+    
+    # impossible region shading(do borders afterwards)
+    kk0 = seq(0,1,length=501)
+    kk2 = 1+kk0-2*sqrt(kk0)
+    polygon(kk0, kk2, col=shading, border=NA)
+    #text(.4, .4, "impossible region", srt=-45)
+    
+    # impossible border
+    points(kk0,kk2,type='l', lty=3)
+    
+    # axes
+    segments(c(0,0,0), c(0,0,1), c(1,0,1), c(0,1,0))
+    
+    # kinship lines
+    for(phi in kinship.lines) {
+        if(phi<0 || phi>0.5) stop(paste("kinship coefficient not in intervall [0, 0.5]", phi))
+        abline(a=(4*phi -1), b=1, lty=2)
+        labpos.x = .5*(1.2 - (4*phi -1))
+        labpos.y = 1.2 - labpos.x
+        lab = substitute(paste(phi1, " = ", a), list(a = phi))
+        text(labpos.x, labpos.y, labels=lab, pos=3, srt=45)
+    }
+    
+    # relationships
+    RELS = data.frame(
+        label=c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC", "DFC", "Q"),
+        k0 = c(1, 0, 0, 1/4, 1/2, 3/4, 15/16, 9/16, 17/32),
+        k1 = c(0, 1, 0, 1/2, 1/2, 1/4, 1/16, 6/16, 14/32),
+        k2 = c(0, 0, 1, 1/4,  0,   0,   0,  1/16, 1/32),
+        pos = c(1, 1, 4, 4, 1, 1, 1, 3, 2)
+    )
+    assert_that(is.character(relationships), all(relationships %in% RELS$label))
+    if(length(relationships)>0) {
+        rels = RELS[RELS$label %in% relationships, ]
+        points(rels$k0, rels$k2, pch=pch, cex=cex_points)
+        text(rels$k0, rels$k2, labels=rels$label, pos=rels$pos, cex=cex_text)
+    }
 }  
- 
 
 .make_arrays = function(f, extended) {
     # precomputes arrays that are used repeatedly in the likelihood computation
@@ -263,7 +299,7 @@ IBDestimate = function(g1, g2=NULL, dat, f=NULL, error=NULL, plot.action=2, poin
 
 .ibdPrep = function(x, removebad=T) {
     ### if x is a list of linkdats
-    if(!inherits(x, 'linkdat') && is.list(x) && all(sapply(x,inherits, 'linkdat'))) {
+    if(is.linkdat.list(x)) {
         alldata = lapply(x, .ibdPrep, removebad = F)
         alldata = lapply(seq_along(x), function(i) {dd = alldata[[i]]; names(dd) = paste(x[[i]]$famid, names(dd), sep="-"); dd})
         dat = do.call(cbind, alldata)

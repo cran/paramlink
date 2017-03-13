@@ -10,16 +10,14 @@ Most of the work is done by the plotting functionality in the 'kinship2' package
 }
 \usage{
 \method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
-     skip.empty.genotypes = FALSE, id.labels = x$orig.ids, 
-     title = paste("Family", x$famid), available = FALSE, col = 1, 
-     deceased = numeric(0), starred = numeric(0), aff2 = NULL, 
+     skip.empty.genotypes = FALSE, id.labels = NULL, title = NULL, available = FALSE, 
+     col = 1, deceased = numeric(0), starred = numeric(0), aff2 = NULL, 
      margins = c(0.6, 1, 4.1, 1), ...)
                        
 \method{plot}{singleton}(x, marker = NULL, alleles = NULL, sep = "/", missing = "-", 
-     id.labels = x$orig.ids, title = paste("Family", x$famid), 
-     available = FALSE, col = 1, starred = numeric(0), 
-     margins = c(4.1, 1, 4.1, 1), symbolsize=4, offset=0.5+0.2*symbolsize, 
-     textsize=1, ...)
+     skip.empty.genotypes = FALSE, id.labels = NULL, title = NULL, available = FALSE, 
+     col = 1, deceased = numeric(0), starred = numeric(0), aff2 = NULL, 
+     margins = c(8,0,0,0), ...)
 }
 
 \arguments{
@@ -44,41 +42,32 @@ the symbol (integer or character) for missing alleles.
 a logical. If TRUE, and \code{marker} is non-NULL, empty genotypes (which by default looks like "-/-") are not printed.
 }
   \item{id.labels}{
-a vector with labels/names of the pedigree members.
+a vector with labels for each pedigree member. This defaults to \code{x$plot.labels} is this is set (see \code{\link{setPlotLabels}}), otherwise to \code{as.character(x$orig.ids)}.
 }
   \item{title}{
 the plot title. If NULL or "", no title is added to the plot. 
 }
   \item{available}{
-if TRUE, the available individuals are drawn in red. 
+either a logical, a color name, or the word "shaded". If a color name is given, the available individuals (as defined by \code{x$available}) are plotted in this color. 
+If \code{available=F} no coloring is used, while (for backwards compatibility) \code{available=T} is equivalent to \code{available="red"}. The "shaded" option results in diagonal shading.
 }
   \item{col}{
 a vector with color indicators for the pedigree members. Recycled if necessary. By default everyone is drawn black.
 }
   \item{deceased}{
-a numeric containing ID's of deceased pedigree members. (Not implemented for singletons.)
+a numeric containing ID's of deceased pedigree members.
 }
   \item{starred}{
 a numeric containing ID's of pedigree members that should be marked with a star in the pedigree plot.
 }
   \item{aff2}{
-NULL, or a numeric with affection statuses (2=affected, 1=unaffected, 0=unknown) for a second trait. (Not implemented for singletons.)
+NULL, or a numeric with affection statuses (2=affected, 1=unaffected, 0=unknown) for a second trait.
 }
   \item{margins}{
-a numeric of length 4 indicating the plot margins.
-}
-  \item{symbolsize}{
-numeric controlling the size of pedigree symbols (squares for males, circles for females). NB: This works differently in 
-\code{plot.linkdat} and \code{plot.singleton}.
-}
-  \item{offset}{
-a numeric controlling the vertical distance between the symbol and text label in singleton plots.
-}
-  \item{textsize}{
-a numeric controlling the text label size in singleton plots.
+a numeric of length 4 indicating the plot margins. For singletons only the first element (the "bottom" margin) is used.
 }
   \item{\dots}{
-in \code{plot.linkdat}: Arguments passed on to \code{plot.pedigree} in the \code{kinship2} package. In particular \code{symbolsize} and 
+arguments passed on to \code{plot.pedigree} in the \code{kinship2} package. In particular \code{symbolsize} and 
 \code{cex} can be useful.
 }
 }
@@ -91,7 +80,8 @@ Magnus Dehli Vigeland, Guro Doerum
 }
 
 \seealso{
-\code{\link{plot.pedigree}}}
+\code{\link{plot.pedigree}}, \code{\link{setPlotLabels}}
+}
 \examples{
 data(toyped)
 x = linkdat(toyped)
