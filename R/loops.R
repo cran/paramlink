@@ -1,68 +1,189 @@
-
+#' Pedigree loops
+#' 
+#' Functions for identifying, breaking and restoring loops in pedigrees.
+#' 
+#' Most of paramlink's handling of pedigree loops is done under the hood -
+#' using the functions described here - without need for explicit action from
+#' end users. When a linkdat object \code{x} is created, an internal routine
+#' detects if the pedigree contains loops, in which case \code{x$hasLoops} is
+#' set to TRUE. In analyses of \code{x} where loops must be broken (e.g. lod
+#' score computation or marker simulation), this is done automatically by
+#' calling \code{breakLoops}.
+#' 
+#' In some cases with complex inbreeding, it can be instructive to plot the
+#' pedigree after breaking the loops. Duplicated individuals are plotted with
+#' appropriate labels (see examples).
+#' 
+#' The function \code{findLoopBreakers} identifies a set of individuals
+#' breaking all inbreeding loops, but not marriage loops. These require more
+#' machinery for efficient detection, and paramlink does this is a seperate
+#' function, \code{findLoopBreakers2}, utilizing methods from the \code{igraph}
+#' package. Since this is rarely needed for most users, \code{igraph} is not
+#' imported when loading paramlink, only when \code{findLoopBreakers2} is
+#' called.
+#' 
+#' In practice, \code{breakLoops} first calls \code{findLoopBreakers} and
+#' breaks at the returned individuals. If the resulting linkdat object still
+#' has loops, \code{findLoopBreakers2} is called to break any marriage loops.
+#' 
+#' @param x a \code{\link{linkdat}} object.
+#' @param loop_breakers either NULL (resulting in automatic selection of loop
+#' breakers) or a numeric containing IDs of individuals to be used as loop
+#' breakers.
+#' @param verbose a logical: Verbose output or not?
+#' @return For \code{breakLoops}, a \code{linkdat} object in which the
+#' indicated loop breakers are duplicated. The returned object will also have a
+#' non-null \code{loop_breakers} entry, namely a matrix with the IDs of the
+#' original loop breakers in the first column and the duplicates in the second.
+#' 
+#' For \code{tieLoops}, a \code{linkdat} object in which any duplicated
+#' individuals (as given in the \code{x$loop_breakers} entry) are merged. For
+#' any linkdat object \code{x}, the call \code{tieLoops(breakLoops(x))} should
+#' return \code{x}.
+#' 
+#' For \code{pedigreeLoops}, a list containing all inbreeding loops (not
+#' marriage loops) found in the pedigree. Each loop is represented as a list
+#' with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a
+#' path from top to bottom) and 'pathB' (creating a different path from top to
+#' bottom, with no individuals in common with pathA). Note that the number of
+#' loops reported here counts all closed paths in the pedigree and will in
+#' general be larger than the genus of the underlying graph.
+#' 
+#' For \code{findLoopBreakers} and \code{findLoopBreakers2}, a numeric vector
+#' of individual ID's.
+#' @author Magnus Dehli Vigeland
+#' 
+#' @examples
+#' 
+#' x = cousinsPed(1, child=TRUE)
+#' 
+#' # Make the child affected, and homozygous for rare allele.
+#' x = swapAff(x, 9)
+#' x = setMarkers(x, marker(x, 9, c(2,2), alleles=1:2, afreq=c(0.99, 0.01)))
+#' 
+#' # Compute the LOD score under a recessive model. Loops are automatically broken in lod().
+#' x = setModel(x, 2)
+#' LOD1 = lod(x, theta=0.1)
+#' stopifnot(round(LOD1, 2) == 0.88)
+#' 
+#' # Or we can break the loop manually before computing the LOD:
+#' loopfree = breakLoops(x, loop_breaker=8)
+#' plot(loopfree)
+#' LOD2 = lod(loopfree, theta=0.1)
+#' stopifnot(all.equal(x, tieLoops(loopfree)))
+#' stopifnot(all.equal(LOD1, LOD2))
+#' 
+#' # Pedigree with marriage loop: Double first cousins
+#' if(require('igraph')) {
+#'     y = doubleCousins(1, 1, child=TRUE)
+#'     findLoopBreakers(y) # --> 9
+#'     findLoopBreakers2(y) # --> 9 and 4
+#'     breakLoops(y) # uses both 9 and 4
+#' }
+#'
+#' @export
 pedigreeLoops = function(x) {
-    dls = .descentPaths(x, 1:x$nInd, original.ids=FALSE)
+    dls = .descentPaths(x, 1:x$nInd, original.ids = FALSE)
+    
     loops = list()
     for (id in 1:x$nInd) {
-        if (length(dl <- dls[[id]])==1) next
+        if (length(dl <- dls[[id]]) == 1) 
+            next
         pairs = .comb2(length(dl))
         for (p in 1:nrow(pairs)) {
-            p1 = dl[[pairs[p,1]]]; p2 = dl[[pairs[p,2]]]
-            if (p1[2]==p2[2]) next
-            inters = p1[match(p2,p1,0L)][-1]  #intersecting path members, excluding id
-            if (length(inters)==0) next
-            else {
-                top=x$orig.ids[p1[1]]; bottom=x$orig.ids[inters[1]]
-                pathA = p1[ seq_len(which(p1==inters[1]) - 2) + 1 ] #without top and bottom. Seq_len to deal with the 1:0 problem.
-                pathB = p2[ seq_len(which(p2==inters[1]) - 2) + 1 ]
-                loops = c(loops, list(list(top=top, bottom=bottom, pathA = x$orig.ids[pathA], pathB=x$orig.ids[pathB])))
+            p1 = dl[[pairs[p, 1]]]
+            p2 = dl[[pairs[p, 2]]]
+            if (p1[2] == p2[2]) 
+                next
+            inters = p1[match(p2, p1, 0L)][-1]  #intersecting path members, excluding id
+            if (length(inters) == 0) 
+                next else {
+                top = x$orig.ids[p1[1]]
+                bottom = x$orig.ids[inters[1]]
+                pathA = p1[seq_len(which(p1 == inters[1]) - 2) + 1]  #without top and bottom. Seq_len to deal with the 1:0 problem.
+                pathB = p2[seq_len(which(p2 == inters[1]) - 2) + 1]
+                loops = c(loops, list(list(top = top, bottom = bottom, pathA = x$orig.ids[pathA], 
+                  pathB = x$orig.ids[pathB])))
             }
         }
     }
     unique(loops)
 }
 
-breakLoops = function(x, loop_breakers=NULL, verbose=TRUE) {
-    if(is.singleton(x)) 
+#' @export
+#' @rdname pedigreeLoops
+breakLoops = function(x, loop_breakers = NULL, verbose = TRUE) {
+    if (is.singleton(x)) 
         stop("This function does not apply to singleton objects.")
     automatic = is.null(loop_breakers)
-    if(automatic) {
-        if(!x$hasLoops) return(x)
+    if (automatic) {
+        if (!x$hasLoops) 
+            return(x)
         loop_breakers = findLoopBreakers(x)
-        if(length(loop_breakers)==0) {
-            if(verbose) cat("Marriage loops detected, trying different selection method.\n")
+        if (length(loop_breakers) == 0) {
+            if (verbose) 
+                cat("Marriage loops detected, trying different selection method.\n")
             loop_breakers = findLoopBreakers2(x)
         }
     }
     
-    if(length(loop_breakers)==0)
+    if (length(loop_breakers) == 0) 
         stop("Loop breaking unsuccessful.")
     
-    if(any(loop_breakers %in% x$orig.ids[x$founders])) 
+    if (any(loop_breakers %in% x$orig.ids[x$founders])) 
         stop("Pedigree founders cannot be loop breakers.")
-
-    if(verbose) 
-        cat(ifelse(automatic,"Selected","User specified"), "loop breakers:", loop_breakers, '\n')
     
-    pedm = as.matrix(x)#data.frame(x, famid=T, missing=0)
-    attrs = attributes(pedm) #all attributes except 'dim'
-    dup_pairs = x$loop_breakers #normally = NULL at this stage 
-    for(id in loop_breakers) {
-        dup_id = max(pedm[, 'ID']) + 1
+    if (verbose) 
+        cat(ifelse(automatic, "Selected", "User specified"), "loop breakers:", loop_breakers, 
+            "\n")
+    
+    pedm = as.matrix(x)  #data.frame(x, famid=T, missing=0)
+    attrs = attributes(pedm)  #all attributes except 'dim'
+    dup_pairs = x$loop_breakers  #normally = NULL at this stage 
+    for (id in loop_breakers) {
+        dup_id = max(pedm[, "ID"]) + 1
         dup_pairs = rbind(dup_pairs, c(id, dup_id))
-        intern = match(id, pedm[,'ID'])  #don't use .internalID here, since pedm changes all the time
-        sex_col = pedm[intern, 'SEX'] + 2 # FID column if 'intern' is male; MID if female
+        intern = match(id, pedm[, "ID"])  #don't use .internalID here, since pedm changes all the time
+        sex_col = pedm[intern, "SEX"] + 2  # FID column if 'intern' is male; MID if female
         
-        pedm = pedm[c(1:intern, intern, (intern+1):nrow(pedm)), ]
-        pedm[intern+1, c('ID', 'FID','MID')] = c(dup_id, 0, 0)
+        pedm = pedm[c(1:intern, intern, (intern + 1):nrow(pedm)), ]
+        pedm[intern + 1, c("ID", "FID", "MID")] = c(dup_id, 0, 0)
         pedm[pedm[, sex_col] == id, sex_col] = dup_id
     }
-    newx = restore_linkdat(pedm, attrs=attrs) 
+    newx = restore_linkdat(pedm, attrs = attrs)
     newx$loop_breakers = dup_pairs
-    if(automatic) 
-        return(breakLoops(newx, verbose=verbose))
+    if (automatic) 
+        return(breakLoops(newx, verbose = verbose))
     newx
 }
 
+#' @export
+#' @rdname pedigreeLoops
+tieLoops = function(x) {
+    dups = x$loop_breakers
+    if (is.null(dups) || nrow(dups) == 0) {
+        cat("No loops to tie\n")
+        return(x)
+    }
+    if (!all(dups %in% x$orig.ids)) 
+        stop("Something's wrong: Duplicated individuals no longer in pedigree.")
+    pedm = as.matrix(x)
+    attrs = attributes(pedm)
+    
+    origs = dups[, 1]
+    copies = dups[, 2]
+    pedm = pedm[-match(copies, pedm[, "ID"]), ]
+    for (i in 1:length(origs)) {
+        orig = origs[i]
+        copy = copies[i]
+        sex = pedm[pedm[, "ID"] == orig, "SEX"]
+        pedm[pedm[, sex + 2] == copy, sex + 2] = orig
+    }
+    restore_linkdat(pedm, attrs = attrs)
+}
+
+#' @export
+#' @rdname pedigreeLoops
 findLoopBreakers = function(x) {
     loopdata = pedigreeLoops(x)
     # write each loop as vector exluding top/bottom
@@ -77,10 +198,14 @@ findLoopBreakers = function(x) {
     bestbreakers
 }
 
+#' @export
+#' @rdname pedigreeLoops
 findLoopBreakers2 = function(x) {
-    if (!requireNamespace("igraph", quietly = TRUE))
-        stop("This pedigree has marriage loops. The package 'igraph' must be installed for automatic selection of loop breakers.", call. = FALSE)
-
+    if (!requireNamespace("igraph", quietly = TRUE)) {
+        cat("This pedigree has marriage loops. The package 'igraph' must be installed for automatic selection of loop breakers.")
+        return(numeric())
+    }
+    
     ids = x$orig.ids
     N = max(ids)
     nonf = ids[x$nonfounders]
@@ -88,43 +213,27 @@ findLoopBreakers2 = function(x) {
     
     ped2edge = function(p) {
         # input: ped-matrise UTEN founder-rader
-        pp = cbind(p, paste(p[,'FID'], p[,'MID'], sep="+"))
-        edge.children = pp[, c(4,1), drop=F]
-        edge.marriage = unique.matrix(rbind(pp[, c(2,4), drop=F], pp[, c(3,4), drop=F]))
+        pp = cbind(p, paste(p[, "FID"], p[, "MID"], sep = "+"))
+        edge.children = pp[, c(4, 1), drop = F]
+        edge.marriage = unique.matrix(rbind(pp[, c(2, 4), drop = F], pp[, c(3, 4), drop = F]))
         rbind(edge.marriage, edge.children)
     }
     
-    p = as.matrix(x, keep=F)[x$nonfounders, c('ID' ,'FID', 'MID'), drop=F]
-    while(T) {
+    p = as.matrix(x, keep = F)[x$nonfounders, c("ID", "FID", "MID"), drop = F]
+    while (T) {
         g = igraph::graph_from_edgelist(ped2edge(p))
         loop = igraph::girth(g)$circle
-        if(length(loop)==0) 
+        if (length(loop) == 0) 
             break
         good.breakers = intersect(loop$name, nonf)
-        if(length(good.breakers)==0)
+        if (length(good.breakers) == 0) 
             stop("This pedigree requires founders as loop breakers, which is not implemented in paramlink yet. Sorry!")
         b = good.breakers[1]
         breakers = c(breakers, b)
         
         b.is.parent = p == b & col(p) > 1
-        p[b.is.parent] = as.character(N <- N+1)
+        p[b.is.parent] = as.character(N <- N + 1)
     }
     breakers
 }
 
-tieLoops = function(x) {
-    dups = x$loop_breakers
-    if(is.null(dups) || nrow(dups)==0) {cat("No loops to tie\n"); return(x)}
-    if(!all(dups %in% x$orig.ids)) stop("Something's wrong: Duplicated individuals no longer in pedigree.")
-    pedm = as.matrix(x)
-    attrs = attributes(pedm)
-
-    origs = dups[,1]; copies = dups[,2]
-    pedm = pedm[-match(copies, pedm[,'ID']), ]
-    for(i in 1:length(origs)) {
-        orig = origs[i]; copy = copies[i]
-        sex = pedm[pedm[,'ID']==orig, 'SEX']
-        pedm[pedm[, sex+2] == copy, sex+2] = orig 
-    }
-    restore_linkdat(pedm, attrs=attrs)
-}

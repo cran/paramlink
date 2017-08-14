@@ -1,6 +1,14 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
-
+2017-08-10: Version 1.1-1
+    * I'm now using roxygen2 and devtools to maintain this package. This required various rearrangements and cleanups of the source code, hopfully without breaking anything.
+    
+    * plotPedList: Expressions (e.g. sub/superscripts) are now allowed in frametitles.
+    
+    * Test for availability of packages 'igraph' and 'identity' (in the Suggests field of DESCRIPTION), both in code and examples.
+    
+    * Improved mendelianCheck(), which did not catch certain Mendelian errors involving siblings carrying too many alleles in total.
+    
 2017-03-11: Version 1.1-0
     * Rewritten the package title and "description", to reflect paramlink's recent features in forensic genetics.
     
