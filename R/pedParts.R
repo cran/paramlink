@@ -105,21 +105,16 @@ spouses = function(x, id, original.id = TRUE) {
 #' @rdname pedParts
 #' @export
 related.pairs = function(x, relation = c("parents", "siblings", "grandparents", "nephews_nieces", 
-    "cousins", "spouses", "unrelated"), available = F, original.id = T, interfam = c("none", 
+    "cousins", "spouses", "unrelated"), available = F, interfam = c("none", 
     "founders", "all"), ...) {
     relation = match.arg(relation)
     interfam = match.arg(interfam)
     func = function(...) get(relation)(...)
     
     if (is.linkdat.list(x)) {
-        res = do.call(rbind, lapply(x, function(xx) {
-            pairs = related.pairs(xx, relation, available, original.id, ...)
-            if (nrow(pairs) > 0) {
-                newpairs = paste(xx$famid, pairs, sep = "-")
-                dim(newpairs) = dim(pairs)
-                newpairs
-            } else pairs
-        }))
+        res = do.call(rbind, lapply(x, function(xx)
+            related.pairs(xx, relation, available, ...)
+        ))
         if (relation == "unrelated" && interfam != "none") {
             avail = lapply(x, function(xx) {
                 ids = if (available) 
@@ -127,7 +122,8 @@ related.pairs = function(x, relation = c("parents", "siblings", "grandparents", 
                 if (interfam == "founders") 
                   ids = intersect(ids, xx$orig.ids[xx$founders])
                 if (length(ids) == 0) 
-                  NULL else paste(xx$famid, ids, sep = "-")
+                  return(NULL)
+                ids
             })
             avail = avail[!sapply(avail, is.null)]
             fampairs = data.frame(t(.comb2(length(avail))))  # enable use of lapply below
@@ -149,11 +145,9 @@ related.pairs = function(x, relation = c("parents", "siblings", "grandparents", 
         avail = .internalID(x, x$available)
         res = res[res[, 1] %in% avail & res[, 2] %in% avail, , drop = F]
     }
-    if (original.id) {
-        res = matrix(x$orig.ids[res], ncol = 2)
-        res[res[, 1] > res[, 2], ] = res[res[, 1] > res[, 2], 2:1]  # sort again
-    }
-    res = res[order(res[, 1], res[, 2]), , drop = F]
+    
+    # return matrix with original IDs
+    res[] = x$orig.ids[res]
     res
 }
 
@@ -169,6 +163,7 @@ unrelated = function(x, id, original.id = TRUE) {
         unrel = .internalID(x, unrel)
     unrel
 }
+
 
 #' @rdname pedParts
 #' @export

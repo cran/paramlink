@@ -4,69 +4,58 @@
 \alias{IBDestimate}
 \title{Relatedness estimation}
 \usage{
-IBDestimate(x, g1, g2 = NULL, f = NULL, error = NULL, plot.action = 2,
-  pointcol = 2, cex = 1, ...)
+IBDestimate(x, ids, markers = NULL, start = c(0.99, 0.001), tol = 1e-07)
 }
 \arguments{
 \item{x}{A single \code{linkdat} object or a list of \code{linkdat} and/or
-\code{singleton} objects. (A third option is to provide a data frame, as
-produced by \code{paramlink:::.ibdPrep}.)}
+\code{singleton} objects.}
 
-\item{g1, g2}{The pairs of individuals for which IBD estimates should be
- computed. Several formats are possible:  If \code{g1} is a vector of ID
- labels, and \code{g2} is NULL, then all pairs among the \code{g1} are included.
- If \code{g2} is not NULL, only combinations formed by \code{g1} and
- \code{g2} are considered.  Finally, \code{g1} can be given as a matrix with
- two columns and each row indicating a pair.
+\item{ids}{Either a vector of length 2, or a matrix with two columns, indicating the 
+the pair(s) of individuals for which IBD estimates should be computed. If a matrix, 
+each row corresponds to a pair. The entries can be either characters (matching the 
+\code{plot.labels} of the linkdat object(s)) or integers (matching the \code{orig.ids}
+identifiers of the linkdat object(s)).}
 
- If \code{x} is a list of \code{linkdat} objects, then all ID labels must
- be characters of the form 'X-Y', where X is the family ID, and Y the
- individual ID.}
+\item{markers}{A numeric indicating which marker(s) to include. If NULL (default),
+all markers are used.}
 
-\item{f}{A numeric vector containing the frequencies of the '2' allele. If
-NULL (default), this is computed from \code{x}.}
+\item{start}{Numeric of length 2, indicating the initial value of \eqn{(\kappa_0, \kappa_2)}
+in the optimisation (passed on to \code{maxLik}).}
 
-\item{error}{A single numeric to be used in error modelling, or NULL. See
-details.}
-
-\item{plot.action}{An integer: 2 = make new triangle and draw points; 1 =
-add points to existing triangle; 0 = no plotting.}
-
-\item{pointcol}{A single numeric or character: Color specification for the
-points in the plot.}
-
-\item{cex}{A single numeric controlling point size (this is simply passed on 
-to \code{\link{points}}.}
-
-\item{\dots}{Other arguments.}
+\item{tol}{A single numeric: the optimising tolerance value; passed on to \code{maxLik}).}
 }
 \value{
-A matrix (or a list of matrices) with 6 columns: ID1, ID2, N
-(#markers with no missing alleles), k0, k1, k2.
+A data.frame with 8 columns: ID1, ID2 (numeric IDs), Name1, Name2 (plot labels, if present), N
+(#markers with no missing alleles), \eqn{\kappa_0}, \eqn{\kappa_1}, \eqn{\kappa_2}.
 }
 \description{
-Estimate IBD coefficients (k0, k1, k2) for
+Estimate the pairwise IBD coefficients \eqn{(\kappa_0, \kappa_1, \kappa_2)} for
 specified pairs of pedigree members, using maximum likelihood methods.
 The optimization machinery is imported from the \code{maxLik} package.
 }
 \details{
-Our implementation is fairly close to the original description in (Thompson, 1975).
+This function optimises the log-likelihood function first described in (Thompson, 1975).
+Optimisation is done in the \eqn{(\kappa_0, \kappa_2)}-plane and restricted to the 
+probability triangle defined by \eqn{\kappa_0 \ge 0, \kappa_2 \ge 0, \kappa_0 + \kappa_2 \le 1}.
 }
 \examples{
 
-x = cousinsPed(1)
+# Simulate marker data for two siblings
+x = nuclearPed(2)
+x = setPlotLabels(x, c("Sib1", "Sib2"), c(3,4))
 x = simpleSim(x, 200, 1:2) # 200 equifrequent SNPs
-est1 = IBDestimate(x, g1=3, g2=6)
 
-# Estimation across families
-x1 = branch(x, 3)
-x2 = branch(x, 6)
-x2$famid = 2
+# Estimate the IBD coefficients for the siblings
+est1 = IBDestimate(x, ids=c(3,4))
 
-# With multiple pedigrees individuals are denoted 'famid-ID'
-est2 = IBDestimate(list(x1,x2), g1='1-3', g2='2-6')
+# Estimate should be the same if pedigree structure is unknown
+xlist = list(branch(x, 3), branch(x, 4))
+est2 = IBDestimate(xlist, ids=c(3,4)) 
+stopifnot(identical(est1, est2))
 
-stopifnot(all.equal(est1[,4:6], est2[,4:6]))
+# If the pedigree has plot.labels, they can be used as IDs
+est3 = IBDestimate(x, ids=c("Sib1", "Sib2"))
+stopifnot(identical(est1, est3))
 
 }
 \references{

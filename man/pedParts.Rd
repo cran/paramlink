@@ -22,7 +22,7 @@ spouses(x, id, original.id = TRUE)
 
 related.pairs(x, relation = c("parents", "siblings", "grandparents",
   "nephews_nieces", "cousins", "spouses", "unrelated"), available = F,
-  original.id = T, interfam = c("none", "founders", "all"), ...)
+  interfam = c("none", "founders", "all"), ...)
 
 unrelated(x, id, original.id = TRUE)
 

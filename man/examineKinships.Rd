@@ -5,16 +5,15 @@
 \title{Check pedigree for relationship errors}
 \usage{
 examineKinships(x, who = "all", interfam = c("founders", "none", "all"),
-  makeplot = T, showRelationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC",
-  "SC"), ...)
+  makeplot = T, pch = 4, ...)
 }
 \arguments{
 \item{x}{A \code{\link{linkdat}} object, or a list of such.}
 
 \item{who}{A character vector of one or more of the words 'parents',
- 'siblings', 'grandparents', 'cousins', 'distant' and 'unrelated'. Two short
-forms are possible: 'all' (all of the above) and 'close' (all of the above
-except 'distant' and 'unrelated'.)}
+'siblings', 'hugs' (= halfsibs/uncles/grandparents), 'cousins' and 'unrelated'. 
+Two additional single-word values are possible: 'all' (all of the above, plus 'other') 
+and 'close' (= 'parents', 'siblings', 'hugs', 'cousins').}
 
 \item{interfam}{A character; either 'founders', 'none' or 'all', indicating
 which interfamiliar pairs of individuals should be included. Only relevant
@@ -22,23 +21,19 @@ if \code{x} is a list of several \code{linkdat} objects.}
 
 \item{makeplot}{A logical.}
 
-\item{showRelationships}{A character vector passed on to the
-\code{relationships} argument of \code{IBDtriangle}.}
+\item{pch}{Plotting symbol (default: cross).}
 
-\item{\dots}{Other arguments passed on to \code{IBDestimate}.}
+\item{\dots}{Other plot arguments passed on to \code{\link{showInTriangle}}.}
 }
 \value{
-A list of matrices (one for each relation category) with IBD estimates.
+A list of data.frames (one for each relation category) with IBD estimates.
 }
 \description{
 This function provides a convenient way to check for pedigree errors in a 
 linkage project or other situations where marker data is available for several 
-members. The function estimates IBD coefficients for all indicated
-pairs in the pedigree(s) and produces a color-coded plot where wrong
+members. The function calls \code{\link{IBDestimate}} to estimate IBD coefficients 
+for all indicated pairs of pedigree members and produces a color-coded plot where wrong
 relationships are easy to spot.
-}
-\details{
-This function works with SNP markers only (for now).
 }
 \examples{
 
@@ -46,17 +41,17 @@ x = cousinsPed(1)
 x = simpleSim(x, 500, alleles=1:2)
 examineKinships(x)
 
-# Pretend we didn't know the borthers were related
+# Pretend we didn't know the brothers (3 and 6) were related
 x1 = branch(x, 3)
 x2 = branch(x, 6)
 x2$famid = 2
 
-# Notice the grey dot close to the 'S' (siblings)
+# Notice the error: An 'unrelated' dot close to the sibling point
 examineKinships(list(x1, x2))
 
 }
 \seealso{
-\code{\link{IBDestimate}}, \code{\link{IBDtriangle}}
+\code{\link{IBDestimate}}, \code{\link{IBDtriangle}}, \code{\link{showInTriangle}}
 }
 \author{
 Magnus Dehli Vigeland

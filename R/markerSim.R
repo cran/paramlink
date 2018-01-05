@@ -10,7 +10,8 @@
 #' @param x a \code{\link{linkdat}} object
 #' @param N a positive integer: the number of markers to be simulated
 #' @param available a vector containing IDs of the available individuals, i.e.
-#' those whose genotypes should be simulated.
+#' those whose genotypes should be simulated. 
+#' By default, all individuals are included.
 #' @param alleles a vector containing the alleles for the marker to be
 #' simulation. If a single integer is given, this is interpreted as the number
 #' of alleles, and the actual alleles as \code{1:alleles}. Must be NULL if
@@ -46,7 +47,7 @@
 #' markerSim(x, N=1, available=4, partialmarker=partial)
 #' 
 #' @export
-markerSim <- function(x, N = 1, available = x$orig.ids, alleles = NULL, afreq = NULL, partialmarker = NULL, 
+markerSim <- function(x, N = 1, available = NULL, alleles = NULL, afreq = NULL, partialmarker = NULL, 
     loop_breakers = NULL, eliminate = 0, seed = NULL, verbose = TRUE) {
     
     if (!is.linkdat(x) && !is.linkdat.list(x)) 
@@ -54,8 +55,8 @@ markerSim <- function(x, N = 1, available = x$orig.ids, alleles = NULL, afreq = 
     
     # if input is a list of linkdat objects: Apply markerSim recursively
     if (is.linkdat.list(x)) 
-        return(lapply(x, function(xi) markerSim(xi, N = N, available = intersect(available, 
-            xi$orig.ids), alleles = alleles, afreq = afreq, partialmarker = partialmarker, 
+        return(lapply(x, function(xi) markerSim(xi, N = N, available = intersect(xi$orig.ids, available), 
+            alleles = alleles, afreq = afreq, partialmarker = partialmarker, 
             loop_breakers = loop_breakers, eliminate = eliminate, seed = seed, verbose = verbose)))
     
     starttime = proc.time()
@@ -63,6 +64,7 @@ markerSim <- function(x, N = 1, available = x$orig.ids, alleles = NULL, afreq = 
     assert_that(.is.natural(N))
     if (!is.null(x$loop_breakers)) 
         stop("Linkdat objects with broken loops are not allowed as input to the `markerSim` function.")
+    if(is.null(available)) available = x$orig.ids
     
     if (!is.null(partialmarker)) {
         if (!is.null(alleles) || !is.null(afreq)) 

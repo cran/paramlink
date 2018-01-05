@@ -131,23 +131,7 @@ Familias2linkdat = function(familiasped, datamatrix, loci) {
     
     ### Part 3: marker annotations
     
-    if (!is.null(loci)) {
-        if (class(loci) == "FamiliasLocus") 
-            loci = list(loci)
-        annotations = lapply(loci, function(a) {
-            malemut = a$maleMutationMatrix
-            femalemut = a$femaleMutationMatrix
-            
-            if (all(diag(malemut) == 1)) 
-                malemut = NULL
-            if (all(diag(femalemut) == 1)) 
-                femalemut = NULL
-            if (is.null(malemut) && is.null(femalemut)) 
-                mutmat = NULL else mutmat = list(male = malemut, female = femalemut)
-            list(name = a$locusname, alleles = names(a$alleles), afreq = as.numeric(a$alleles), 
-                mutmat = mutmat)
-        })
-    } else annotations = NULL
+    annotations = readFamiliasLoci(loci)
     
     ### Create linkdat object and add plot labels
     
@@ -160,6 +144,25 @@ Familias2linkdat = function(familiasped, datamatrix, loci) {
     x
 }
 
+#' @export
+#' @rdname Familias2linkdat
+readFamiliasLoci = function(loci) {
+    if (is.null(loci)) 
+        return(NULL)
+    if (class(loci) == "FamiliasLocus") 
+        loci = list(loci)
+    annotations = lapply(loci, function(a) {
+        malemut = a$maleMutationMatrix
+        femalemut = a$femaleMutationMatrix
+        
+        if (all(diag(malemut) == 1)) malemut = NULL
+        if (all(diag(femalemut) == 1)) femalemut = NULL
+        if (is.null(malemut) && is.null(femalemut)) 
+            mutmat = NULL else mutmat = list(male = malemut, female = femalemut)
+        list(name = a$locusname, alleles = names(a$alleles), afreq = as.numeric(a$alleles), mutmat = mutmat)
+    })
+}
+    
 #' @export
 #' @rdname Familias2linkdat
 connectedComponents = function(ID, FID, MID) {

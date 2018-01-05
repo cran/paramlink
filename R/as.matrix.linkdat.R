@@ -89,7 +89,8 @@ restore_linkdat = function(x, attrs = NULL, checkped = TRUE) {
     markers = x[, -(1:6), drop = F]
     nMark = ncol(markers)/2
     if (nMark == 0) 
-        markerdata_list = NULL else {
+        markerdata_list = NULL 
+    else {
         markerattr = attrs$markerattr
         markerdata_list = lapply(seq_len(nMark), function(k) {
             m = markers[, c(2 * k - 1, 2 * k), drop = F]

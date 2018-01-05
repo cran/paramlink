@@ -4,9 +4,9 @@
 \alias{markerSim}
 \title{Marker simulation}
 \usage{
-markerSim(x, N = 1, available = x$orig.ids, alleles = NULL,
-  afreq = NULL, partialmarker = NULL, loop_breakers = NULL,
-  eliminate = 0, seed = NULL, verbose = TRUE)
+markerSim(x, N = 1, available = NULL, alleles = NULL, afreq = NULL,
+  partialmarker = NULL, loop_breakers = NULL, eliminate = 0,
+  seed = NULL, verbose = TRUE)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object}
@@ -14,7 +14,8 @@ markerSim(x, N = 1, available = x$orig.ids, alleles = NULL,
 \item{N}{a positive integer: the number of markers to be simulated}
 
 \item{available}{a vector containing IDs of the available individuals, i.e.
-those whose genotypes should be simulated.}
+those whose genotypes should be simulated. 
+By default, all individuals are included.}
 
 \item{alleles}{a vector containing the alleles for the marker to be
 simulation. If a single integer is given, this is interpreted as the number

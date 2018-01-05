@@ -1,5 +1,14 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+2017-12-26: Version 1.1-2
+    * New function LR() calculating likelihood ratios of competing pedigree hypotheses.
+    
+    * IBDestimate() now accepts multi-allelic markers. This called for a complete rewriting of the code, and have introduced breaking changes in the syntax.
+    
+    * examineKinships() also accepts multi-allelic markers. 
+    
+    * A new function showInTriangle() facilitates plotting points in the IBD triangle.
+
 2017-08-10: Version 1.1-1
     * I'm now using roxygen2 and devtools to maintain this package. This required various rearrangements and cleanups of the source code, hopfully without breaking anything.
     

@@ -1,6 +1,6 @@
 Package: paramlink
-Version: 1.1-1
-Date: 2017-08-08
+Version: 1.1-2
+Date: 2018-01-05
 Title: Parametric Linkage and Other Pedigree Analysis in R
 Authors@R: c(
     person("Magnus Dehli", "Vigeland", email = "m.d.vigeland@medisin.uio.no", role = c("aut", "cre")),
@@ -21,6 +21,6 @@ License: GPL (>= 2)
 LazyData: Yes
 RoxygenNote: 6.0.1
 NeedsCompilation: no
-Packaged: 2017-08-12 09:43:56 UTC; magnusdv
+Packaged: 2018-01-05 13:59:33 UTC; magnusdv
 Repository: CRAN
-Date/Publication: 2017-08-14 15:08:51 UTC
+Date/Publication: 2018-01-05 16:06:10 UTC

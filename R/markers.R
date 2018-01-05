@@ -151,11 +151,16 @@ addMarker = function(x, m, ...) {
 #' @export
 setMarkers = function(x, m, annotations = NULL, missing = 0) {
     if (is.null(m)) 
-        markerdata_list = NULL else if (inherits(m, "marker")) 
-        markerdata_list = structure(list(m), class = "markerdata") else if (is.list(m) && all(sapply(m, inherits, what = "marker"))) 
-        markerdata_list = structure(m, class = "markerdata") else if (inherits(m, "markerdata")) 
-        markerdata_list = m else if ((n <- ncol(m <- as.matrix(m))) == 0) 
-        markerdata_list = NULL else {
+        markerdata_list = NULL 
+    else if (inherits(m, "marker")) 
+        markerdata_list = structure(list(m), class = "markerdata") 
+    else if (is.list(m) && all(sapply(m, inherits, what = "marker"))) 
+        markerdata_list = structure(m, class = "markerdata") 
+    else if (inherits(m, "markerdata")) 
+        markerdata_list = m 
+    else if ((n <- ncol(m <- as.matrix(m))) == 0) 
+        markerdata_list = NULL 
+    else {
         if (is.character(m[1, 1]) && ("/" %in% strsplit(m[1, 1], "")[[1]])) {
             # if alleles are merged to 1 genotype per column
             splitvec = unlist(strsplit(m, "/", fixed = T))
@@ -171,7 +176,7 @@ setMarkers = function(x, m, annotations = NULL, missing = 0) {
         if (!is.null(annotations)) {
             if (length(annotations) == 2 && !is.null(names(annotations))) 
                 annotations = rep(list(annotations), nMark)  # if given attrs for a single marker
- else if (length(annotations) != nMark) 
+            else if (length(annotations) != nMark) 
                 stop("Length of marker annotation list does not equal number of markers.")
             
             markerdata_list = lapply(1:nMark, function(i) {
@@ -191,8 +196,7 @@ setMarkers = function(x, m, annotations = NULL, missing = 0) {
     }
     x$nMark = length(markerdata_list)
     x$markerdata = markerdata_list
-    x$available = if (x$nMark > 0) 
-        x$orig.ids[rowSums(do.call(cbind, markerdata_list)) > 0] else numeric(0)
+    x$available = if (x$nMark > 0) x$orig.ids[rowSums(do.call(cbind, markerdata_list)) > 0] else numeric(0)
     x
 }
 
@@ -428,6 +432,19 @@ swapGenotypes = function(x, ids) {
     restore_linkdat(y)
 }
 
+#TODO!
+#print.marker = function(m) {
+#    cat(sprintf("Marker name: %s\n", attr(m, 'name')))
+#    chrom = attr(m, 'chrom')
+#    pos = attr(m, 'pos')
+#    if(!is.na(chrom)) pos = paste(chrom, pos, sep=" - ")
+#    cat(sprintf("Position: %s\n", pos))
+#    cat("Alleles and frequencies:\n")
+#    afreq = attr(m, 'afreq')
+#    names(afreq) = attr(m, 'allele')
+#    print(afreq)   
+#}
+
 #' @rdname markers
 #' @export
 modifyMarkerMatrix = function(x, ids, new.alleles) {
@@ -435,4 +452,11 @@ modifyMarkerMatrix = function(x, ids, new.alleles) {
     y = as.matrix(x)
     y[ids, -(1:6)] = new.alleles
     restore_linkdat(y)
+}
+
+.setSNPfreqs = function(x, newfreqs) {
+    stopifnot(all(vapply(x$markerdata, function(m) attr(m, "nalleles"), numeric(1)) == 2))
+    newfreqs = rep(newfreqs, length = x$nMark)
+    for (i in seq_len(x$nMark)) attr(x$markerdata[[i]], "afreq") = c(newfreqs[i], 1 - newfreqs[i])
+    x
 }

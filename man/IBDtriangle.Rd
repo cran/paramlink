@@ -10,10 +10,12 @@ IBDtriangle(relationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC",
 }
 \arguments{
 \item{relationships}{A character vector indicating relationships points to
-be included in the plot.  UN=unrelated; PO=parent/offspring; MZ=monozygotic
-twins; S=full siblings; H=half sibling; U=uncle/aunt;}
+be included in the plot. By default all of the following are included:
+UN=unrelated; PO=parent/offspring; MZ=monozygotic
+twins; S=full siblings; H=half siblings; U=uncle/niece and similar; G=grandparent/grandchild; 
+FC=first cousins; SC=second cousins; DFC=double first cousins; Q=quadruple first half cousins.}
 
-\item{kinship.lines}{A numeric vector.}
+\item{kinship.lines}{A numeric vector. (See Details.)}
 
 \item{shading}{The shading color for the unattainable region.}
 
@@ -28,7 +30,7 @@ relationship labels.}
 \item{axes}{Draw surrounding axis box?}
 }
 \description{
-This function draws an IBD triangle, as typically used to visualize pairwise
+The IBD triangle is typically used to visualize the pairwise
 relatedness of non-inbred individuals.  Various annotations are available,
 including points marking the most common relationships, contour lines for
 the kinship coefficients, and shading of the unattainable region.
@@ -51,12 +53,13 @@ relationships.  By default this region in shaded in a 'lightgray' color.
 
 The IBD coefficients are linearly related to the kinship coefficient
 \eqn{\phi} by the formula \deqn{\phi = 0.25\kappa_1 + 0.5\kappa_2.} By
-indicating values for \eqn{phi} in the \code{kinship.lines} argument, the
+indicating values for \eqn{\phi} in the \code{kinship.lines} argument, the
 corresponding contour lines are shown as dashed lines in the triangle plot.
 }
 \examples{
 
 IBDtriangle()
+IBDtriangle(kinship=c(0.25, 0.125), shading=NULL, cex_text=0.8)
 
 }
 \references{

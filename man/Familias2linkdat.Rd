@@ -2,10 +2,13 @@
 % Please edit documentation in R/familias2linkdat.R
 \name{Familias2linkdat}
 \alias{Familias2linkdat}
+\alias{readFamiliasLoci}
 \alias{connectedComponents}
 \title{Convert 'Familias' output to linkdat objects}
 \usage{
 Familias2linkdat(familiasped, datamatrix, loci)
+
+readFamiliasLoci(loci)
 
 connectedComponents(ID, FID, MID)
 }

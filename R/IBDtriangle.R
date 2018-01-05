@@ -1,6 +1,6 @@
 #' IBD triangle plot
 #' 
-#' This function draws an IBD triangle, as typically used to visualize pairwise
+#' The IBD triangle is typically used to visualize the pairwise
 #' relatedness of non-inbred individuals.  Various annotations are available,
 #' including points marking the most common relationships, contour lines for
 #' the kinship coefficients, and shading of the unattainable region.
@@ -22,13 +22,15 @@
 #' 
 #' The IBD coefficients are linearly related to the kinship coefficient
 #' \eqn{\phi} by the formula \deqn{\phi = 0.25\kappa_1 + 0.5\kappa_2.} By
-#' indicating values for \eqn{phi} in the \code{kinship.lines} argument, the
+#' indicating values for \eqn{\phi} in the \code{kinship.lines} argument, the
 #' corresponding contour lines are shown as dashed lines in the triangle plot.
 #' 
 #' @param relationships A character vector indicating relationships points to
-#' be included in the plot.  UN=unrelated; PO=parent/offspring; MZ=monozygotic
-#' twins; S=full siblings; H=half sibling; U=uncle/aunt;
-#' @param kinship.lines A numeric vector.
+#' be included in the plot. By default all of the following are included:
+#' UN=unrelated; PO=parent/offspring; MZ=monozygotic
+#' twins; S=full siblings; H=half siblings; U=uncle/niece and similar; G=grandparent/grandchild; 
+#' FC=first cousins; SC=second cousins; DFC=double first cousins; Q=quadruple first half cousins.
+#' @param kinship.lines A numeric vector. (See Details.)
 #' @param shading The shading color for the unattainable region.
 #' @param pch Symbol used for the relationship points (see \code{\link{par}}).
 #' @param cex_points A single numeric controlling the symbol size for the
@@ -48,6 +50,7 @@
 #' @examples
 #' 
 #' IBDtriangle()
+#' IBDtriangle(kinship=c(0.25, 0.125), shading=NULL, cex_text=0.8)
 #' 
 #' @export
 IBDtriangle = function(relationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC", "DFC", 
@@ -94,3 +97,33 @@ IBDtriangle = function(relationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "
         text(rels$k0, rels$k2, labels = rels$label, pos = rels$pos, cex = cex_text)
     }
 }
+
+#' Add points to the IBD triangle
+#'
+#' Utility function for plotting points in the IBD triangle.
+#'
+#' @param k0,k2 Numerical vectors giving coordinates for points to be plotted in the IBDtriangle. 
+#' @param new Logical indicating if a new IBDtriangle should be drawn.
+#' @param col,cex,pch,lwd Parameters passed onto \code{\link{points}}.
+#' @param labels A character of same length as \code{k0}, or NULL.
+#' @param col_labels,cex_labels,pos,adj Parameters passed onto \code{\link{text}} (if \code{labels} is non-NULL).
+#' @param \dots Plot arguments passed on to \code{IBDtriangle}.
+#' @return NULL
+#' @author Magnus Dehli Vigeland
+#' @seealso \code{\link{IBDtriangle}}, \code{\link{examineKinships}}
+#'
+#' @examples
+#' 
+#' showInTriangle(k0=3/8, k2=1/8, label="3/4 siblings", pos=1)
+#' 
+#' @export
+showInTriangle = function(k0, k2=NULL, new=T, col="blue", cex=1, pch=4, lwd=2, 
+    labels=NULL, col_labels=col, cex_labels=0.8, pos=1, adj=NULL, ...) {
+    
+    if(new) 
+        IBDtriangle(...)
+    if(is.null(k0)) return()
+    points(k0, k2, col=col, pch=pch, lwd=lwd, cex=cex)
+    if(!is.null(labels)) 
+        text(k0, k2, labels=labels, col=col_labels, cex=cex_labels, pos=pos, adj=adj)
+} 
