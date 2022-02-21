@@ -4,16 +4,23 @@
 \alias{examineKinships}
 \title{Check pedigree for relationship errors}
 \usage{
-examineKinships(x, who = "all", interfam = c("founders", "none", "all"),
-  makeplot = T, pch = 4, ...)
+examineKinships(
+  x,
+  who = "all",
+  interfam = c("founders", "none", "all"),
+  makeplot = T,
+  pch = 4,
+  ...
+)
 }
 \arguments{
 \item{x}{A \code{\link{linkdat}} object, or a list of such.}
 
 \item{who}{A character vector of one or more of the words 'parents',
-'siblings', 'hugs' (= halfsibs/uncles/grandparents), 'cousins' and 'unrelated'. 
-Two additional single-word values are possible: 'all' (all of the above, plus 'other') 
-and 'close' (= 'parents', 'siblings', 'hugs', 'cousins').}
+'siblings', 'hugs' (= halfsibs/uncles/grandparents), 'cousins' and
+'unrelated'. Two additional single-word values are possible: 'all' (all of
+the above, plus 'other') and 'close' (= 'parents', 'siblings', 'hugs',
+'cousins').}
 
 \item{interfam}{A character; either 'founders', 'none' or 'all', indicating
 which interfamiliar pairs of individuals should be included. Only relevant
@@ -26,14 +33,15 @@ if \code{x} is a list of several \code{linkdat} objects.}
 \item{\dots}{Other plot arguments passed on to \code{\link{showInTriangle}}.}
 }
 \value{
-A list of data.frames (one for each relation category) with IBD estimates.
+A list of data.frames (one for each relation category) with IBD
+  estimates.
 }
 \description{
-This function provides a convenient way to check for pedigree errors in a 
-linkage project or other situations where marker data is available for several 
-members. The function calls \code{\link{IBDestimate}} to estimate IBD coefficients 
-for all indicated pairs of pedigree members and produces a color-coded plot where wrong
-relationships are easy to spot.
+This function provides a convenient way to check for pedigree errors in a
+linkage project or other situations where marker data is available for
+several members. The function calls \code{\link{IBDestimate}} to estimate IBD
+coefficients for all indicated pairs of pedigree members and produces a
+colour-coded plot where wrong relationships are easy to spot.
 }
 \examples{
 
@@ -51,8 +59,6 @@ examineKinships(list(x1, x2))
 
 }
 \seealso{
-\code{\link{IBDestimate}}, \code{\link{IBDtriangle}}, \code{\link{showInTriangle}}
-}
-\author{
-Magnus Dehli Vigeland
+\code{\link{IBDestimate}}, \code{\link{IBDtriangle}},
+  \code{\link{showInTriangle}}
 }

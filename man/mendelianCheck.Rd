@@ -17,9 +17,9 @@ returned, where the incorrect markers have been deleted.}
 are shown.}
 }
 \value{
-A numeric containing the indices of the markers
-that did not pass the tests, or (if \code{remove=TRUE}) a new \code{linkdat}
-object where the failing markers are removed.
+A numeric containing the indices of the markers that did not pass the
+tests, or (if \code{remove=TRUE}) a new \code{linkdat} object where the
+failing markers are removed.
 }
 \description{
 Check marker data for Mendelian inconsistencies
@@ -30,7 +30,7 @@ x = nuclearPed(3)
 
 # Adding a SNP with a mendelian error:
 # Individual 3 has an allele 'c' not carried by either parents
-m1 = marker(x, 1, c('a','a'), 2, c('a','b'), 3, c('a','c')) 
+m1 = marker(x, 1, c('a','a'), 2, c('a','b'), 3, c('a','c'))
 
 # Another erroneous marker: The siblings carry more than 4 different alleles.
 m2 = marker(x, 3, c(1,2), 4, c(3,4), 5, c(1,5))
@@ -56,7 +56,4 @@ stopifnot(all.equal(err_index, 1:4))
 x_remove = mendelianCheck(x, remove=TRUE)
 stopifnot(x_remove$nMark == 2)
 
-}
-\author{
-Magnus Dehli Vigeland
 }

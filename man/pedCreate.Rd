@@ -39,10 +39,11 @@ halfCousinPed(degree)
 family.}
 
 \item{sex}{A vector of length \code{noffs}; indicating the genders (1=male,
-2=female) of the offspring. If missing, all offspring are taken to be males.}
+2=female) of the offspring. If missing, all offspring are taken to be
+males.}
 
-\item{degree, degree1, degree2}{Non-negative integers, indicating the degree
-of cousin-like relationships: 0=siblings, 1=first cousins; 2=second cousins,
+\item{degree, degree1, degree2}{Non-negative integers, indicating the degree of
+cousin-like relationships: 0=siblings, 1=first cousins; 2=second cousins,
 a.s.o. See Details and Examples.}
 
 \item{removal, removal1, removal2}{Non-negative integers, indicating removals
@@ -88,12 +89,11 @@ where \code{n=1,...,generations}.
 \code{cousinPed} and \code{halfCousinPed} (written without the 's') are
 depreciated functions kept for backwards compatibility. They create cousin
 pedigrees, but without possibility for removals, and with a different
-ordering than their replacements \code{cousinsPed} and
-\code{halfCousinsPed}.
+ordering than their replacements \code{cousinsPed} and \code{halfCousinsPed}.
 }
 \examples{
 
-# A nuclear family with 2 boys and 3 girls, 
+# A nuclear family with 2 boys and 3 girls,
 # where the father and the two boys are affected.
 x = nuclearPed(noffs=5, sex=c(1,1,2,2,2))
 x = swapAff(x, ids=c(1,3,4))
@@ -107,7 +107,7 @@ cousinsPed(degree=0, removal=2)
 # Second cousins once removed.
 cousinsPed(degree=2, removal=1)
 
-# Again second cousins once removed, 
+# Again second cousins once removed,
 # but with the 'removal' on the left side.
 cousinsPed(degree=3, degree2=2)
 
@@ -124,16 +124,13 @@ halfSibStack(2)
 doubleFirstCousins()
 
 # Quadruple half first cousins
-# Weird plotting behaviour for this pedigree. 
+# Weird plotting behaviour for this pedigree.
 x = quadHalfFirstCousins()
 #plot(x)
 
 }
 \seealso{
 \code{\link{swapAff}}, \code{\link{swapSex}},
-\code{\link{removeIndividuals}}, \code{\link{addOffspring}},
-\code{\link{relabel}}
-}
-\author{
-Magnus Dehli Vigeland
+  \code{\link{removeIndividuals}}, \code{\link{addOffspring}},
+  \code{\link{relabel}}
 }

@@ -5,9 +5,17 @@
 \alias{merlinUnlikely}
 \title{MERLIN wrappers}
 \usage{
-merlin(x, markers = seq_len(x$nMark), model = TRUE, theta = NULL,
-  options = "", verbose = FALSE, generate.files = TRUE,
-  cleanup = generate.files, logfile = "")
+merlin(
+  x,
+  markers = seq_len(x$nMark),
+  model = TRUE,
+  theta = NULL,
+  options = "",
+  verbose = FALSE,
+  generate.files = TRUE,
+  cleanup = generate.files,
+  logfile = ""
+)
 
 merlinUnlikely(x, remove = FALSE, verbose = !remove)
 }
@@ -28,8 +36,8 @@ included in the MERLIN command using the \code{--position} parameter. Works
 only for single markers (i.e. \code{markers} must consist of a single
 integer).}
 
-\item{options}{a character with additional options to the MERLIN command.
-See details.}
+\item{options}{a character with additional options to the MERLIN command. See
+details.}
 
 \item{verbose}{a logical: Show MERLIN output and other information, or not.}
 
@@ -48,30 +56,28 @@ returned, where the unlikely markers have been deleted.}
 }
 \value{
 If \code{model=TRUE}, a \code{\link{linkres}} object. Otherwise a
-character containing the complete MERLIN output.
+  character containing the complete MERLIN output.
 
-For \code{merlinUnlikely}, a numeric containing the indices of the unlikely,
-or (if \code{remove=TRUE}) a new \code{linkdat} object where the unlikely
-markers are removed.
+  For \code{merlinUnlikely}, a numeric containing the indices of the
+  unlikely, or (if \code{remove=TRUE}) a new \code{linkdat} object where the
+  unlikely markers are removed.
 }
 \description{
 Wrappers for the MERLIN software, providing multipoint LOD scores and other
-computations on pedigrees with marker data. These functions require MERLIN 
-to be installed and correctly pointed to in the PATH environment variable.
+computations on pedigrees with marker data. These functions require MERLIN to
+be installed and correctly pointed to in the PATH environment variable.
 }
 \details{
 For these functions to work, MERLIN must be installed and the path to
-merlin.exe included in the PATH variable. The \code{merlin} function is
-first and foremost a wrapper to the parametric linkage functionality of
-MERLIN.
+merlin.exe included in the PATH variable. The \code{merlin} function is first
+and foremost a wrapper to the parametric linkage functionality of MERLIN.
 
 By default the following MERLIN command is run (via a call to
-\code{\link{system}}) after creating appropriate files in the current
-working directory:
+\code{\link{system}}) after creating appropriate files in the current working
+directory:
 
-\preformatted{%
-merlin -p _merlin.ped -d _merlin.dat -m _merlin.map -f _merlin.freq
-       --model _merlin.model --tabulate --markerNames --quiet}
+\preformatted{% merlin -p _merlin.ped -d _merlin.dat -m _merlin.map -f
+_merlin.freq --model _merlin.model --tabulate --markerNames --quiet}
 
 The resulting multipoint LOD scores are extracted from the output and
 returned in R as a \code{\link{linkres}} object.
@@ -110,7 +116,4 @@ merlin(x, model=F, options='--lik')
 }
 \references{
 \url{http://csg.sph.umich.edu/abecasis/Merlin/}
-}
-\author{
-Magnus Dehli Vigeland
 }

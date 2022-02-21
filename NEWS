@@ -1,151 +1,169 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+2022-02-21: Version 1.1-4.
+    Note: 'PARAMLINK' HAS BEEN SUPERSEDED BY THE 'PED SUITE'. IT IS MAINTAINED ONLY FOR LEGACY PURPOSES AND SHOULD NOT BE USED IN NEW PROJECTS.
+
+    * Fixed a bug in `ancestor()` causing CRAN failure.
+    * Various minor fixes, mostly preventive measures trying to avoid future CRAN issues.
+    * Paramlink is now on GitHub.
+
+2018-04-30: Version 1.1-3
+    * Fixed bug in markerSim() and simpleSim() affecting pedigrees with nonstandard ordering. For simplicity the simulation algorithms assume that all parents precede their children. In the new version this is enforced if necessary (and a note printed to the screen).
+
+    * Fixed bug in markerSim() which passed the same random seed to each element in recursive calls.
+
+    * Renamed kinship.coeff() to kinship_coefs().
+
+    * The function descendants() is re-implemented and now much faster.
+
+    * New function hasCA() returning a logical matrix showing which pairs of pedigree members have a common ancestor.
+
 2017-12-26: Version 1.1-2
     * New function LR() calculating likelihood ratios of competing pedigree hypotheses.
-    
+
     * IBDestimate() now accepts multi-allelic markers. This called for a complete rewriting of the code, and have introduced breaking changes in the syntax.
-    
-    * examineKinships() also accepts multi-allelic markers. 
-    
+
+    * examineKinships() also accepts multi-allelic markers.
+
     * A new function showInTriangle() facilitates plotting points in the IBD triangle.
 
 2017-08-10: Version 1.1-1
     * I'm now using roxygen2 and devtools to maintain this package. This required various rearrangements and cleanups of the source code, hopfully without breaking anything.
-    
+
     * plotPedList: Expressions (e.g. sub/superscripts) are now allowed in frametitles.
-    
+
     * Test for availability of packages 'igraph' and 'identity' (in the Suggests field of DESCRIPTION), both in code and examples.
-    
+
     * Improved mendelianCheck(), which did not catch certain Mendelian errors involving siblings carrying too many alleles in total.
-    
+
 2017-03-11: Version 1.1-0
     * Rewritten the package title and "description", to reflect paramlink's recent features in forensic genetics.
-    
+
     * Various clean-ups for CRAN release.
-    
+
 2017-02-28: Version 1.0-4
     * New feature: Familias2linkdat() provides conversion from output files of the forensic software "Familias" into paramlink format.
-    
+
     * plot.singleton() rewritten, allowing all features of plot.linkdat().
-    
+
     * plot.linkdat() and plot.singleton(): id.labels can now be a named vector, e.g. plot(nuclearPed(1), id.labels=c(father=1, mother=2, child=3))
-    
+
 2017-02-01: Version 1.0-2
-    * Allele reduction ("lumping") was previously not done for markers with non-trivial mutation 
-      matrices. Lumping is now implemented for mutation matrices which always allow it (i.e. 
+    * Allele reduction ("lumping") was previously not done for markers with non-trivial mutation
+      matrices. Lumping is now implemented for mutation matrices which always allow it (i.e.
       any subset of alleles).  This includes common Familias models like "Equal" and "Proportional".
 
 2017-01-10: Version 0.9-98
-    * New function IBDtriangle() replacing and improving the previous internal 
+    * New function IBDtriangle() replacing and improving the previous internal
       paramlink:::.plot_IBDtriangle().
-    
+
     * Minor improvements of the plots in examineKinships().
-    
+
 2016-12-31: Version 0.9-97
-   * The default values for arguments "id.labels" and "title" in plot.linkdat() and 
-     plot.singleton() are now NULL. The default plotting labels will be taken from x$plot.labels 
+   * The default values for arguments "id.labels" and "title" in plot.linkdat() and
+     plot.singleton() are now NULL. The default plotting labels will be taken from x$plot.labels
      if this is non-NULL, otherwise x$orig.ids.
-     
+
 2016-12-20: Version 0.9-96
-   * New feature: transferMarkerdata() for copying marker genotypes between (lists of) linkdat 
+   * New feature: transferMarkerdata() for copying marker genotypes between (lists of) linkdat
      objects.
-   
-   * Made markerSim() more intelligent in choice of simulation strategy, making it much faster 
+
+   * Made markerSim() more intelligent in choice of simulation strategy, making it much faster
      in many cases.
-     
+
    * Stopped markerSim() from outputting "forced genotypes" of unavailable individuals.
-   
-   * Fixed bug in exclusionPower() which manifested when some component of true_ped or claim_ped 
+
+   * Fixed bug in exclusionPower() which manifested when some component of true_ped or claim_ped
      did not contain any available individuals.
-   
+
 2016-12-11: Version 0.9-95
    * New feature: likelihood with mutations for X-linked markers.
-   
+
    * New feature: markerSim() accepts list of linkdat/singleton objects.
-   
-   * Bug fix: markerSim() and oneMarkerDistribution() sometimes gave erroneous results if 
+
+   * Bug fix: markerSim() and oneMarkerDistribution() sometimes gave erroneous results if
      loops where broken prior to calling them. Trying to do so now instead raises an error.
-   
+
 2016-12-08: Version 0.9-94
-   * Improved loop breaking using methods from the 'igraph' package. Automatic selection of loop breakers 
+   * Improved loop breaking using methods from the 'igraph' package. Automatic selection of loop breakers
      now works in pedigrees with (almost) any combination of marriage loops and inbreeding loops.
-   
+
    * New function jacquard2() as an alternative to jacquard() which sometimes causes R to crash.
-   
+
 2016-12-04: Version 0.9-93
-   * Fixed bug in likelihood.singleton() affecting empty markers: In some cases an emtpty numeric() was 
+   * Fixed bug in likelihood.singleton() affecting empty markers: In some cases an emtpty numeric() was
      returned instead of 1.
 
 2016-12-01: Version 0.9-92
-   * New feature: Loops are now automatically broken whenever applicable. Loop breakers can be supplied 
+   * New feature: Loops are now automatically broken whenever applicable. Loop breakers can be supplied
      manually as before; otherwise they are autmatically selected.
 
 2016-11-30: Version 0.9-91
    * New function: plotPedList, for plotting several pedigrees in the same window.
-   
-   * New feature: Likelihood with mutations. When creating marker objects, a mutation matrix 
-     (or a list of such for males and females respectively) can be supplied, which will be taken into 
+
+   * New feature: Likelihood with mutations. When creating marker objects, a mutation matrix
+     (or a list of such for males and females respectively) can be supplied, which will be taken into
      account in likelihood computations involving the marker.
 
 2016-10-14: Version 0.9-9
-   * New functions: Several new utility functions for creating cousin-like pedigrees and sib-pair stacks. 
+   * New functions: Several new utility functions for creating cousin-like pedigrees and sib-pair stacks.
      See ?createPedigree for details.
-   
+
    * New function: jacquard() which is a simple wrapper for identity.coefs() in the identity package.
-   
+
 2016-04-27: Version 0.9-8
-   * The version of likelihood() for two linked markers previously handled only autosomal markers. This is 
+   * The version of likelihood() for two linked markers previously handled only autosomal markers. This is
      now extended to X chromosomal markers.
-   
+
    * As a result of the above, twoMarkerDistribution() now works for X chromosomal markers.
-   
-   * New utility functions addDaughter() and addSon(). These are wrappers for addOffspring() for the simple 
+
+   * New utility functions addDaughter() and addSon(). These are wrappers for addOffspring() for the simple
      case of adding a single child to a single pedigree member. The other parent will be created as a founder.
 
 2014-08-08: Version 0.9-7
    * New function: peakSummary() summarising lod score peaks
-   
+
    * Fixed bug in related.pairs() causing erroneous classifications of "distant" relationships
-   
+
    * Fixed bug in relabel() affecting the "available" attribute
-   
+
    * Improved handling of endpoints in lod.peaks()
-   
-   * Improved handling of impossible genotype combinations (e.g. parent=1/1, child=2/2) in the internal 
+
+   * Improved handling of impossible genotype combinations (e.g. parent=1/1, child=2/2) in the internal
      function .startdata_MM()
-   
-   * New functions: allGenotypes(), fast.grid() and geno.grid.subset(). These are cleaned-up versions of 
+
+   * New functions: allGenotypes(), fast.grid() and geno.grid.subset(). These are cleaned-up versions of
      previous internal functions, and are probably not important to most end users.
-   
+
 2014-03-31: Version 0.9-6
    * Cleaned up merlin()
-   
+
 2013-09-26: Version 0.9-5
-   * New feature: Relatedness estimation. The function ibdEstimate() estimates pairwise IBD coefficients 
+   * New feature: Relatedness estimation. The function ibdEstimate() estimates pairwise IBD coefficients
      (maximum likelihood functionality imported from maxLik package). Checking for pedigree errors is
-     conveniently done with the examineKinships() function: This computes IBD coefficients for all pairs in 
+     conveniently done with the examineKinships() function: This computes IBD coefficients for all pairs in
      the pedigree and produces a color-coded plot where wrong relationships are easy to spot.
-   
+
 2013-09-24: Version 0.9-4
-   * New pedigree utility functions: parents(), siblings(), grandparents(), nephews_nieces(), cousins() 
+   * New pedigree utility functions: parents(), siblings(), grandparents(), nephews_nieces(), cousins()
      and unrelated(), similar to the existing functions offspring(), ancestors() and descendants().
-     All of these functions take one individual as input, and return a vector identifying all pedigree 
+     All of these functions take one individual as input, and return a vector identifying all pedigree
      members with the corresponding relationship to him/her.
-   
+
    * New function related.pairs(), accompanying the above functions: This finds *all* pairs of
      pedigree members having the specified relationship.
-   
+
    * New function branch() extracting the branch of a 'linkdat' object starting with a specified member.
-   
+
    * Bug fix: likelihood.singleton() gave wrong result for genotypes with one missing allele.
-   
+
    * Bug fix: .checkped() crashed when encountering parental IDs not found in the IID column.
-   
+
 2013-05-15: Version 0.9-2
    * Added option 'skip.empty.genotypes' in plot.linkdat().
-   
+
    * Changed the default bottom margin in pedigree plots from 4.1 to 0.6.
-   
+
 
 2013-04-15: Version 0.9-1
    * Improved pedigree checking in linkdat(), catching individuals being their own ancestor.
@@ -156,7 +174,7 @@ NEWS FILE FOR PACKAGE PARAMLINK
      marker name, chromosome and position.
 
    * New functions as.data.frame.linkres() and lod.peaks() for post processing linkage results.
-   
+
    * The arguments 'nallel' og 'afreq' of setModel() have been depreciated a long time, and are
      now completely removed.
 
@@ -170,151 +188,151 @@ NEWS FILE FOR PACKAGE PARAMLINK
 
 2013-04-05: Version 0.9-0
    * The MERLIN wrapper is extended to X-linked disease models, calling the MINX program.
-   
-   * New function linkageSim() simulates genotypes for markers linked to a disease locus, 
-     conditional on marker allele frequencies (up to 4 alleles) and disease model. This is an 
+
+   * New function linkageSim() simulates genotypes for markers linked to a disease locus,
+     conditional on marker allele frequencies (up to 4 alleles) and disease model. This is an
      extended and improved version of SNPsim, which did the same thing for diallelic markers.
-   
+
   * linkage.power() can now estimate power for markers with up to 4 alleles.
 
-  
+
 2013-04-02: Version 0.8-3
-   * Reading and writing large ped-files is now must faster, by using scan() and write() 
+   * Reading and writing large ped-files is now must faster, by using scan() and write()
      directly instead of read.table() and write.table().
-   
-   * Added S3 function as.matrix() and its reverse restore_linkdat(), facilitating 
+
+   * Added S3 function as.matrix() and its reverse restore_linkdat(), facilitating
      individual-by-individual operations on linkdat objects.
-   
-   * Fixed bug in .readMap() which caused allele frequencies to be ignored when reading .freq 
+
+   * Fixed bug in .readMap() which caused allele frequencies to be ignored when reading .freq
      files in (short) MERLIN format.
-   
-   * Added "/" separators to the dimnames in the output array of oneMarkerDistribution() and 
+
+   * Added "/" separators to the dimnames in the output array of oneMarkerDistribution() and
      twoMarkerDistribution().
 
-     
+
 2013-03-01: Version 0.8-2
-   * The construction of linkdat objects now accepts singleton pedigrees, i.e. consisting of 
-     a single individual. 
-   
+   * The construction of linkdat objects now accepts singleton pedigrees, i.e. consisting of
+     a single individual.
+
    * Improved plot in exclusionPower().
 
-   
+
 2013-01-02: Version 0.8-1
-   * Fixed algorithmic bug in .informative() which caused likelihood() to give wrong answer in 
+   * Fixed algorithmic bug in .informative() which caused likelihood() to give wrong answer in
      certain (rare) cases.
 
-     
+
 2012-10-12: Version 0.8-0
    * New function exclusionPower() replaces exclusion().
 
-   
+
 2012-08-10: Version 0.7-0
    * Removed all calls to .Internal().
-   
+
    * oneMarkerDistribution() behaves better with X-linked markers.
-   
+
    * improved likelihood calculation in twoMarkerDistribution.
 
-   
+
 2012-03-08: Version 0.6-3
-   * SNPsim() now stores all simulated markers as diallelic, annotated with the input allele 
+   * SNPsim() now stores all simulated markers as diallelic, annotated with the input allele
      frequencies. (In earlier versions markers with only one allele were stored as monoallelic).
-   
+
    * Fixed bug in mendelianCheck() causing empty result with looped pedigrees.
 
-   
+
 2012-02-10: Version 0.6-2
    * New function simpleSim() for unconditional simulation (gene dropping) of unlinked markers.
-   
-   * New function lod.varyParam() which computes and plots the LOD score under variable model 
-     parameters. Either one or two parameters are allowed to vary; in the latter case a contour 
-     plot of the LOD is produced. 
-   
+
+   * New function lod.varyParam() which computes and plots the LOD score under variable model
+     parameters. Either one or two parameters are allowed to vary; in the latter case a contour
+     plot of the LOD is produced.
+
    * Added logical argument 'verbose' to mendelianCheck().
-   
-   * Added argument 'afreq' for specifying allele frequencies in functions SNPsim() and 
+
+   * Added argument 'afreq' for specifying allele frequencies in functions SNPsim() and
      linkage.power(). In earlier versions this was done in given in setModel().
-   
+
    * Fixed bug in addMarker() which deleted other markers when given an allele matrix as input.
-   
+
    * New function exclusion() (undocumented and experimental).
 
-   
+
 2012-01-31: Version 0.6-0
    * Rewritten User's Manual.
-   
+
    * Improved and fixed bugs in merlin().
-   
+
    * Genotypes of more than one marker can now be included in pedigree plots.
-   
+
    * New function oneMarkerDistribution() replacing genotypeDistribution().
-   
+
    * Many small cleanups.
 
-   
+
 2012-01-11: Version 0.5-2
    * Fixed bugs in twoMarkerDistribution().
-   
-   * Fixed bug in marker() that gave error with missing 'alleles' argument. 
-   
-   * The 'sim' slot of a linkdat object, with availability statuses in SLINK format, is now 
-     depreciated. It is replaced by an 'available' slot for each linkdat object, which 
-     simply contains the IDs of available individuals. The main use of this is to indicate 
-     availability in SNPsim(), linkage.power() and plot.linkdat(). If the linkdat object 
-     includes marker data, the default is to set all genotyped individuals as available. 
-   
-   * Added optional arguments in the plot.linkdat() function: 
+
+   * Fixed bug in marker() that gave error with missing 'alleles' argument.
+
+   * The 'sim' slot of a linkdat object, with availability statuses in SLINK format, is now
+     depreciated. It is replaced by an 'available' slot for each linkdat object, which
+     simply contains the IDs of available individuals. The main use of this is to indicate
+     availability in SNPsim(), linkage.power() and plot.linkdat(). If the linkdat object
+     includes marker data, the default is to set all genotyped individuals as available.
+
+   * Added optional arguments in the plot.linkdat() function:
       'available': logical. If TRUE, the available/genotyped individuals are drawn red.
-      'col': integer or character vector with colors for the pedigree members. Passed on 
+      'col': integer or character vector with colors for the pedigree members. Passed on
              to kinship2:::plot.pedigree.
       'starred': individuals that should be marked with a star.
-      
+
    * By default, print.linkdat and plot.linkdat now use "/" as marker allele separator.
- 
- 
+
+
 2012-01-06: Version 0.5-1
    * merlin() now returns 'linkres' objects, for better summary and plotting of LOD scores.
-  
+
    * relabel() improved.
- 
+
    * marker() stops with an error if the genotypes given don't match the 'alleles' argument.
- 
- 
+
+
 2012-01-04: Version 0.5-0
-   * Updating the plot.linkdat() function, which now imports plot.pedigree() from the new 
+   * Updating the plot.linkdat() function, which now imports plot.pedigree() from the new
      'kinship2' package (instead of the old 'kinship')
-   
+
    * Many small cleanups.
- 
- 
+
+
 2012-01-02: Version 0.4-1
-   * genotypeDistribution() can now computes join genotype distributions for any number of 
-     individuals (at a single marker). 
-   
-   * New function twoMarkerDistribution() computes the joint genotype distribution at two 
-     linked or unlinked markers for a single individual, possibly conditional on partial 
+   * genotypeDistribution() can now computes join genotype distributions for any number of
+     individuals (at a single marker).
+
+   * New function twoMarkerDistribution() computes the joint genotype distribution at two
+     linked or unlinked markers for a single individual, possibly conditional on partial
      data on the two markers.
-   
-   * New function merlin(): This is a wrapper to MERLIN, which must be properly installed 
+
+   * New function merlin(): This is a wrapper to MERLIN, which must be properly installed
      and included in the path variable.
-   
-   * New function setMap(), for describing the position of the markers. The input should 
-     be a data.frame or a map-file/dat-file pair in MERLIN format. 
-   
-   
+
+   * New function setMap(), for describing the position of the markers. The input should
+     be a data.frame or a map-file/dat-file pair in MERLIN format.
+
+
 2011-12-20: Version 0.4-0
-   * The functions lod(), linkage.power(), SNPsim() and genotypeDistribution() now handle 
+   * The functions lod(), linkage.power(), SNPsim() and genotypeDistribution() now handle
      looped pedigrees.
-   
+
    * New functions to deal with looped pedigrees: breakLoops() and tieLoops().
-   
+
    * lod() handles markers with more than 2 alleles. The likelihood calculation (using the
      Elston-Stewart algorithm) is done in paramlink:::.likelihood_multi().
-   
-   * New class 'marker', and related functions marker() and addMarker(). A marker object is 
-     an allele matrix with various attributes including allele frequencies, allele names 
+
+   * New class 'marker', and related functions marker() and addMarker(). A marker object is
+     an allele matrix with various attributes including allele frequencies, allele names
      and missing allele symbol.
-   
-   * linkdat() now handles ped-files with more than one pedigree, outputting a list of 
+
+   * linkdat() now handles ped-files with more than one pedigree, outputting a list of
      linkdat objects.
-   
+

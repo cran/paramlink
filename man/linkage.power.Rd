@@ -5,8 +5,16 @@
 \alias{summary.powres}
 \title{Power of a linkage study}
 \usage{
-linkage.power(x, N = 100, available = x$available, afreq = c(0.5, 0.5),
-  loop_breakers = NULL, threshold = NULL, seed = NULL, verbose = FALSE)
+linkage.power(
+  x,
+  N = 100,
+  available = x$available,
+  afreq = c(0.5, 0.5),
+  loop_breakers = NULL,
+  threshold = NULL,
+  seed = NULL,
+  verbose = FALSE
+)
 
 \method{summary}{powres}(object, threshold = NULL, ...)
 }
@@ -27,12 +35,13 @@ loop breakers. Relevant only if the pedigree has loops. See
 \code{\link{breakLoops}}.}
 
 \item{threshold}{NULL, or a single numeric. If numeric, the output includes
-the percentage of simulated markers having LOD larger than \code{threshold}.}
+the percentage of simulated markers having LOD larger than
+\code{threshold}.}
 
 \item{seed}{NULL, or a numeric seed for the random number generator.}
 
-\item{verbose}{a logical passed on to \code{linkageSim}. If \code{TRUE},
-some details are shown during the marker simulation.}
+\item{verbose}{a logical passed on to \code{linkageSim}. If \code{TRUE}, some
+details are shown during the marker simulation.}
 
 \item{object}{a \code{powres} object, normally produced by
 \code{linkage.power}.}
@@ -41,21 +50,21 @@ some details are shown during the marker simulation.}
 }
 \value{
 The function prints a summary and returns invisibly a \code{powres}
-object, which is a list with the following entries: \item{sim}{A
-\code{linkdat} object with the simulated markers} \item{lod}{The LOD scores
-(computed with recombination fraction theta=0) of the simulated markers}
-\item{maxlod}{The highest LOD score of the simulated markers}
-\item{elod}{The average LOD score for the simulated markers}
+  object, which is a list with the following entries: \item{sim}{A
+  \code{linkdat} object with the simulated markers} \item{lod}{The LOD scores
+  (computed with recombination fraction theta=0) of the simulated markers}
+  \item{maxlod}{The highest LOD score of the simulated markers}
+  \item{elod}{The average LOD score for the simulated markers}
 
-%The \code{power.varyPar} function creates a plot of the results and returns
-the maximum LOD score for each element of \code{values}.
+  %The \code{power.varyPar} function creates a plot of the results and
+  returns the maximum LOD score for each element of \code{values}.
 }
 \description{
 Power analysis of parametric linkage studies
 }
 \examples{
 
-# Note: In the examples below N is set very low in order to reduce time consumption. 
+# Note: In the examples below N is set very low in order to reduce time consumption.
 # Increase N to get more interesting results.
 
 x = nuclearPed(3)
@@ -75,13 +84,9 @@ stopifnot(round(pow$maxlod, 1) == 1.2)
 
 }
 \references{
-The marker simulation takes place in \code{\link{linkageSim}},
-which implements the algorithm used by SLINK:
-\url{http://linkage.rockefeller.edu/ott/SLINK.htm}
+Marker simulation is inspired by the SLINK algorithm:
+  \url{https://www.jurgott.org/linkage/SLINK.htm}.
 }
 \seealso{
 \code{\link{linkdat}}, \code{\link{linkageSim}}
-}
-\author{
-Magnus Dehli Vigeland
 }

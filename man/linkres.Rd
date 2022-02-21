@@ -28,8 +28,8 @@ peakSummary(x, threshold, width = 1, physmap = NULL)
 \item{sort}{a logical, indicating if the data frame should be sorted
 according to map position.}
 
-\item{threshold}{a single numeric. A peak is defined as a regions of at
-least \code{width} consecutive markers LOD score above \code{threshold}.}
+\item{threshold}{a single numeric. A peak is defined as a regions of at least
+\code{width} consecutive markers LOD score above \code{threshold}.}
 
 \item{width}{a single numeric.}
 
@@ -56,7 +56,4 @@ as.data.frame(lods)
 }
 \seealso{
 \code{\link{lod}}, \code{\link{merlin}}
-}
-\author{
-Magnus Dehli Vigeland
 }

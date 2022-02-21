@@ -4,8 +4,15 @@
 \alias{lod}
 \title{Two-point LOD score}
 \usage{
-lod(x, markers = seq_len(x$nMark), theta = 0, loop_breakers = NULL,
-  max.only = FALSE, verbose = FALSE, tol = 0.01)
+lod(
+  x,
+  markers = seq_len(x$nMark),
+  theta = 0,
+  loop_breakers = NULL,
+  max.only = FALSE,
+  verbose = FALSE,
+  tol = 0.01
+)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object.}
@@ -30,22 +37,22 @@ parameter.}
 }
 \value{
 If \code{max.only=TRUE}, the highest computed LOD score is returned,
- as a single number.
+  as a single number.
 
-Otherwise a \code{linkres} object, which is essentially a matrix containing 
-the LOD scores. The details depend on the other parameters:
+  Otherwise a \code{linkres} object, which is essentially a matrix containing
+  the LOD scores. The details depend on the other parameters:
 
-If \code{theta} is numeric, the matrix has
-dimensions \code{length(theta) * length(markers)}, and the entry in row
-\code{t}, column \code{m} is the lod score of the pedigree for marker
-\code{m} assuming a recombination rate of \code{t}.
+  If \code{theta} is numeric, the matrix has dimensions \code{length(theta) *
+  length(markers)}, and the entry in row \code{t}, column \code{m} is the lod
+  score of the pedigree for marker \code{m} assuming a recombination rate of
+  \code{t}.
 
-If \code{theta='max'}, the \code{linkres} matrix has one column per marker
-and two rows: The first containing the LOD score and the second the optimal
-recombination ratio for each marker.
+  If \code{theta='max'}, the \code{linkres} matrix has one column per marker
+  and two rows: The first containing the LOD score and the second the optimal
+  recombination ratio for each marker.
 
-If a marker has incompatible values (i.e. if a child of homozygous 1/1
-parents has a 2 allele), the corresponding output entries are \code{NaN}.
+  If a marker has incompatible values (i.e. if a child of homozygous 1/1
+  parents has a 2 allele), the corresponding output entries are \code{NaN}.
 }
 \description{
 Calculates the two-point LOD scores of a pedigree for the specified markers.
@@ -53,12 +60,10 @@ The recombination ratio between the disease and marker loci can be either
 fixed at specific values, or optimized.
 }
 \details{
-The LOD score of a marker is defined as 
-\deqn{LOD(\theta) = \log[10] \frac{L(\theta)}{L(0.5)}}{%
-LOD(\theta) = log10 L(\theta)/L(0.5)}
-where \eqn{L(\theta)} denotes the likelihood of the
-observed marker genotypes given a recombination ratio \eqn{\theta}
-between the marker and the disease locus.
+The LOD score of a marker is defined as \deqn{LOD(\theta) =
+\log[10]\frac{L(\theta)}{L(0.5)}} where \eqn{L(\theta)} denotes the
+likelihood of the observed marker genotypes given a recombination ratio
+\eqn{\theta} between the marker and the disease locus.
 }
 \examples{
 
@@ -89,7 +94,7 @@ z = modifyMarker(z, marker=1, ids=c(7,9,11,13), genotype=3, alleles=1:3, afreq=c
 plot(z, 1)
 res3 = lod(z)
 
-z = modifyMarker(z, marker=1, alleles=1:4, afreq=c(0.001, 0.499, 0.25, 0.25)) 
+z = modifyMarker(z, marker=1, alleles=1:4, afreq=c(0.001, 0.499, 0.25, 0.25))
 res4 = lod(z)
 
 stopifnot(all(3 == round(c(res1, res2, res3, res4), 1)))
@@ -97,8 +102,5 @@ stopifnot(all(3 == round(c(res1, res2, res3, res4), 1)))
 }
 \seealso{
 \code{\link{likelihood}}, \code{\link{optimize}},
-\code{\link{breakLoops}}
-}
-\author{
-Magnus Dehli Vigeland
+  \code{\link{breakLoops}}
 }

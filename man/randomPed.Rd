@@ -4,8 +4,13 @@
 \alias{randomPed}
 \title{Random pedigree}
 \usage{
-randomPed(gen, lambda = 2, penetrances = c(0, 1, 1), naff = "last.gen",
-  founder.mut = 1)
+randomPed(
+  gen,
+  lambda = 2,
+  penetrances = c(0, 1, 1),
+  naff = "last.gen",
+  founder.mut = 1
+)
 }
 \arguments{
 \item{gen}{an integer in the interval \code{[2,5]} indicating the number of
@@ -31,9 +36,9 @@ A \code{linkdat} object.
 Creates a random medical pedigree with specified number of generations.
 }
 \details{
-The function produces a random simple pedigree. Each founder is given at
-most one disease allele. At least one of the two top founders carries a
-disease allele.
+The function produces a random simple pedigree. Each founder is given at most
+one disease allele. At least one of the two top founders carries a disease
+allele.
 }
 \examples{
 
@@ -47,7 +52,4 @@ randomPed(gen=4, penetrances=c(0,0,1), naff=2, founder.mut=1)
 }
 \seealso{
 \code{\link{linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

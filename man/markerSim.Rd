@@ -4,9 +4,18 @@
 \alias{markerSim}
 \title{Marker simulation}
 \usage{
-markerSim(x, N = 1, available = NULL, alleles = NULL, afreq = NULL,
-  partialmarker = NULL, loop_breakers = NULL, eliminate = 0,
-  seed = NULL, verbose = TRUE)
+markerSim(
+  x,
+  N = 1,
+  available = NULL,
+  alleles = NULL,
+  afreq = NULL,
+  partialmarker = NULL,
+  loop_breakers = NULL,
+  eliminate = 0,
+  seed = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object}
@@ -14,8 +23,8 @@ markerSim(x, N = 1, available = NULL, alleles = NULL, afreq = NULL,
 \item{N}{a positive integer: the number of markers to be simulated}
 
 \item{available}{a vector containing IDs of the available individuals, i.e.
-those whose genotypes should be simulated. 
-By default, all individuals are included.}
+those whose genotypes should be simulated. By default, all individuals are
+included.}
 
 \item{alleles}{a vector containing the alleles for the marker to be
 simulation. If a single integer is given, this is interpreted as the number
@@ -35,7 +44,8 @@ loop breakers. Relevant only if the pedigree has loops, and only if
 
 \item{eliminate}{A non-negative integer, indicating the number of iterations
 in the internal genotype-compatibility algorithm. Positive values can save
-time if \code{partialmarker} is non-NULL and the number of alleles is large.}
+time if \code{partialmarker} is non-NULL and the number of alleles is
+large.}
 
 \item{seed}{NULL, or a numeric seed for the random number generator.}
 
@@ -43,15 +53,15 @@ time if \code{partialmarker} is non-NULL and the number of alleles is large.}
 }
 \value{
 a \code{linkdat} object equal to \code{x} except its
-\code{markerdata} entry, which consists of the \code{N} simulated markers.
+  \code{markerdata} entry, which consists of the \code{N} simulated markers.
 }
 \description{
 Simulates marker genotypes conditional on the pedigree structure, affection
 statuses and disease model.
 }
 \details{
-This implements (with various time savers) the algorithm used in SLINK of
-the LINKAGE/FASTLINK suite. If \code{partialmarker} is NULL, genotypes are
+This implements (with various time savers) the algorithm used in SLINK of the
+LINKAGE/FASTLINK suite. If \code{partialmarker} is NULL, genotypes are
 simulated by simple gene dropping, using \code{\link{simpleSim}}.
 }
 \examples{
@@ -66,12 +76,9 @@ markerSim(x, N=1, available=4, partialmarker=partial)
 }
 \references{
 G. M. Lathrop, J.-M. Lalouel, C. Julier, and J. Ott,
-\emph{Strategies for Multilocus Analysis in Humans}, PNAS 81(1984), pp.
-3443-3446.
+  \emph{Strategies for Multilocus Analysis in Humans}, PNAS 81(1984), pp.
+  3443-3446.
 }
 \seealso{
 \code{\link{simpleSim}}, \code{\link{linkage.power}}
-}
-\author{
-Magnus Dehli Vigeland
 }

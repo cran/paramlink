@@ -10,21 +10,37 @@
 \usage{
 likelihood(x, ...)
 
-\method{likelihood}{linkdat}(x, locus1, locus2 = NULL, theta = NULL,
-  startdata = NULL, eliminate = 0, logbase = NULL, loop_breakers = NULL,
-  ...)
+\method{likelihood}{linkdat}(
+  x,
+  locus1,
+  locus2 = NULL,
+  theta = NULL,
+  startdata = NULL,
+  eliminate = 0,
+  logbase = NULL,
+  loop_breakers = NULL,
+  ...
+)
 
 \method{likelihood}{singleton}(x, locus1, logbase = NULL, ...)
 
 \method{likelihood}{list}(x, locus1, locus2 = NULL, ..., returnprod = TRUE)
 
-likelihood_LINKAGE(x, marker, theta = NULL, afreq = NULL, logbase = NULL,
-  TR.MATR = NULL, initialCalc = NULL, singleNum.geno = NULL,
-  loop_breakers = NULL)
+likelihood_LINKAGE(
+  x,
+  marker,
+  theta = NULL,
+  afreq = NULL,
+  logbase = NULL,
+  TR.MATR = NULL,
+  initialCalc = NULL,
+  singleNum.geno = NULL,
+  loop_breakers = NULL
+)
 }
 \arguments{
-\item{x}{a \code{\link{linkdat}} object, a \code{\link{singleton}} object,
-or a list of such objects. In \code{likelihood_LINKAGE}, \code{x} must be a
+\item{x}{a \code{\link{linkdat}} object, a \code{\link{singleton}} object, or
+a list of such objects. In \code{likelihood_LINKAGE}, \code{x} must be a
 \code{linkdat} object, with \code{x$model} different from NULL.}
 
 \item{\dots}{further arguments.}
@@ -33,8 +49,8 @@ or a list of such objects. In \code{likelihood_LINKAGE}, \code{x} must be a
 \code{x} is a list, then \code{locus1} must be a list of corresponding
 \code{marker} objects.}
 
-\item{locus2}{either NULL, the character 'disease', or a
-\code{\link{marker}} object compatible with \code{x}. See Details.}
+\item{locus2}{either NULL, the character 'disease', or a \code{\link{marker}}
+object compatible with \code{x}. See Details.}
 
 \item{theta}{the recombination rate between locus1 and locus2 (in
 \code{likelihood_LINKAGE}: between the marker and the disease locus).  To
@@ -47,8 +63,8 @@ the number of iterations in the internal genotype-compatibility algorithm.
 Positive values can save time if \code{partialmarker} is non-empty and the
 number of alleles is large.}
 
-\item{logbase}{a numeric, or NULL. If numeric the log-likelihood is
-returned, with \code{logbase} as basis for the logarithm.}
+\item{logbase}{a numeric, or NULL. If numeric the log-likelihood is returned,
+with \code{logbase} as basis for the logarithm.}
 
 \item{loop_breakers}{a numeric containing IDs of individuals to be used as
 loop breakers. If NULL, automatic selection of loop breakers will be
@@ -68,7 +84,7 @@ linkage computations with few-allelic markers.}
 }
 \value{
 The likelihood of the data. If the parameter \code{logbase} is a
-positive number, the output is \code{log(likelihood, logbase)}.
+  positive number, the output is \code{log(likelihood, logbase)}.
 }
 \description{
 Calculates various forms of pedigree likelihoods.
@@ -76,8 +92,8 @@ Calculates various forms of pedigree likelihoods.
 \details{
 All likelihoods are calculated using the Elston-Stewart algorithm.
 
-If \code{locus2 = NULL}, the result is simply the likelihood of the
-genotypes observed at the marker in locus1.
+If \code{locus2 = NULL}, the result is simply the likelihood of the genotypes
+observed at the marker in locus1.
 
 If \code{locus2 = 'disease'}, the result is the likelihood of the marker
 genotypes in locus1, given the affection statuses of the pedigree members,
@@ -90,14 +106,14 @@ genotypes at the two markers, given the recombination rate theta between
 them.
 
 The function \code{likelihood_LINKAGE} is a fast version of
-\code{likelihood.linkdat} in the case where \code{locus2 = 'disease'} and
-the marker in locus1 has less than 5 alleles.
+\code{likelihood.linkdat} in the case where \code{locus2 = 'disease'} and the
+marker in locus1 has less than 5 alleles.
 }
 \examples{
 
 x = linkdat(toyped, model=1) #dominant model
 
-lod1 = likelihood_LINKAGE(x, marker=1, theta=0, logbase=10) - 
+lod1 = likelihood_LINKAGE(x, marker=1, theta=0, logbase=10) -
        likelihood_LINKAGE(x, marker=1, theta=0.5, logbase=10)
 lod2 = lod(x, markers=1, theta=0)
 
@@ -114,7 +130,4 @@ stopifnot(l1==0.09375, l2==l1)
 }
 \seealso{
 \code{\link{lod}}
-}
-\author{
-Magnus Dehli Vigeland
 }

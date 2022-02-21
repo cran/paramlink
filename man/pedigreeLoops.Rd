@@ -28,54 +28,53 @@ breakers.}
 \item{verbose}{a logical: Verbose output or not?}
 }
 \value{
-For \code{breakLoops}, a \code{linkdat} object in which the
-indicated loop breakers are duplicated. The returned object will also have a
-non-null \code{loop_breakers} entry, namely a matrix with the IDs of the
-original loop breakers in the first column and the duplicates in the second.
+For \code{breakLoops}, a \code{linkdat} object in which the indicated
+  loop breakers are duplicated. The returned object will also have a non-null
+  \code{loop_breakers} entry, namely a matrix with the IDs of the original
+  loop breakers in the first column and the duplicates in the second.
 
-For \code{tieLoops}, a \code{linkdat} object in which any duplicated
-individuals (as given in the \code{x$loop_breakers} entry) are merged. For
-any linkdat object \code{x}, the call \code{tieLoops(breakLoops(x))} should
-return \code{x}.
+  For \code{tieLoops}, a \code{linkdat} object in which any duplicated
+  individuals (as given in the \code{x$loop_breakers} entry) are merged. For
+  any linkdat object \code{x}, the call \code{tieLoops(breakLoops(x))} should
+  return \code{x}.
 
-For \code{pedigreeLoops}, a list containing all inbreeding loops (not
-marriage loops) found in the pedigree. Each loop is represented as a list
-with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a
-path from top to bottom) and 'pathB' (creating a different path from top to
-bottom, with no individuals in common with pathA). Note that the number of
-loops reported here counts all closed paths in the pedigree and will in
-general be larger than the genus of the underlying graph.
+  For \code{pedigreeLoops}, a list containing all inbreeding loops (not
+  marriage loops) found in the pedigree. Each loop is represented as a list
+  with elements 'top', a 'bottom' individual, 'pathA' (individuals forming a
+  path from top to bottom) and 'pathB' (creating a different path from top to
+  bottom, with no individuals in common with pathA). Note that the number of
+  loops reported here counts all closed paths in the pedigree and will in
+  general be larger than the genus of the underlying graph.
 
-For \code{findLoopBreakers} and \code{findLoopBreakers2}, a numeric vector
-of individual ID's.
+  For \code{findLoopBreakers} and \code{findLoopBreakers2}, a numeric vector
+  of individual ID's.
 }
 \description{
 Functions for identifying, breaking and restoring loops in pedigrees.
 }
 \details{
-Most of paramlink's handling of pedigree loops is done under the hood -
-using the functions described here - without need for explicit action from
-end users. When a linkdat object \code{x} is created, an internal routine
-detects if the pedigree contains loops, in which case \code{x$hasLoops} is
-set to TRUE. In analyses of \code{x} where loops must be broken (e.g. lod
-score computation or marker simulation), this is done automatically by
-calling \code{breakLoops}.
+Most of paramlink's handling of pedigree loops is done under the hood - using
+the functions described here - without need for explicit action from end
+users. When a linkdat object \code{x} is created, an internal routine detects
+if the pedigree contains loops, in which case \code{x$hasLoops} is set to
+TRUE. In analyses of \code{x} where loops must be broken (e.g. lod score
+computation or marker simulation), this is done automatically by calling
+\code{breakLoops}.
 
 In some cases with complex inbreeding, it can be instructive to plot the
 pedigree after breaking the loops. Duplicated individuals are plotted with
 appropriate labels (see examples).
 
-The function \code{findLoopBreakers} identifies a set of individuals
-breaking all inbreeding loops, but not marriage loops. These require more
-machinery for efficient detection, and paramlink does this is a seperate
-function, \code{findLoopBreakers2}, utilizing methods from the \code{igraph}
-package. Since this is rarely needed for most users, \code{igraph} is not
-imported when loading paramlink, only when \code{findLoopBreakers2} is
-called.
+The function \code{findLoopBreakers} identifies a set of individuals breaking
+all inbreeding loops, but not marriage loops. These require more machinery
+for efficient detection, and paramlink does this is a separate function,
+\code{findLoopBreakers2}, utilizing methods from the \code{igraph} package.
+Since this is rarely needed for most users, \code{igraph} is not imported
+when loading paramlink, only when \code{findLoopBreakers2} is called.
 
-In practice, \code{breakLoops} first calls \code{findLoopBreakers} and
-breaks at the returned individuals. If the resulting linkdat object still
-has loops, \code{findLoopBreakers2} is called to break any marriage loops.
+In practice, \code{breakLoops} first calls \code{findLoopBreakers} and breaks
+at the returned individuals. If the resulting linkdat object still has loops,
+\code{findLoopBreakers2} is called to break any marriage loops.
 }
 \examples{
 
@@ -98,14 +97,11 @@ stopifnot(all.equal(x, tieLoops(loopfree)))
 stopifnot(all.equal(LOD1, LOD2))
 
 # Pedigree with marriage loop: Double first cousins
-if(require('igraph')) {
+if(requireNamespace("igraph", quietly = TRUE)) {
     y = doubleCousins(1, 1, child=TRUE)
     findLoopBreakers(y) # --> 9
     findLoopBreakers2(y) # --> 9 and 4
     breakLoops(y) # uses both 9 and 4
 }
 
-}
-\author{
-Magnus Dehli Vigeland
 }

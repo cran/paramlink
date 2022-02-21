@@ -9,8 +9,8 @@ mergePed(x, y, quick = FALSE)
 \arguments{
 \item{x, y}{\code{\link{linkdat}} objects}
 
-\item{quick}{a single logical. If TRUE, no pedigree checks are performed, and the
-individual ordering may be unfortunate.}
+\item{quick}{a single logical. If TRUE, no pedigree checks are performed, and
+the individual ordering may be unfortunate.}
 }
 \value{
 A \code{linkdat} object.
@@ -36,11 +36,9 @@ y = addOffspring(y, father=9, mother=10, noffs=1, id=11)
 # Joining x and y at the common individuals 9,10,11:
 z = mergePed(x,y)
 
-# plot all three pedigrees 
-par(mfrow=c(1,3))
+# plot all three pedigrees
+op = par(mfrow = c(1,3))
 plot(x); plot(y); plot(z)
+par(op)
 
-}
-\author{
-Magnus Dehli Vigeland
 }

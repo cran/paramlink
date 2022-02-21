@@ -13,13 +13,13 @@ readFamiliasLoci(loci)
 connectedComponents(ID, FID, MID)
 }
 \arguments{
-\item{familiasped}{A \code{\link[Familias]{FamiliasPedigree}} object or a list of
-such.}
+\item{familiasped}{A \code{FamiliasPedigree} object or a
+list of such.}
 
 \item{datamatrix}{A data frame with two columns per marker (one for each
 allele) and one row per individual.}
 
-\item{loci}{A \code{\link[Familias]{FamiliasLocus}} object or a list of such.}
+\item{loci}{A \code{FamiliasLocus} object or a list of such.}
 
 \item{ID}{An integer vector: Individual ID.}
 
@@ -44,49 +44,18 @@ a pedigree must be connected, have numerical IDs, and each member must have
 either 0 or 2 parents present in the pedigree. None of this is required by
 \code{FamiliasPedigree} objects. The conversion function
 \code{Familias2linkdat} takes care of all of these potential differences: It
-converts each FamiliasPedigree into a list of connected linkdat objects,
+converts each \code{FamiliasPedigree} into a list of connected linkdat objects,
 additional parents are added where needed, and non-numerical ID labels are
 stored in the \code{plot.labels} slot of the linkdat object(s).
 }
 \examples{
 
-# Example
-\dontrun{
-library(Familias)
-data(NorwegianFrequencies)
-locus1 = FamiliasLocus(NorwegianFrequencies$TH01)
-persons = c('mother', 'daughter', 'AF')
-ped1 = FamiliasPedigree(id=persons, dadid=c(NA, 'AF', NA), momid=c(NA, 'mother', NA), 
-                         sex=c('female', 'female', 'male'))
-datamatrix = data.frame(THO1.1=c(NA, 8, NA), THO1.2=c(NA,9.3, NA))
-rownames(datamatrix) = persons
-x = Familias2linkdat(ped1, datamatrix, locus1)
-plotPedList(list(x), new=TRUE, frametitles=c('H1'), available='shaded', marker = 1)
-
-# Example
-library(fam2r)
-data(F21)
-pedigrees = F21$pedigrees
-datamatrix = F21$datamatrix
-loci = F21$loci
-x = Familias2linkdat(pedigrees, datamatrix, loci)
-plotPedList(x, new=TRUE, frametitles=c('H1', 'H2'), available='shaded')
-
-# Give dev.width explicitly to allow for long names
-plotPedList(x, new=TRUE, frametitles=c('H1', 'H2'), available='shaded',
-            dev.width=17)
-
-# Numerical labels work better
-plotPedList(x, new=TRUE, id.labels='num', frametitles=c('H1', 'H2'),
-            available='shaded')
-}
+x = nuclearPed(1)
 
 }
 \references{
-Windows Familias is freely availabe from \url{http://familias.name}.
-}
-\seealso{
-See \code{Familias} and \code{\link{linkdat}}.
+Windows Familias is freely available from
+  \url{https://familias.name}.
 }
 \author{
 Magnus Dehli Vigeland, Thore Egeland

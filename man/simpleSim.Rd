@@ -4,8 +4,17 @@
 \alias{simpleSim}
 \title{Unconditional marker simulation}
 \usage{
-simpleSim(x, N, alleles, afreq, available, Xchrom = FALSE, mutmat = NULL,
-  seed = NULL, verbose = T)
+simpleSim(
+  x,
+  N,
+  alleles,
+  afreq,
+  available,
+  Xchrom = FALSE,
+  mutmat = NULL,
+  seed = NULL,
+  verbose = T
+)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object}
@@ -34,7 +43,7 @@ decimals).}
 }
 \value{
 a \code{linkdat} object equal to \code{x} in all respects except its
-\code{markerdata} entry, which consists of the \code{N} simulated markers.
+  \code{markerdata} entry, which consists of the \code{N} simulated markers.
 }
 \description{
 Unconditional simulation of unlinked markers
@@ -43,8 +52,8 @@ Unconditional simulation of unlinked markers
 This simulation is done by distributing alleles randomly to all founders,
 followed by unconditional gene dropping down throughout the pedigree (i.e.
 for each non-founder a random allele is selected from each of the parents).
-Finally the genotypes of any individuals not included in \code{available}
-are removed.
+Finally the genotypes of any individuals not included in \code{available} are
+removed.
 }
 \examples{
 
@@ -57,7 +66,4 @@ simpleSim(y, N=3, alleles=LETTERS[1:10])
 }
 \seealso{
 \code{\link{markerSim}}, \code{\link{linkageSim}}
-}
-\author{
-Magnus Dehli Vigeland
 }

@@ -4,9 +4,19 @@
 \alias{relationLR}
 \title{Relationship Likelihood Ratio}
 \usage{
-relationLR(ped_numerator, ped_denominator, ids, alleles, afreq = NULL,
-  known_genotypes = list(), loop_breakers = NULL, Xchrom = FALSE,
-  plot = TRUE, title1 = "", title2 = "")
+relationLR(
+  ped_numerator,
+  ped_denominator,
+  ids,
+  alleles,
+  afreq = NULL,
+  known_genotypes = list(),
+  loop_breakers = NULL,
+  Xchrom = FALSE,
+  plot = TRUE,
+  title1 = "",
+  title2 = ""
+)
 }
 \arguments{
 \item{ped_numerator}{a \code{\link{linkdat}} object, or a list of several
@@ -23,8 +33,8 @@ to the hypothesis H2 (denominator). ID labels must be consistent with
 
 \item{alleles}{a numeric or character vector containing marker alleles names}
 
-\item{afreq}{a numerical vector with allele frequencies. An error is given
-if they don't sum to 1 (rounded to 3 decimals).}
+\item{afreq}{a numerical vector with allele frequencies. An error is given if
+they don't sum to 1 (rounded to 3 decimals).}
 
 \item{known_genotypes}{list of triplets \code{(a, b, c)}, indicating that
 individual \code{a} has genotype \code{b/c}. Missing value is 0.}
@@ -44,33 +54,33 @@ computations are done.}
 }
 \value{
 \item{lik.numerator}{likelihood of data given ped_numerator}
-\item{lik.denominator}{likelihood of data given ped_denominator}
-\item{LR}{likelihood ratio lik.numerator/lik.denominator}
+  \item{lik.denominator}{likelihood of data given ped_denominator}
+  \item{LR}{likelihood ratio lik.numerator/lik.denominator}
 }
 \description{
 Computes likelihood for two pedigrees and their ratio, the likelihood ratio
 (LR).
 }
 \details{
-This function computes the likelihood of two pedigrees (each corresponding
-to a hypothesis describing a family relationship).  The likelihood ratio is
-also reported. Unlike other implementations we are aware of, partial DNA
-profiles are allowed here. For instance, if the genotype of a person is
-reported as 1/0 (0 is 'missing') for a triallelic marker with uniform allele
-frequencies, the possible ordered genotypes (1,1), (2,1), (1,2), (1,3) and
-(3,1) are treated as equally likely. (For general allele frequencies,
-genotype probabilities are obtained by assuming Hardy-Weinberg equilibrium.)
-A reasonable future extension would be to allow the user to weigh these
+This function computes the likelihood of two pedigrees (each corresponding to
+a hypothesis describing a family relationship).  The likelihood ratio is also
+reported. Unlike other implementations we are aware of, partial DNA profiles
+are allowed here. For instance, if the genotype of a person is reported as
+1/0 (0 is 'missing') for a triallelic marker with uniform allele frequencies,
+the possible ordered genotypes (1,1), (2,1), (1,2), (1,3) and (3,1) are
+treated as equally likely. (For general allele frequencies, genotype
+probabilities are obtained by assuming Hardy-Weinberg equilibrium.) A
+reasonable future extension would be to allow the user to weigh these
 genotypes; typically (1,1) may be more likely than the others.  If
 \code{plot='plot_only'}, the function returns NULL after producing the plot.
 }
 \examples{
 
 ############################################
-# A partial DNA profile is obtained from the person 
-# denoted 4 in the figure produced below 
-# There are two possibilities: 
-# H1: 4 is the missing relative of 3 and 6 (as shown to the left) or 
+# A partial DNA profile is obtained from the person
+# denoted 4 in the figure produced below
+# There are two possibilities:
+# H1: 4 is the missing relative of 3 and 6 (as shown to the left) or
 # H2: 4 is unrelated to 3 and 6.
 ############################################
 p = c(0.2, 0.8)

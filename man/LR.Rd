@@ -7,24 +7,28 @@
 LR(x, ref, markers)
 }
 \arguments{
-\item{x}{A list of pedigrees. Each pedigree is either a single linkdat/singleton object, or a list of such objects 
-(the latter is neccessary if the pedigree is disconnected).}
+\item{x}{A list of pedigrees. Each pedigree is either a single
+linkdat/singleton object, or a list of such objects (the latter is
+necessary if the pedigree is disconnected).}
 
-\item{ref}{A single integer, indicating the index of the reference pedigree. This is used in the denominator of each LR.}
+\item{ref}{A single integer, indicating the index of the reference pedigree.
+This is used in the denominator of each LR.}
 
-\item{markers}{A vector of integers, indexing which markers should be included. If NULL (the default) all markers are used.}
+\item{markers}{A vector of integers, indexing which markers should be
+included. If NULL (the default) all markers are used.}
 }
 \value{
-A list with entries
-\item{LR}{Likelihood ratios}
-\item{LRperMarker}{Likelihood ratios for each marker}
-\item{likelihoodsPerSystem}{Likelihoods for each marker}
-\item{time}{user, system and elapsed time}
+A list with entries \item{LR}{Likelihood ratios}
+  \item{LRperMarker}{Likelihood ratios for each marker}
+  \item{likelihoodsPerSystem}{Likelihoods for each marker} \item{time}{user,
+  system and elapsed time}
 }
 \description{
-This function computes likelihood ratios for a given a list of pedigrees (linkdat/singletons objects), one of which is
-the 'reference', with genotype data from the same set of markers. Data exported from the 'Familias' software can be analysed
-by using \code{\link{Familias2linkdat}} prior to calling this function.
+This function computes likelihood ratios for a given a list of pedigrees
+(linkdat/singletons objects), one of which is the 'reference', with genotype
+data from the same set of markers. Data exported from the 'Familias' software
+can be analysed by using \code{\link{Familias2linkdat}} prior to calling this
+function.
 }
 \examples{
 
@@ -41,13 +45,6 @@ unrel = transferMarkerdata(sibs, unrel)
 
 # Compute LR with 'unrelated' as reference
 LR(list(sibs, halfsibs, unrel), ref=3)
-
-\dontrun{
-data(adoption)
-x = Familias2linkdat(adoption$pedigrees, adoption$datamatrix, adoption$loci)
-result = LRparamlink(x, ref=2)
-result33 = LRparamlink(x, ref=2, marker=c(11,33))
-}
 
 }
 \seealso{

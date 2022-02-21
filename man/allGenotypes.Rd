@@ -34,9 +34,9 @@ attribute of \code{partialmarker} is used. If this is also missing, then
 }
 \value{
 \code{allGenotypes} returns a matrix with 2 columns and \code{n +
-n*n(n-1)/2} rows containing all possible (unordered) genotypes at a
-biallelic locus with alleles \code{1,2,\dots{},n}. \code{fast.grid} is
-basically a stripped down version of \code{\link{expand.grid}}.
+  n*n(n-1)/2} rows containing all possible (unordered) genotypes at a
+  biallelic locus with alleles \code{1,2,\dots{},n}. \code{fast.grid} is
+  basically a stripped down version of \code{\link{expand.grid}}.
 }
 \description{
 Auxiliary functions computing possible genotype combinations in a pedigree.
@@ -47,7 +47,4 @@ These are not normally intended for end users.
 m = allGenotypes(2)
 stopifnot(m == rbind(c(1,1), c(2,2), 1:2))
 
-}
-\author{
-Magnus Dehli Vigeland
 }

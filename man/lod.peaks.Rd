@@ -40,6 +40,3 @@ stopifnot(length(peak1)==1, nrow(peak1[[1]])==1, length(peak2)==0, length(peak3)
 \seealso{
 \code{\link{linkres}}, \code{\link{lod}}, \code{\link{merlin}},
 }
-\author{
-Magnus Dehli Vigeland
-}

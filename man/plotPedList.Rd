@@ -4,12 +4,21 @@
 \alias{plotPedList}
 \title{Plot a list of pedigrees.}
 \usage{
-plotPedList(plot.arg.list, widths = NA, frames = T, frametitles = NULL,
-  fmar = NA, newdev = F, dev.height = NA, dev.width = NA, ...)
+plotPedList(
+  plot.arg.list,
+  widths = NA,
+  frames = TRUE,
+  frametitles = NULL,
+  fmar = NA,
+  newdev = FALSE,
+  dev.height = NA,
+  dev.width = NA,
+  ...
+)
 }
 \arguments{
-\item{plot.arg.list}{A list of lists. Each element of \code{plot.arg.list}
-is a list, where the first element is the \code{\link{linkdat}} object to be
+\item{plot.arg.list}{A list of lists. Each element of \code{plot.arg.list} is
+a list, where the first element is the \code{\link{linkdat}} object to be
 plotted, and the remaining elements are passed on to \code{plot.linkdat}.
 These elements must be correctly named. See examples below.}
 
@@ -40,8 +49,8 @@ pedigree sizes.}
 \description{
 This function creates a row of pedigree plots, each created by
 \code{\link{plot.linkdat}}.  Each parameter accepted by
-\code{\link{plot.linkdat}} can be applied here.  Some effort is made to
-guess a reasonable window size and margins, but in general the user must be
+\code{\link{plot.linkdat}} can be applied here.  Some effort is made to guess
+a reasonable window size and margins, but in general the user must be
 prepared to do manual resizing of the plot window.
 }
 \details{
@@ -53,17 +62,17 @@ Note that for tweaking dev.height and dev.width the function
 \examples{
 
 
-# Simplest use: Just give a list of linkdat objects. 
+# Simplest use: Just give a list of linkdat objects.
 # To guess suitable plot window dimensions, use 'newdev=T'
 peds = list(nuclearPed(3),cousinPed(2), singleton(12), halfCousinsPed(0))
-plotPedList(peds, newdev=TRUE)
+plotPedList(peds) # try with newdev=TRUE
 
 \dontrun{
-# Modify the relative widths (which are not guessed) 
+# Modify the relative widths (which are not guessed)
 widths = c(2, 3, 1, 2)
 plotPedList(peds, widths=widths)
 
-# In most cases the guessed dimensions are not perfect. 
+# In most cases the guessed dimensions are not perfect.
 # Resize plot window manually, and then plot again with newdev=F (default)
 # plotPedList(peds, widths=widths)
 
@@ -74,15 +83,15 @@ plotPedList(peds, widths=widths, frames=F)
 frames = list(1, 2:3)
 plotPedList(peds, widths=widths, frames=frames, frametitles=c('First', 'Second'))
 
-# To give *the same* parameter to all plots, it can just be added at the end: 
+# To give *the same* parameter to all plots, it can just be added at the end:
 margins=c(2,4,2,4)
 title='Same title'
 id.labels=''
 symbolsize=1.5 # note: doesn't work as expected for singletons
-plotPedList(peds, widths=widths, frames=frames, margins=margins, title=title, 
+plotPedList(peds, widths=widths, frames=frames, margins=margins, title=title,
             id.labels=id.labels, symbolsize=symbolsize)
 
-# For more control of individual plots, each plot and all its parameters 
+# For more control of individual plots, each plot and all its parameters
 # can be specified in its own list:
 x1 = nuclearPed(3)
 x1$available = 3:5
@@ -94,7 +103,7 @@ x2 = cousinsPed(2)
 x2$available = leaves(x2)
 m2 = marker(x2, leaves(x2), 'A')
 marg2 = c(3,4,2,4)
-plot2 = list(x2, marker=m2, margins=marg2, title='Plot 2', symbolsize=1.2, 
+plot2 = list(x2, marker=m2, margins=marg2, title='Plot 2', symbolsize=1.2,
              skip.empty.genotypes=T)
 
 x3 = singleton(12)
@@ -107,18 +116,15 @@ names4 = c(Father=1, Brother=3, Sister=5)
 marg4 = marg1
 plot4 = list(x4, margins=marg4, title='Plot 4', id.labels=names4)
 
-plotPedList(list(plot1, plot2, plot3, plot4), widths=c(2,3,1,2), 
+plotPedList(list(plot1, plot2, plot3, plot4), widths=c(2,3,1,2),
             frames=list(1,2:3,4), available=T, newdev=T)
 
 # Different example:
-plotPedList(list(halfCousinPed(4), cousinsPed(7)), title='Many generations', 
+plotPedList(list(halfCousinPed(4), cousinsPed(7)), title='Many generations',
     new=T, dev.height=9, dev.width=9)
 }
 
 }
 \seealso{
 \code{\link{plot.linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

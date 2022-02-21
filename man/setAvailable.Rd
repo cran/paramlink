@@ -35,8 +35,5 @@ x$available
 }
 \seealso{
 \code{\link{plot.linkdat}}, \code{\link{linkage.power}},
-\code{\link{linkageSim}}
-}
-\author{
-Magnus Dehli Vigeland
+  \code{\link{linkageSim}}
 }

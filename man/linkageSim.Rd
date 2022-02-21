@@ -4,9 +4,17 @@
 \alias{linkageSim}
 \title{Simulate markers linked to a disease locus.}
 \usage{
-linkageSim(x, N = 1, available = x$available, afreq = NULL,
-  partialmarker = NULL, loop_breakers = NULL, unique = FALSE,
-  seed = NULL, verbose = TRUE)
+linkageSim(
+  x,
+  N = 1,
+  available = x$available,
+  afreq = NULL,
+  partialmarker = NULL,
+  loop_breakers = NULL,
+  unique = FALSE,
+  seed = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object}
@@ -16,8 +24,8 @@ linkageSim(x, N = 1, available = x$available, afreq = NULL,
 \item{available}{a vector containing IDs of the available individuals, i.e.
 those whose genotypes should be simulated.}
 
-\item{afreq}{a vector of length < 5 containing the population frequencies
-for the marker alleles.}
+\item{afreq}{a vector of length < 5 containing the population frequencies for
+the marker alleles.}
 
 \item{partialmarker}{Either NULL (indicating no given marker data), or a
 \code{marker} object.}
@@ -35,16 +43,16 @@ should be removed.}
 }
 \value{
 a \code{linkdat} object equal to \code{x} except its
-\code{markerdata} entry, which consists of the \code{N} simulated markers.
+  \code{markerdata} entry, which consists of the \code{N} simulated markers.
 }
 \description{
 Simulates markers (with up to 4 alleles) conditional on the pedigree
 structure, affection statuses and disease model.
 }
 \details{
-All markers are simulated under the condition that the recombination
-fraction between the marker and the disease locus is 0.  This is an
-implementation of the algorithm used in SLINK of the LINKAGE/FASTLINK suite.
+All markers are simulated under the condition that the recombination fraction
+between the marker and the disease locus is 0.  This is an implementation of
+the algorithm used in SLINK of the LINKAGE/FASTLINK suite.
 }
 \examples{
 
@@ -59,11 +67,9 @@ linkageSim(z, N=1, afreq = c(0.1, 0.2, 0.7))
 }
 \references{
 G. M. Lathrop, J.-M. Lalouel, C. Julier, and J. Ott (1984).
-\emph{Strategies for Multilocus Analysis in Humans}, PNAS 81, pp. 3443-3446.
+  \emph{Strategies for Multilocus Analysis in Humans}, PNAS 81, pp.
+  3443-3446.
 }
 \seealso{
 \code{\link{linkage.power}}
-}
-\author{
-Magnus Dehli Vigeland
 }

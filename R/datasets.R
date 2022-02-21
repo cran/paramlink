@@ -1,42 +1,42 @@
 #' Example pedigree for linkage analysis
-#' 
+#'
 #' Medical pedigree with 23 individuals of which 15 are genotyped with 650 SNP
 #' markers. Eleven family members are affected by a disease, showing an
 #' autosomal dominant inheritance pattern.
-#' 
+#'
 #' @docType data
-#' @format A data frame with 23 rows and 1306 columns, describing the pedigree and 
-#' marker data in pre-makeped format. The first 6 columns contain the pedigree 
-#' structure and affection status, while the final 1300 columns hold the marker alleles.  
+#' @format A data frame with 23 rows and 1306 columns, describing the pedigree and
+#' marker data in pre-makeped format. The first 6 columns contain the pedigree
+#' structure and affection status, while the final 1300 columns hold the marker alleles.
 #' \itemize{
 #'   \item FAMID. Family ID
 #'   \item ID. Individual ID
 #'   \item FID. Father ID
 #'   \item MID. Mother ID
 #'   \item SEX. Gender (male=1, female=2)
-#'   \item AFF. Affection status (unaffected=1, affected=2, unkonwn=0)
+#'   \item AFF. Affection status (unaffected=1, affected=2, unknown=0)
 #'   \item M1_1. First allele of marker 1
 #'   \item M1_2. Second allele of marker 1
 #'   \item ...
 #'   \item M650_1. First allele of marker 650
 #'   \item M650_2. Second allele of marker 650
 #' }
-#' All markers are SNPs, whose alleles are written as 1 and 2. 
+#' All markers are SNPs, whose alleles are written as 1 and 2.
 #' Missing alleles are denoted by 0.
-#' 
+#'
 #' @examples
-#' 
+#'
 #' x = linkdat(dominant)
 #' summary(x)
-#' 
+#'
 "dominant"
 
 
 #' Toy pedigree for linkage analysis
-#' 
+#'
 #' Toy pedigree with 4 individuals typed at a single SNP marker. Individual 1 is
 #' missing one allele.
-#' 
+#'
 #' The format is standard LINKAGE (pre-makeped) format, with columns as follows:
 #' \itemize{
 #'   \item FAMID. Family ID
@@ -44,56 +44,56 @@
 #'   \item FID. Father ID
 #'   \item MID. Mother ID
 #'   \item SEX. Gender (male=1, female=2)
-#'   \item AFF. Affection status (unaffected=1, affected=2, unkonwn=0)
+#'   \item AFF. Affection status (unaffected=1, affected=2, unknown=0)
 #'   \item M_A1. First allele of marker 1
 #'   \item M_A2. Second allele of marker 1
 #' }
 #' @docType data
-#' 
+#'
 #' @format A data frame with 4 rows and 8 columns
-#' 
+#'
 #' @examples
-#' 
+#'
 #' toyped
 #' linkdat(toyped)
-#' 
+#'
 "toyped"
 
 
 #' A consanguineous pedigree
-#' 
-#' A consanguineous pedigree with two inbreeding loops. 
-#' 
-#' 
+#'
+#' A consanguineous pedigree with two inbreeding loops.
+#'
+#'
 #' @docType data
-#' 
-#' @format A data frame with 17 rows and 6 columns. 
+#'
+#' @format A data frame with 17 rows and 6 columns.
 #' See \code{\link{toyped}} for details about the format.
-#' 
+#'
 #' @examples
-#' 
+#'
 #' x = linkdat(twoloops)
 #' plot(x)
-#' 
+#'
 "twoloops"
 
 
 #' Example pedigree with X-linked disease pattern.
-#' 
+#'
 #' A complex pedigree with an X-linked recessive disease pattern
-#' 
+#'
 #' The format is standard LINKAGE (pre-makeped) format.
-#' 
+#'
 #' @name Xped
 #' @docType data
-#' 
-#' @format A data frame with 15 rows and 6 columns.
-#' See \code{\link{toyped}} for details about the format.
-#' 
+#'
+#' @format A data frame with 15 rows and 6 columns. See \code{\link{toyped}} for
+#'   details about the format.
+#'
 #' @examples
-#' 
+#'
 #' Xped
-#' 
+#'
 #' # Convert to a 'linkdat' object and set a recessive X-linked model:
 #' x = linkdat(Xped, model=4)
 #' summary(x)

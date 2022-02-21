@@ -4,20 +4,27 @@
 \alias{IBDtriangle}
 \title{IBD triangle plot}
 \usage{
-IBDtriangle(relationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC",
-  "DFC", "Q"), kinship.lines = numeric(), shading = "lightgray", pch = 16,
-  cex_points = 1.2, cex_text = 1, axes = FALSE)
+IBDtriangle(
+  relationships = c("UN", "PO", "MZ", "S", "H,U,G", "FC", "SC", "DFC", "Q"),
+  kinship.lines = numeric(),
+  shading = "lightgray",
+  pch = 16,
+  cex_points = 1.2,
+  cex_text = 1,
+  axes = FALSE
+)
 }
 \arguments{
-\item{relationships}{A character vector indicating relationships points to
-be included in the plot. By default all of the following are included:
-UN=unrelated; PO=parent/offspring; MZ=monozygotic
-twins; S=full siblings; H=half siblings; U=uncle/niece and similar; G=grandparent/grandchild; 
-FC=first cousins; SC=second cousins; DFC=double first cousins; Q=quadruple first half cousins.}
+\item{relationships}{A character vector indicating relationships points to be
+included in the plot. By default all of the following are included:
+UN=unrelated; PO=parent/offspring; MZ=monozygotic twins; S=full siblings;
+H=half siblings; U=uncle/niece and similar; G=grandparent/grandchild;
+FC=first cousins; SC=second cousins; DFC=double first cousins; Q=quadruple
+first half cousins.}
 
 \item{kinship.lines}{A numeric vector. (See Details.)}
 
-\item{shading}{The shading color for the unattainable region.}
+\item{shading}{The shading colour for the unattainable region.}
 
 \item{pch}{Symbol used for the relationship points (see \code{\link{par}}).}
 
@@ -30,18 +37,17 @@ relationship labels.}
 \item{axes}{Draw surrounding axis box?}
 }
 \description{
-The IBD triangle is typically used to visualize the pairwise
-relatedness of non-inbred individuals.  Various annotations are available,
-including points marking the most common relationships, contour lines for
-the kinship coefficients, and shading of the unattainable region.
+The IBD triangle is typically used to visualize the pairwise relatedness of
+non-inbred individuals.  Various annotations are available, including points
+marking the most common relationships, contour lines for the kinship
+coefficients, and shading of the unattainable region.
 }
 \details{
 For any pair of non-inbred individuals A and B, their genetic relationship
 can be summarized by the IBD coefficients \eqn{(\kappa_0, \kappa_1,
-\kappa_2)}, where 
-\deqn{\kappa_i = P(A and B share i alleles IBD at random autosomal locus).}
-Since \eqn{\kappa_0+\kappa_1+\kappa_2=1}, any
-relationship corresponds to a point in the triangle in the \eqn{(\kappa_0,
+\kappa_2)}, where \deqn{\kappa_i = P(A and B share i alleles IBD at random
+autosomal locus).} Since \eqn{\kappa_0+\kappa_1+\kappa_2=1}, any relationship
+corresponds to a point in the triangle in the \eqn{(\kappa_0,
 \kappa_2)}-plane defined by \eqn{\kappa_0 \ge 0, \kappa_2 \ge 0, \kappa_0 +
 \kappa_2 \le 1}. The choice of \eqn{\kappa_0} and \eqn{\kappa_2} as the axis
 variables is done for reasons of symmetry and is not significant (other
@@ -49,7 +55,7 @@ authors have used different views of the triangle).
 
 As shown in (Thompson, 1976) points in the subset of the triangle defined by
 \eqn{4\kappa_0\kappa_2 > \kappa_1^2} is unattainable for pairwise
-relationships.  By default this region in shaded in a 'lightgray' color.
+relationships.  By default this region in shaded in a 'lightgray' colour.
 
 The IBD coefficients are linearly related to the kinship coefficient
 \eqn{\phi} by the formula \deqn{\phi = 0.25\kappa_1 + 0.5\kappa_2.} By
@@ -63,15 +69,12 @@ IBDtriangle(kinship=c(0.25, 0.125), shading=NULL, cex_text=0.8)
 
 }
 \references{
-E. A. Thompson (1975). \emph{The estimation of pairwise relationships.}
-Annals of Human Genetics 39.
+E. A. Thompson (1975). \emph{The estimation of pairwise
+  relationships.} Annals of Human Genetics 39.
 
-E. A. Thompson (1976). \emph{A restriction on the space of genetic relationships.}
-Annals of Human Genetics 40.
+  E. A. Thompson (1976). \emph{A restriction on the space of genetic
+  relationships.} Annals of Human Genetics 40.
 }
 \seealso{
 \code{\link{examineKinships}}
-}
-\author{
-Magnus Dehli Vigeland
 }

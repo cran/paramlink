@@ -16,23 +16,20 @@ setPlotLabels(x, labels, ids = x$orig.ids)
 }
 \value{
 A new linkdat object, differing from \code{x} only in
-\code{x$plot.labels}.
+  \code{x$plot.labels}.
 }
 \description{
 This function attaches (or modifies) a character vector of plotting labels
-for the pedigree members of a linkdat object.  This is useful since only
+for the pedigree members of a linkdat object. This is useful since only
 numerical ID's are allowed in defining pedigrees in paramlink.
 }
 \examples{
 
-x =  nuclearPed(1)
+x = nuclearPed(1)
 x = setPlotLabels(x, labels=c('Father', 'Mother', 'Son'))
 plot(x)
 
 }
 \seealso{
 \code{\link{plot.linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

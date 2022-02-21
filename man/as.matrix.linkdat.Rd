@@ -27,32 +27,30 @@ checks for pedigree errors are performed.}
 }
 \value{
 For \code{as.matrix}: A matrix with \code{x$nInd} rows and \code{6 +
-2*x$nMark} columns.  The 6 first columns describe the pedigree in LINKAGE
-format, and the remaining columns contain marker alleles, using the internal
-(numerical) allele coding and 0 for missing alleles. If \code{include.attrs
-= TRUE} the matrix has the following attributes:
-\itemize{
-\item \code{markerattr} (a list of marker annotations)
-\item \code{available} (the availability vector) 
-\item \code{model} (the disease model, if present)
-\item \code{plot.labels} (plot labels, if present)
-\item \code{orig.ids} (original individual IDs)
-}
+  2*x$nMark} columns.  The 6 first columns describe the pedigree in LINKAGE
+  format, and the remaining columns contain marker alleles, using the
+  internal (numerical) allele coding and 0 for missing alleles. If
+  \code{include.attrs = TRUE} the matrix has the following attributes:
+  \itemize{ \item \code{markerattr} (a list of marker annotations) \item
+  \code{available} (the availability vector) \item \code{model} (the disease
+  model, if present) \item \code{plot.labels} (plot labels, if present) \item
+  \code{orig.ids} (original individual IDs) }
 
-For \code{restore_linkdat}: A \code{linkdat} object.
+  For \code{restore_linkdat}: A \code{linkdat} object.
 }
 \description{
-Converts a \code{linkdat} object to a matrix (basically following a pre-makeped
-LINKAGE format), with marker annotations and other info attached as attributes.
+Converts a \code{linkdat} object to a matrix (basically following a
+pre-makeped LINKAGE format), with marker annotations and other info attached
+as attributes.
 }
 \details{
 \code{restore_linkdat} is the reverse of \code{as.matrix}.
 
 The way \code{\link{linkdat}} objects are created in paramlink, marker data
-are stored as a list of \code{marker} objects. Each of these is essentially
-a matrix with various attributes like allele frequencies, map info a.s.o..
-This format works well for marker-by-marker operations (e.g. likelihoods and
-LOD scores), but makes it somewhat awkward to operate 'horizontally', i.e.
+are stored as a list of \code{marker} objects. Each of these is essentially a
+matrix with various attributes like allele frequencies, map info a.s.o.. This
+format works well for marker-by-marker operations (e.g. likelihoods and LOD
+scores), but makes it somewhat awkward to operate 'horizontally', i.e.
 individual-by-individual, for instance if one wants to delete all genotypes
 of a certain individual, or rearrange the pedigree in some way.
 
@@ -83,7 +81,4 @@ stopifnot(all.equal(z, z2))
 }
 \seealso{
 \code{\link{linkdat}}, \code{\link{as.data.frame.linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

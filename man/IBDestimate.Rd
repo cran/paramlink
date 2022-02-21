@@ -10,9 +10,9 @@ IBDestimate(x, ids, markers = NULL, start = c(0.99, 0.001), tol = 1e-07)
 \item{x}{A single \code{linkdat} object or a list of \code{linkdat} and/or
 \code{singleton} objects.}
 
-\item{ids}{Either a vector of length 2, or a matrix with two columns, indicating the 
-the pair(s) of individuals for which IBD estimates should be computed. If a matrix, 
-each row corresponds to a pair. The entries can be either characters (matching the 
+\item{ids}{Either a vector of length 2, or a matrix with two columns, indicating the
+the pair(s) of individuals for which IBD estimates should be computed. If a matrix,
+each row corresponds to a pair. The entries can be either characters (matching the
 \code{plot.labels} of the linkdat object(s)) or integers (matching the \code{orig.ids}
 identifiers of the linkdat object(s)).}
 
@@ -35,10 +35,12 @@ The optimization machinery is imported from the \code{maxLik} package.
 }
 \details{
 This function optimises the log-likelihood function first described in (Thompson, 1975).
-Optimisation is done in the \eqn{(\kappa_0, \kappa_2)}-plane and restricted to the 
+Optimisation is done in the \eqn{(\kappa_0, \kappa_2)}-plane and restricted to the
 probability triangle defined by \eqn{\kappa_0 \ge 0, \kappa_2 \ge 0, \kappa_0 + \kappa_2 \le 1}.
 }
 \examples{
+
+if (requireNamespace("maxLik", quietly = TRUE)) {
 
 # Simulate marker data for two siblings
 x = nuclearPed(2)
@@ -50,12 +52,14 @@ est1 = IBDestimate(x, ids=c(3,4))
 
 # Estimate should be the same if pedigree structure is unknown
 xlist = list(branch(x, 3), branch(x, 4))
-est2 = IBDestimate(xlist, ids=c(3,4)) 
+est2 = IBDestimate(xlist, ids=c(3,4))
 stopifnot(identical(est1, est2))
 
 # If the pedigree has plot.labels, they can be used as IDs
 est3 = IBDestimate(x, ids=c("Sib1", "Sib2"))
 stopifnot(identical(est1, est3))
+
+}
 
 }
 \references{
@@ -64,9 +68,6 @@ E. A. Thompson (2000). \emph{Statistical Inferences from Genetic Data
  Statistics. Volume 6.
 }
 \seealso{
-\code{\link{examineKinships}}, 
+\code{\link{examineKinships}},
  \code{\link{IBDtriangle}}, \code{\link[maxLik]{maxLik}}
-}
-\author{
-Magnus Dehli Vigeland
 }

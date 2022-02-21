@@ -4,8 +4,10 @@
 \name{Xped}
 \alias{Xped}
 \title{Example pedigree with X-linked disease pattern.}
-\format{A data frame with 15 rows and 6 columns.
-See \code{\link{toyped}} for details about the format.}
+\format{
+A data frame with 15 rows and 6 columns. See \code{\link{toyped}} for
+  details about the format.
+}
 \usage{
 Xped
 }

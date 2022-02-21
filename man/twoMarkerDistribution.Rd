@@ -4,8 +4,16 @@
 \alias{twoMarkerDistribution}
 \title{Genotype probability distribution}
 \usage{
-twoMarkerDistribution(x, id, partialmarker1, partialmarker2, theta,
-  loop_breakers = NULL, eliminate = 99, verbose = TRUE)
+twoMarkerDistribution(
+  x,
+  id,
+  partialmarker1,
+  partialmarker2,
+  theta,
+  loop_breakers = NULL,
+  eliminate = 99,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{x}{A \code{\link{linkdat}} object.}
@@ -55,7 +63,4 @@ stopifnot(all(r1==c(.5,0,0,.5)), all(r2==c(.25,.25,.25,.25)))
 }
 \seealso{
 \code{\link{oneMarkerDistribution}}
-}
-\author{
-Magnus Dehli Vigeland
 }

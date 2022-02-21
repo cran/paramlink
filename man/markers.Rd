@@ -12,8 +12,18 @@
 \alias{modifyMarkerMatrix}
 \title{Marker functions}
 \usage{
-marker(x, ..., allelematrix, alleles = NULL, afreq = NULL, missing = 0,
-  chrom = NA, pos = NA, name = NA, mutmat = NULL)
+marker(
+  x,
+  ...,
+  allelematrix,
+  alleles = NULL,
+  afreq = NULL,
+  missing = 0,
+  chrom = NA,
+  pos = NA,
+  name = NA,
+  mutmat = NULL
+)
 
 addMarker(x, m, ...)
 
@@ -21,11 +31,16 @@ setMarkers(x, m, annotations = NULL, missing = 0)
 
 modifyMarker(x, marker, ids, genotype, alleles, afreq, chrom, name, pos)
 
-getMarkers(x, markernames = NULL, chroms = NULL, fromPos = NULL,
-  toPos = NULL)
+getMarkers(x, markernames = NULL, chroms = NULL, fromPos = NULL, toPos = NULL)
 
-removeMarkers(x, markers = NULL, markernames = NULL, chroms = NULL,
-  fromPos = NULL, toPos = NULL)
+removeMarkers(
+  x,
+  markers = NULL,
+  markernames = NULL,
+  chroms = NULL,
+  fromPos = NULL,
+  toPos = NULL
+)
 
 swapGenotypes(x, ids)
 
@@ -37,13 +52,13 @@ modifyMarkerMatrix(x, ids, new.alleles)
 \item{...}{an even number of vectors, indicating individuals and their
 genotypes. See examples.}
 
-\item{allelematrix}{a matrix with one row per pedigree member and two
-columns per marker, containing the alleles for a single marker.}
+\item{allelematrix}{a matrix with one row per pedigree member and two columns
+per marker, containing the alleles for a single marker.}
 
 \item{alleles}{a numeric or character vector containing allele names.}
 
-\item{afreq}{a numerical vector with allele frequencies. An error is given
-if they don't sum to 1 (rounded to 3 decimals).}
+\item{afreq}{a numerical vector with allele frequencies. An error is given if
+they don't sum to 1 (rounded to 3 decimals).}
 
 \item{missing}{a numeric - or character - of length 1, indicating the code
 for missing alleles.}
@@ -84,23 +99,23 @@ given the \code{ids} individuals. See examples.}
 }
 \value{
 The \code{marker} function returns an object of class \code{marker}:
-This is a numerical 2-column matrix with one row per individual, and
-attributes 'alleles' (a character vector with allele names), 'nalleles' (the
-number of alleles) and 'missing' (the input symbol for missing marker
-alleles), 'chrom' (chromosome number), 'name' (marker identifier), 'pos'
-(chromosome position in cM).
+  This is a numerical 2-column matrix with one row per individual, and
+  attributes 'alleles' (a character vector with allele names), 'nalleles'
+  (the number of alleles) and 'missing' (the input symbol for missing marker
+  alleles), 'chrom' (chromosome number), 'name' (marker identifier), 'pos'
+  (chromosome position in cM).
 
-For \code{addMarker}, \code{setMarkers}, \code{removeMarkers},
-\code{modifyMarker}, \code{modifyMarkerMatrix} and \code{swapGenotypes}, a
-\code{linkdat} object is returned, whose \code{markerdata} element has been
-set/modified.
+  For \code{addMarker}, \code{setMarkers}, \code{removeMarkers},
+  \code{modifyMarker}, \code{modifyMarkerMatrix} and \code{swapGenotypes}, a
+  \code{linkdat} object is returned, whose \code{markerdata} element has been
+  set/modified.
 
-For \code{getMarkers} a numeric vector containing marker numbers (i.e. their
-indices in \code{x$markerdata}) for the markers whose 'name' attribute is
-contained in \code{markernames}, 'chrom' attribute is contained in
-\code{chroms}, and 'pos' attribute is between \code{from} and \code{to}.
-NULL arguments are skipped, so \code{getMarkers(x)} will return
-\code{seq_len(x$nMark)} (i.e. all markers).
+  For \code{getMarkers} a numeric vector containing marker numbers (i.e.
+  their indices in \code{x$markerdata}) for the markers whose 'name'
+  attribute is contained in \code{markernames}, 'chrom' attribute is
+  contained in \code{chroms}, and 'pos' attribute is between \code{from} and
+  \code{to}. NULL arguments are skipped, so \code{getMarkers(x)} will return
+  \code{seq_len(x$nMark)} (i.e. all markers).
 }
 \description{
 Functions for setting and manipulating marker genotypes for 'linkdat'
@@ -112,15 +127,15 @@ x = linkdat(toyped)
 x = removeMarkers(x, 1) # removing the only marker.
 x
 
-# Creating and adding a SNP marker with alleles 'a' and 'b', for which 
-# individual 1 is heterozygous, individuals 2 and 4 are homozygous for the 
+# Creating and adding a SNP marker with alleles 'a' and 'b', for which
+# individual 1 is heterozygous, individuals 2 and 4 are homozygous for the
 # 'b' allele, and individual 3 has a missing genotype.
-m1 = marker(x, 1, c('a','b'), c(2,4), c('b','b')) 
+m1 = marker(x, 1, c('a','b'), c(2,4), c('b','b'))
 x = addMarker(x, m1)
 
 # A rare SNP for which both children are heterozygous.
-# The 'alleles' argument can be skipped, but is recommended to ensure 
-# correct order of the frequencies. 
+# The 'alleles' argument can be skipped, but is recommended to ensure
+# correct order of the frequencies.
 m2 = marker(x, 3:4, 1:2, alleles=1:2, afreq=c(0.99, 0.01))
 x = addMarker(x, m2)
 
@@ -131,16 +146,13 @@ x = modifyMarker(x, marker=2, alleles=1:3, ids=1, genotype=2:3)
 # Adding an empty SNP (all genotypes are missing):
 x = addMarker(x, 0, alleles=c('A', 'B'))
 
-# Similar shortcut for creating a marker for which all 
+# Similar shortcut for creating a marker for which all
 # pedigree members are homozygous for an allele (say 'b'):
-x = addMarker(x, 'b') 
+x = addMarker(x, 'b')
 # Alternative: m = marker(x, 'b'); addMarker(x, m)
 
 
 }
 \seealso{
 \code{\link{linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

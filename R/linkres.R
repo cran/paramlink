@@ -1,41 +1,40 @@
 #' S3 methods for class 'linkres'.
-#' 
+#'
 #' Functions for printing, summarizing and plotting the results of a linkage
 #' analysis.
-#' 
-#' 
+#'
+#'
 #' @param x,object a \code{linkres} object (normally produced by
-#' \code{\link{lod}} or \code{\link{merlin}}).
+#'   \code{\link{lod}} or \code{\link{merlin}}).
 #' @param sort a logical, indicating if the data frame should be sorted
-#' according to map position.
+#'   according to map position.
 #' @param chrom NULL, or a numeric containing chromosome numbers. In the latter
-#' case only results for the markers on the indicated chromosomes will be
-#' plotted.
+#'   case only results for the markers on the indicated chromosomes will be
+#'   plotted.
 #' @param ylim NULL, or a numeric of length 2: to be passed on to plot.default.
-#' @param threshold a single numeric. A peak is defined as a regions of at
-#' least \code{width} consecutive markers LOD score above \code{threshold}.
+#' @param threshold a single numeric. A peak is defined as a regions of at least
+#'   \code{width} consecutive markers LOD score above \code{threshold}.
 #' @param width a single numeric.
 #' @param physmap a matrix or data frame with three columns: Marker name,
-#' chromosome and physical position. This argument is optional.
+#'   chromosome and physical position. This argument is optional.
 #' @param \dots further arguments.
-#' @author Magnus Dehli Vigeland
 #' @seealso \code{\link{lod}}, \code{\link{merlin}}
-#' 
+#'
 #' @examples
-#' 
+#'
 #' x = linkdat(toyped, model=1)
 #' lods = lod(x, theta='max')
 #' summary(lods)
 #' as.data.frame(lods)
 #'
-#' @name linkres 
+#' @name linkres
 NULL
 
 #' @rdname linkres
 #' @export
 print.linkres = function(x, ...) {
     rownames(x) = paste(rownames(x), ":", sep = "")
-    if (attr(x, "analysis") == "mlink") 
+    if (attr(x, "analysis") == "mlink")
         rownames(x) = paste("theta=", rownames(x), sep = "")
     df = as.data.frame(unclass(x))
     print(df, print.gap = 2, ...)
@@ -65,10 +64,10 @@ summary.linkres = function(object, ...) {
 as.data.frame.linkres = function(x, ..., sort = TRUE) {
     map = attr(x, "map")
     map = map[map$MARKER %in% colnames(x), , drop = FALSE]
-    if (sort) 
+    if (sort)
         map = map[order(map$CHR, map$POS), , drop = FALSE]
-    if (attr(x, "analysis") == "mlink") 
-        LOD = apply(x[, map$MARKER, drop = FALSE], 2, function(co) if (all(is.na(co))) 
+    if (attr(x, "analysis") == "mlink")
+        LOD = apply(x[, map$MARKER, drop = FALSE], 2, function(co) if (all(is.na(co)))
             NA else max(co, na.rm = TRUE)) else {
         LOD = x["LOD", ]
         x = x[2, , drop = FALSE]
@@ -80,24 +79,23 @@ as.data.frame.linkres = function(x, ..., sort = TRUE) {
 
 
 #' LOD score peaks
-#' 
+#'
 #' Identify LOD score peaks
-#' 
+#'
 #' The function first transforms \code{x} to a data frame (using
 #' \code{\link{as.data.frame.linkres}} with \code{sort=T}. A peak is defined a
 #' run of at least \code{width} consecutive markers with LOD score above or
 #' equal to \code{threshold}. If possible, one flanking marker is included on
 #' each side of the peak.
-#' 
+#'
 #' @param x a \code{\link{linkres}} object
 #' @param threshold a single numeric
 #' @param width a positive integer
 #' @return A list of data frames.
-#' @author Magnus Dehli Vigeland
 #' @seealso \code{\link{linkres}}, \code{\link{lod}}, \code{\link{merlin}},
-#' 
+#'
 #' @examples
-#' 
+#'
 #' ## minimal example
 #' x = linkdat(toyped, model=1)
 #' res = lod(x)
@@ -105,11 +103,11 @@ as.data.frame.linkres = function(x, ..., sort = TRUE) {
 #' peak2 = lod.peaks(res, threshold=0, width=2)
 #' peak3 = lod.peaks(res, threshold=1)
 #' stopifnot(length(peak1)==1, nrow(peak1[[1]])==1, length(peak2)==0, length(peak3)==0)
-#' 
+#'
 #' @export
 lod.peaks = function(x, threshold, width = 1) {
     # x et linkres objekt, eller data.frame med CHR, POS, LOD
-    
+
     peak1chr = function(xchr, threshold, width) {
         # x must be sorted!
         rl = rle(xchr$LOD >= threshold)
@@ -121,7 +119,7 @@ lod.peaks = function(x, threshold, width = 1) {
             } else break
         }
         xchr_nrow = nrow(xchr)
-        if (!any(rl$values)) 
+        if (!any(rl$values))
             return(NULL)
         start_ind = c(0, cumsum(rl$lengths))[which(rl$values)]
         stop_ind = start_ind + rl$lengths[rl$values] + 1  # plus 1 to compensate for endpoint[1]
@@ -129,7 +127,7 @@ lod.peaks = function(x, threshold, width = 1) {
             strt = start_ind[i]
             stp = stop_ind[i]
             telomeric = c(if (strt == 0) "start", if (stp > xchr_nrow) "end")
-            if (length(telomeric) == 0) 
+            if (length(telomeric) == 0)
                 telomeric = "no"
             strt = max(strt, 1)
             stp = min(stp, xchr_nrow)
@@ -151,7 +149,7 @@ lod.peaks = function(x, threshold, width = 1) {
 #' @export
 peakSummary = function(x, threshold, width = 1, physmap = NULL) {
     if (inherits(x, "linkres")) {
-        if (is.null(threshold)) 
+        if (is.null(threshold))
             stop("argument \"threshold\" is missing, with no default")
         x = lod.peaks(x, threshold, width)
     }
@@ -167,15 +165,15 @@ peakSummary = function(x, threshold, width = 1, physmap = NULL) {
         to_lod = df$LOD[n]
         L_cm = to_cm - from_cm
         telom = attr(df, "telomeric")
-        data.frame(CHR = chr, FROM_MARKER = from_marker, TO_MARKER = to_marker, FROM_CM = from_cm, 
-            TO_CM = to_cm, TELOMERIC = telom, L_CM = L_cm, N = n, FROM_LOD = from_lod, MAX_LOD = max_lod, 
+        data.frame(CHR = chr, FROM_MARKER = from_marker, TO_MARKER = to_marker, FROM_CM = from_cm,
+            TO_CM = to_cm, TELOMERIC = telom, L_CM = L_cm, N = n, FROM_LOD = from_lod, MAX_LOD = max_lod,
             TO_LOD = to_lod, stringsAsFactors = F)
     })
     a = do.call(rbind, dat)
     if (!is.null(physmap)) {
-        if (is.matrix(physmap)) 
+        if (is.matrix(physmap))
             physmap = as.data.frame(physmap)
-        if (is.character(physmap)) 
+        if (is.character(physmap))
             physmap = read.table(physmap, header = T, as.is = T)
         if (is.data.frame(physmap)) {
             from_bp = physmap[match(a$FROM_MARKER, physmap[, 1]), 3]
@@ -201,7 +199,7 @@ peakSummary = function(x, threshold, width = 1, physmap = NULL) {
     if (na.action == 1) {
         nas2 = (is.na(chrom) | is.na(pos))
         if (all(nas2)) {
-            if (verbose) 
+            if (verbose)
                 cat("Warning: No map info given. Creating dummy map.\n")
             map$CHR = rep.int(1, x$nMark)
             map$POS = seq_len(x$nMark)
@@ -225,16 +223,16 @@ plot.linkres = function(x, chrom = NULL, ylim = NULL, ...) {
     map = map[map$MARKER %in% colnames(x), , drop = FALSE]
     map = map[order(map$CHR, map$POS), , drop = FALSE]
     x = x[, match(map$MARKER, colnames(x)), drop = FALSE]
-    
+
     if (!is.null(chrom)) {
         subindex = which(map$CHR %in% chrom)
-        if (length(subindex) == 0) 
+        if (length(subindex) == 0)
             stop("No markers on indicated chromosome(s).")
-        subx = structure(x[, subindex, drop = FALSE], analysis = analysis, map = map[subindex, 
+        subx = structure(x[, subindex, drop = FALSE], analysis = analysis, map = map[subindex,
             , drop = F], class = "linkres")
         return(plot(subx, chrom = NULL, ylim = ylim, ...))
     }
-    
+
     switch(analysis, mlink = {
         lds <- apply(x, 2, max)
         if (is.null(ylim)) ylim <- c(-1.2, max(c(3, lds), na.rm = T) + 0.3)
@@ -242,18 +240,18 @@ plot.linkres = function(x, chrom = NULL, ylim = NULL, ...) {
         lds <- x["LOD", ]
         if (is.null(ylim)) ylim <- c(-0.5, max(c(3, lds), na.rm = T) + 0.3)
     }, )
-    
+
     nM = ncol(x)
     pos = map$POS
     chr_br = which(map$CHR[-1] != map$CHR[-nM])
     for (b in chr_br) pos[(b + 1):nM] = pos[(b + 1):nM] + map$POS[b]  # NB: by now, map$POS != pos
-    
+
     multichr = length(chr_br) > 0
-    
-    plot(pos, sapply(lds, max, ylim[1]), ylim = ylim, type = "l", lwd = 2, cex = 0.3, xlab = ifelse(multichr, 
-        "Chromosome", paste("Position (cM) on chromosome", map$CHR[1])), xaxt = ifelse(multichr, 
+
+    plot(pos, sapply(lds, max, ylim[1]), ylim = ylim, type = "l", lwd = 2, cex = 0.3, xlab = ifelse(multichr,
+        "Chromosome", paste("Position (cM) on chromosome", map$CHR[1])), xaxt = ifelse(multichr,
         "n", par("xaxt")), ylab = "LOD score", ...)
     abline(h = 0, col = 2, lwd = 2)
-    if (multichr) 
+    if (multichr)
         axis(1, at = c(0, pos[chr_br]), labels = map$CHR[c(chr_br, nM)], lwd.ticks = 2)
 }

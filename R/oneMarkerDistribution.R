@@ -1,126 +1,125 @@
 #' Genotype probability distribution
-#' 
+#'
 #' Computes the (joint) genotype probability distribution of one or several
 #' pedigree members, possibly conditional on partial marker data.
-#' 
-#' 
+#'
 #' @param x A \code{\link{linkdat}} object.
 #' @param ids A numeric with ID labels of one or more pedigree members.
 #' @param partialmarker Either a \code{\link{marker}} object compatible with
-#' \code{x}, or the index (a single integer) of an existing marker of \code{x}.
+#'   \code{x}, or the index (a single integer) of an existing marker of
+#'   \code{x}.
 #' @param theta The recombination fraction between marker and disease locus.
-#' Only relevant if at least one individual is affected by disease. In that
-#' case an error is raised if \code{theta} is NULL, and if \code{x} does not
-#' have a disease model.
-#' @param grid.subset (Not relevant for most end users.)
-#' A numeric matrix describing a subset of all marker
-#' genotype combinations for the \code{ids} individuals. The matrix should have
-#' one column for each of the \code{ids} individuals, and one row for each
-#' combination: The genotypes are described in terms of the matrix \code{M =
-#' allGenotypes(n)}, where \code{n} is the number of alleles for the marker.
-#' If the entry in column \code{j} is the integer \code{k}, this means that the
-#' genotype of individual \code{ids[j]} is row \code{k} of \code{M}.
+#'   Only relevant if at least one individual is affected by disease. In that
+#'   case an error is raised if \code{theta} is NULL, and if \code{x} does not
+#'   have a disease model.
+#' @param grid.subset (Not relevant for most end users.) A numeric matrix
+#'   describing a subset of all marker genotype combinations for the \code{ids}
+#'   individuals. The matrix should have one column for each of the \code{ids}
+#'   individuals, and one row for each combination: The genotypes are described
+#'   in terms of the matrix \code{M = allGenotypes(n)}, where \code{n} is the
+#'   number of alleles for the marker. If the entry in column \code{j} is the
+#'   integer \code{k}, this means that the genotype of individual \code{ids[j]}
+#'   is row \code{k} of \code{M}.
 #' @param loop_breakers A numeric containing IDs of individuals to be used as
-#' loop breakers. Relevant only if the pedigree has loops. See
-#' \code{\link{breakLoops}}.
+#'   loop breakers. Relevant only if the pedigree has loops. See
+#'   \code{\link{breakLoops}}.
 #' @param eliminate A non-negative integer, indicating the number of iterations
-#' in the internal genotype-compatibility algorithm. Positive values can save
-#' time if \code{partialmarker} is non-empty and the number of alleles is
-#' large.
+#'   in the internal genotype-compatibility algorithm. Positive values can save
+#'   time if \code{partialmarker} is non-empty and the number of alleles is
+#'   large.
 #' @param ignore.affection.status A logical indicating if the 'AFF' column
-#' should be ignored (only relevant if some family members are marked as
-#' affected).
+#'   should be ignored (only relevant if some family members are marked as
+#'   affected).
 #' @param verbose A logical.
 #' @return A named array (of dimension \code{length(ids)}) giving the joint
-#' marker genotype distribution for the \code{ids} individuals, conditional on
-#' 1) the marker allele frequencies given in \code{partialmarker}, 2)
-#' non-missing alleles in \code{partialmarker}, and 3) the disease model of
-#' \code{x} (if the pedigree is affected).
-#' @author Magnus Dehli Vigeland
+#'   marker genotype distribution for the \code{ids} individuals, conditional on
+#'   1) the marker allele frequencies given in \code{partialmarker}, 2)
+#'   non-missing alleles in \code{partialmarker}, and 3) the disease model of
+#'   \code{x} (if the pedigree is affected).
 #' @seealso \code{\link{twoMarkerDistribution}}, \code{\link{allGenotypes}}
-#' 
+#'
 #' @examples
-#' 
+#'
 #' x = nuclearPed(2)
 #' x_aff = swapAff(x, c(1,3))
 #' x_aff = setModel(x_aff, model=1) # dominant model
-#' 
+#'
 #' snp = marker(x, 1, c(1,1), 2, c(1,0), alleles=1:2, afreq=c(0.1, 0.9))
 #' res1 = oneMarkerDistribution(x, ids=3:4, partialmarker=snp)
-#' res2 = oneMarkerDistribution(x_aff, ids=3:4, partialmarker=snp, theta=0.5) 
-#' 
+#' res2 = oneMarkerDistribution(x_aff, ids=3:4, partialmarker=snp, theta=0.5)
+#'
 #' # should give same result, since theta=0.5 implies that marker is independent of disease.
 #' stopifnot(all.equal(res1, res2))
-#' 
+#'
 #' #### Different example for the same pedigree. A marker with 4 alleles:
 #' m2 = marker(x, 3:4, c('C','D'), alleles=LETTERS[1:4])
 #' oneMarkerDistribution(x, ids=1, partialmarker=m2)
-#' 
+#'
 #' # Same as above, but computing only the cases where individual 1 is heterozygous.
-#' # (The numbers 5:10 refer to the 6 last rows of allGenotypes(4), 
+#' # (The numbers 5:10 refer to the 6 last rows of allGenotypes(4),
 #' # which contain the heterozygous genotypes.)
-#' oneMarkerDistribution(x, ids=1, partialmarker=m2, grid.subset=matrix(5:10, ncol=1)) 
-#' 
-#' #### Expanding on the previous example: 
-#' # Joint genotype probabilities of the parents, but including only the combinations 
+#' oneMarkerDistribution(x, ids=1, partialmarker=m2, grid.subset=matrix(5:10, ncol=1))
+#'
+#' #### Expanding on the previous example:
+#' # Joint genotype probabilities of the parents, but including only the combinations
 #' # where the father is heterozygous and the mother is homozygous:
 #' grid = expand.grid(5:10, 1:4)
-#' oneMarkerDistribution(x, ids=1:2, partialmarker=m2, grid.subset=grid) 
-#' 
-#' #### Something else: 
-#' # The genotype distribution of an individual whose half cousin is homozygous 
+#' oneMarkerDistribution(x, ids=1:2, partialmarker=m2, grid.subset=grid)
+#'
+#' #### Something else:
+#' # The genotype distribution of an individual whose half cousin is homozygous
 #' # for a rare allele.
 #' y = halfCousinPed(degree=1)
 #' snp = marker(y, 9, c('a','a'), alleles=c('a', 'b'), afreq=c(0.01, 0.99))
 #' oneMarkerDistribution(y, ids=8, partialmarker=snp)
-#' 
+#'
 #' #### X-linked example:
 #' z = linkdat(Xped, model=4) # X-linked recessive model
 #' z2 = swapAff(z, 1:z$nInd, 1) # disease free version of the same pedigree
-#' 
+#'
 #' snpX = marker(z, c(5,15), c('A','A'), alleles=c('A', 'B'), chrom=23)
-#' 
+#'
 #' r1 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0.5) # results: A - 0.8; B - 0.2
 #' r2 = oneMarkerDistribution(z2, ids=13, partialmarker=snpX)          # should be same as above
 #' r3 = oneMarkerDistribution(z, ids=13, partialmarker=snpX, theta=0) # results: A - 0.67; B - 0.33
-#' 
+#'
 #' stopifnot(all.equal(r1,r2), round(r1[1], 2)==0.8, round(r3[1], 2) == 0.67)
-#' 
+#'
 #' @export
-oneMarkerDistribution <- function(x, ids, partialmarker, theta = NULL, grid.subset = NULL, 
+oneMarkerDistribution <- function(x, ids, partialmarker, theta = NULL, grid.subset = NULL,
     loop_breakers = NULL, eliminate = 0, ignore.affection.status = FALSE, verbose = TRUE) {
     starttime = proc.time()
-    if (!inherits(m <- partialmarker, "marker")) 
-        if (is.numeric(m) && length(m) == 1 && m <= x$nMark) 
+    if (!inherits(m <- partialmarker, "marker"))
+        if (is.numeric(m) && length(m) == 1 && m <= x$nMark)
             m = x$markerdata[[m]] else stop("The 'partialmarker' must be a 'marker' object, or a single integer indicating an existing marker of 'x'.")
-    
-    if (!is.null(x$loop_breakers)) 
+
+    if (!is.null(x$loop_breakers))
         stop("Linkdat objects with broken loops are not allowed as input to the `oneMarkerDistribution` function.")
-    
+
     markerchrom = as.integer(attr(m, "chrom"))
     alleles = attr(m, "alleles")
     mutmat = attr(m, "mutmat")
     mutations = !is.null(mutmat)
-    
+
     affped = any(x$pedigree[, "AFF"] == 2) && !ignore.affection.status
     if (affped) {
-        if (is.null(theta)) 
+        if (is.null(theta))
             stop("This is a disease pedigree, but recombination fraction ('theta') between the marker and disease loci is not indicated. \n(To ignore disease, use 'ignore.affecton.status=TRUE'")
-        if (is.null(x$model)) 
+        if (is.null(x$model))
             stop("This is a disease pedigree. Please spesify a disease model, e.g. using 'setModel()'.")
         locus2 = "disease"
         chrom = x$model$chrom
-        if (!is.na(markerchrom) && ((chrom == "X") != (23L == markerchrom))) 
+        if (!is.na(markerchrom) && ((chrom == "X") != (23L == markerchrom)))
             stop("Disease model and marker chromosome are not compatible.")
     } else {
         locus2 = NULL
         chrom = ifelse(identical(23L, markerchrom), "X", "AUTOSOMAL")
     }
-    
+
     SEX = x$pedigree[, "SEX"]
     if (verbose) {
         cat(ifelse(chrom == "AUTOSOMAL", "Autosomal", "X-linked"), "marker with the following partial data:\n")
-        print(data.frame(ID = x$orig.ids, GENO = .prettyMarkers(list(m), missing = "-", singleCol = TRUE, 
+        print(data.frame(ID = x$orig.ids, GENO = .prettyMarkers(list(m), missing = "-", singleCol = TRUE,
             sep = "/", sex = SEX)), row.names = FALSE)
         cat("\nMarker allele frequencies:\n")
         print(structure(attr(m, "afreq"), names = alleles))
@@ -134,37 +133,37 @@ oneMarkerDistribution <- function(x, ids, partialmarker, theta = NULL, grid.subs
             cat(sprintf("\nRecombination rate between marker and disease locus: %f.\n", theta))
         }
     }
-    
+
     allgenos = allGenotypes(attr(m, "nalleles"))
-    
-    if (is.null(grid.subset)) 
+
+    if (is.null(grid.subset))
         grid.subset = geno.grid.subset(x, m, ids, chrom)  #Do this before loop breaking, works better with eliminate2.
  else grid.subset = as.matrix(grid.subset)
-    
+
     if (x$hasLoops) {
         x = breakLoops(setMarkers(x, m), loop_breakers = loop_breakers, verbose = verbose)
         m = x$markerdata[[1]]
         SEX = x$pedigree[, "SEX"]
     }
-    
+
     int.ids = .internalID(x, ids)
     gt.strings = paste(alleles[allgenos[, 1]], alleles[allgenos[, 2]], sep = "/")
-    geno.names = switch(chrom, AUTOSOMAL = rep(list(gt.strings), length(ids)), X = list(alleles, 
+    geno.names = switch(chrom, AUTOSOMAL = rep(list(gt.strings), length(ids)), X = list(alleles,
         gt.strings)[SEX[int.ids]])
-    
+
     marginal = likelihood(x, locus1 = m, locus2 = locus2, theta = theta, eliminate = eliminate)
-    if (marginal == 0) 
+    if (marginal == 0)
         stop("Partial marker is impossible")
     probs = array(0, dim = lengths(geno.names, use.names = F), dimnames = geno.names)
     probs[grid.subset] = apply(grid.subset, 1, function(allg_rows) {
         m[int.ids, ] = allgenos[allg_rows, ]
         likelihood(x, locus1 = m, locus2 = locus2, theta = theta, eliminate = eliminate)
     })
-    
+
     res = probs/marginal
     if (verbose) {
-        cat(ifelse(length(ids) == 1, "\nGenotype probability distribution for individual ", 
-            "\nJoint genotype probability distribution for individuals "), .prettycat(ids, 
+        cat(ifelse(length(ids) == 1, "\nGenotype probability distribution for individual ",
+            "\nJoint genotype probability distribution for individuals "), .prettycat(ids,
             "and"), ":\n", sep = "")
         print(round(res, 4))
         cat("\nTotal time used: ", (proc.time() - starttime)[["elapsed"]], " seconds.\n", sep = "")

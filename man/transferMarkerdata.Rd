@@ -7,19 +7,22 @@
 transferMarkerdata(from, to)
 }
 \arguments{
-\item{from}{a \code{\link{linkdat}} or \code{\link{singleton}} object, or a list of such objects.}
+\item{from}{a \code{\link{linkdat}} or \code{\link{singleton}} object, or a
+list of such objects.}
 
-\item{to}{a \code{\link{linkdat}} or \code{\link{singleton}} object, or a list of such objects.}
+\item{to}{a \code{\link{linkdat}} or \code{\link{singleton}} object, or a
+list of such objects.}
 }
 \value{
-A \code{linkdat} object (or a list of such)
-similar to \code{to}, but where all individuals also present in \code{from}
-have marker genotypes copied over.  Any previous marker data is erased.
+A \code{linkdat} object (or a list of such) similar to \code{to}, but
+where all individuals also present in \code{from} have marker genotypes
+copied over.  Any previous marker data is erased.
 }
 \description{
-Transfer marker data between pedigrees (in the form of \code{\link{linkdat}} objects).
-Both the source and target can be lists of linkdat and/or singleton objects (these 
-must have disjoint ID sets). Any previous marker data of the target is overwritten.
+Transfer marker data between pedigrees (in the form of \code{\link{linkdat}}
+objects). Both the source and target can be lists of linkdat and/or singleton
+objects (these must have disjoint ID sets). Any previous marker data of the
+target is overwritten.
 }
 \examples{
 
@@ -33,7 +36,4 @@ stopifnot(all.equal(x[[2]], subset(y,1:4)))
 }
 \seealso{
 \code{\link{linkdat}}
-}
-\author{
-Magnus Dehli Vigeland
 }

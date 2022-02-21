@@ -5,26 +5,52 @@
 \alias{plot.singleton}
 \title{Plot pedigrees with genotypes}
 \usage{
-\method{plot}{linkdat}(x, marker = NULL, alleles = NULL, sep = "/",
-  missing = "-", skip.empty.genotypes = FALSE, id.labels = NULL,
-  title = NULL, available = FALSE, col = 1, deceased = numeric(0),
-  starred = numeric(0), aff2 = NULL, margins = c(0.6, 1, 4.1, 1), ...)
+\method{plot}{linkdat}(
+  x,
+  marker = NULL,
+  alleles = NULL,
+  sep = "/",
+  missing = "-",
+  skip.empty.genotypes = FALSE,
+  id.labels = NULL,
+  title = NULL,
+  available = FALSE,
+  col = 1,
+  deceased = numeric(0),
+  starred = numeric(0),
+  aff2 = NULL,
+  margins = c(0.6, 1, 4.1, 1),
+  ...
+)
 
-\method{plot}{singleton}(x, marker = NULL, alleles = NULL, sep = "/",
-  missing = "-", skip.empty.genotypes = FALSE, id.labels = NULL,
-  title = NULL, available = FALSE, col = 1, deceased = numeric(0),
-  starred = numeric(0), aff2 = NULL, margins = c(8, 0, 0, 0), ...)
+\method{plot}{singleton}(
+  x,
+  marker = NULL,
+  alleles = NULL,
+  sep = "/",
+  missing = "-",
+  skip.empty.genotypes = FALSE,
+  id.labels = NULL,
+  title = NULL,
+  available = FALSE,
+  col = 1,
+  deceased = numeric(0),
+  starred = numeric(0),
+  aff2 = NULL,
+  margins = c(8, 0, 0, 0),
+  ...
+)
 }
 \arguments{
 \item{x}{a \code{\link{linkdat}} object.}
 
 \item{marker}{either NULL, a vector of positive integers, a
-\code{\link{marker}} object, or a list of \code{marker} objects. If NULL, no
-genotypes are plotted.  If a \code{marker} object (or a list of such), the
-genotypes are written below each individual in the pedigree, in the format
-determined by \code{alleles}, \code{sep} and \code{missing}. If a vector of
-integers is given, the corresponding marker objects are extracted from
-\code{x$markerdata}.}
+\code{\link{marker}} object, or a list of \code{marker} objects. If NULL,
+no genotypes are plotted.  If a \code{marker} object (or a list of such),
+the genotypes are written below each individual in the pedigree, in the
+format determined by \code{alleles}, \code{sep} and \code{missing}. If a
+vector of integers is given, the corresponding marker objects are extracted
+from \code{x$markerdata}.}
 
 \item{alleles}{a character vector with allele names.}
 
@@ -36,20 +62,20 @@ integers is given, the corresponding marker objects are extracted from
 non-NULL, empty genotypes (which by default looks like '-/-') are not
 printed.}
 
-\item{id.labels}{a vector with labels for each pedigree member. This
-defaults to \code{x$plot.labels} is this is set (see
-\code{\link{setPlotLabels}}), otherwise to \code{as.character(x$orig.ids)}.}
+\item{id.labels}{a vector with labels for each pedigree member. This defaults
+to \code{x$plot.labels} is this is set (see \code{\link{setPlotLabels}}),
+otherwise to \code{as.character(x$orig.ids)}.}
 
 \item{title}{the plot title. If NULL or '', no title is added to the plot.}
 
-\item{available}{either a logical, a color name, or the word 'shaded'. If a
-color name is given, the available individuals (as defined by
-\code{x$available}) are plotted in this color.  If \code{available=F} no
-coloring is used, while (for backwards compatibility) \code{available=T} is
-equivalent to \code{available='red'}. The 'shaded' option results in
+\item{available}{either a logical, a colour name, or the word 'shaded'. If a
+colour name is given, the available individuals (as defined by
+\code{x$available}) are plotted in this colour.  If \code{available=F} no
+colouring is used, while (for backwards compatibility) \code{available=T}
+is equivalent to \code{available='red'}. The 'shaded' option results in
 diagonal shading.}
 
-\item{col}{a vector with color indicators for the pedigree members. Recycled
+\item{col}{a vector with colour indicators for the pedigree members. Recycled
 if necessary. By default everyone is drawn black.}
 
 \item{deceased}{a numeric containing ID's of deceased pedigree members.}
@@ -83,7 +109,7 @@ data(toyped)
 x = linkdat(toyped)
 plot(x, marker=1, alleles=c('a1','a2'), sep=' | ', deceased=2)
 
-y = singleton(id=1) 
+y = singleton(id=1)
 m = marker(y, 1, c('A',0), alleles=c('A','B'))
 plot(y, marker=m, id='indiv 1', title='Singleton', available=TRUE)
 
