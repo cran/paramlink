@@ -84,9 +84,16 @@ likelihood.linkdat = function(x, locus1, locus2 = NULL, theta = NULL, startdata 
         locus1 = x$markerdata[[locus1]]
     if (!inherits(locus2, "marker") && is.numeric(locus2))
         locus2 = x$markerdata[[locus2]]
-    analysisType = switch(class(locus2), `NULL` = 1, character = 2, marker = 3)
-    if (analysisType == 2)
-        locus2 = NULL  # 'disease'
+
+    # analysisType = switch(class(locus2), `NULL` = 1, character = 2, marker = 3)
+    if(inherits(locus2, "marker"))
+      analysisType = 3
+    else if(is.character(locus2)) {
+      analysisType = 2
+      locus2 = NULL  # 'disease'
+    }
+    else
+      analysisType = 1
 
     locus1 = .reduce_alleles(locus1)
     locus2 = .reduce_alleles(locus2)  # unchanged if NULL

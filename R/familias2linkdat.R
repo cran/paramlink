@@ -119,7 +119,7 @@ Familias2linkdat = function(familiasped, datamatrix, loci) {
 readFamiliasLoci = function(loci) {
     if (is.null(loci))
         return(NULL)
-    if (class(loci) == "FamiliasLocus")
+    if (inherits(loci, "FamiliasLocus"))
         loci = list(loci)
     annotations = lapply(loci, function(a) {
         malemut = a$maleMutationMatrix

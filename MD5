@@ -1,6 +1,6 @@
-a96a6ba894ed18b447df8a948039032c *DESCRIPTION
+fff1105dbfc2195668fd6219e47aab1d *DESCRIPTION
 8b767144ccf9ab41ca42aadf31862e4b *NAMESPACE
-1815ac8d015e2245d084c825fd97eec3 *NEWS
+7d28c69cc0686c644280dc353dfabed1 *NEWS
 ee30a967d5d3ce4cd6738e37b47848c7 *R/IBDest_getAlleleData.R
 41bd14046087126e69113d29df173769 *R/IBDestimate.R
 6f579a2a5a6cf49494f52a101de74367 *R/IBDtriangle.R
@@ -14,9 +14,9 @@ eab5bce4852e9a9c3dc92cfea83e3cf4 *R/datasets.R
 505008945409192e956889c1729e864c *R/depreciated.R
 415775910d6dfcc33cd72c6c4039df76 *R/examineKinships.R
 14484ad8c012fe9e7fd36b65f16ec0fe *R/exclusionPower.R
-1a2ceea5336766ab7e3192db8eb277d2 *R/familias2linkdat.R
+58443917daa7afbfce7dc48574153043 *R/familias2linkdat.R
 3382a6441b1e58c07d46742a0566b175 *R/is.linkdat.R
-c2c18ecc9eecd886e321d5358e3c8cc2 *R/likelihood.R
+e40f6cc04ff66a73328e569df7993f17 *R/likelihood.R
 c765af53f96f164a8c31c29c766883a0 *R/likelihoodSNP.R
 bc5222f9902dfc8723d44846b1bbf85a *R/likelihood_LINKAGE.R
 d2fcf4d87cf61d7c4bd1226881bc4b4f *R/linkage.power.R
@@ -39,13 +39,14 @@ fbabb22ff8a1e3be0dc0832eabb512c4 *R/plot.linkdat.R
 7ff163ed09db35dd2a54431da47bc64a *R/plotPedList.R
 5f763ac542fe3e25db3d9289bfd59185 *R/randomPed.R
 fe4075c4ec74fbc2b38437de225a28e6 *R/readDatfile.R
-99b8cc19fc4a97779e3bdceb5a30413d *R/relatednessCoeff.R
+2476d743b460e6f93f3d28c58052d768 *R/relatednessCoeff.R
 f9786b4115edfb392040bca86113d2e4 *R/relationLR.R
 d1c0ee719493a02dcf1dbc254413cb15 *R/setModel.R
 ca1c7e3f7d13d39a1ab659151f4b02ac *R/setPlotLabels.R
 a455b7e3aa98df78e9596bd544aa44ca *R/transferMarkerdata.R
 65a1c0b096ac27e3da076e34cf0c743f *R/twoMarkerDistribution.R
 34547baa4ac37c22c126417617db734c *R/utils.R
+aa85d9f80783ae333f66af8b3c4102e4 *R/zzz.R
 2f87b6637d5d8bfcb9208a2ad7a3094d *README.md
 f54044c91a3bf522d868262c4d2c9632 *data/Xped.rda
 60a86a02973ac1d25ff40fcbb9197707 *data/dominant.rda
@@ -86,7 +87,7 @@ d981b4121f3f8f834c09a7ed56ae9366 *man/pedigreeLoops.Rd
 2781ca388bab346167a9b40fc52c1efc *man/plotPedList.Rd
 12284bc3207fc1e2ed34417976dc63cd *man/randomPed.Rd
 681d29a316a370ca02a4d24f8081cb1c *man/readDatfile.Rd
-02aa06965bf885f24f845c98468728e7 *man/relatednessCoeff.Rd
+96e2454bbef9287055a1817f58a32cd7 *man/relatednessCoeff.Rd
 c10eaa1c09b861b063ec52093dfa888b *man/relationLR.Rd
 50dd9b5f6e3678c9e8a24c4179f7d1ff *man/setAvailable.Rd
 fc750307be1f3a7bf4f205076176c02b *man/setModel.Rd

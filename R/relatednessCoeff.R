@@ -5,12 +5,8 @@
 #' wrappers for functions in other packages or external programs.
 #'
 #' Both \code{inbreeding} and \code{kinship_coefs} are thin wrappers of
-#' \code{\link[kinship2]{kinship}}.  Similarly, \code{jacquard} wraps
-#' \code{identity::identity.coefs}, which is an R interface for the C program
-#' \code{IdCoefs} written by Mark Abney. The function
-#' \code{identity::identity.coefs} sometimes causes R to crash, hence I have
-#' provided an alternative wrapper, \code{jacquard2}, which executes an external
-#' call to the original C program \code{IdCoefs} (version 2.1.1). For this to
+#' \code{\link[kinship2]{kinship}}. \code{jacquard2}, executes an external
+#' call to the C program \code{IdCoefs} (Abney, 2009). For this to
 #' function, \code{IdCoefs} must be installed on the computer (see link in the
 #' References section below) and the executable placed in a folder included in
 #' the PATH variable. The \code{jacquard2} wrapper works by writing the
@@ -29,8 +25,7 @@
 #'   dimnames.\cr For \code{jaquard} and \code{jaquard2}, a numerical vector of
 #'   length 9 (in the standard order of Jacquard's condensed identity
 #'   coefficients).
-#' @seealso \code{\link[kinship2]{kinship}},
-#'   \code{\link[identity]{identity.coefs}}
+#' @seealso \code{\link[kinship2]{kinship}}
 #' @references The \code{IdCoefs} program: Abney, Mark (2009). A graphical
 #'   algorithm for fast computation of identity coefficients and generalized
 #'   kinship coefficients. Bioinformatics, 25, 1561-1563.
@@ -86,12 +81,13 @@ kinship_coefs = function(x, ids = NULL) {
 #' @rdname relatednessCoeff
 #' @export
 jacquard = function(x, ids) {
-    if (!requireNamespace("identity", quietly = TRUE))
-        stop("Package 'identity' must be install for this function to work.", call. = FALSE)
-    assert_that(length(ids) == 2, all(ids %in% x$orig.ids))
-    idsi = .internalID(x, ids)
-    ped = x$pedigree[, 1:3]
-    identity::identity.coefs(idsi, ped)[2, 3:11]
+    message("This function is no longer available. Use `ribd::identityCoefs()` instead")
+    #if (!requireNamespace("identity", quietly = TRUE))
+    #    stop("Package 'identity' must be install for this function to work.", call. = FALSE)
+    #assert_that(length(ids) == 2, all(ids %in% x$orig.ids))
+    #idsi = .internalID(x, ids)
+    #ped = x$pedigree[, 1:3]
+    #identity::identity.coefs(idsi, ped)[2, 3:11]
 }
 
 

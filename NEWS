@@ -1,5 +1,10 @@
 NEWS FILE FOR PACKAGE PARAMLINK
 
+2022-04-15: Version 1.1-5
+    * Added startup message about paramlink being superseded by the ped suite.
+    * Removed function `jacquard()` which relied on the `identity` package (which was archived by CRAN).
+    * Minor fixes to avoid CRAN complaints
+
 2022-02-21: Version 1.1-4.
     Note: 'PARAMLINK' HAS BEEN SUPERSEDED BY THE 'PED SUITE'. IT IS MAINTAINED ONLY FOR LEGACY PURPOSES AND SHOULD NOT BE USED IN NEW PROJECTS.
 
