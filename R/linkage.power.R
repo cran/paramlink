@@ -31,8 +31,7 @@
 #'   %The \code{power.varyPar} function creates a plot of the results and
 #'   returns the maximum LOD score for each element of \code{values}.
 #' @seealso \code{\link{linkdat}}, \code{\link{linkageSim}}
-#' @references Marker simulation is inspired by the SLINK algorithm:
-#'   \url{https://www.jurgott.org/linkage/SLINK.htm}.
+#' @references Marker simulation is inspired by the SLINK algorithm.
 #'
 #' @examples
 #'

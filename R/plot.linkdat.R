@@ -5,7 +5,7 @@
 #' Most of the work is done by the plotting functionality in the 'kinship2'
 #' package.
 #'
-#' \code{plot.linkdat} is in essence a wrapper for \code{plot.pedigree} in the
+#' \code{plot.linkdat} is in essence a wrapper for `plot.pedigree()` in the
 #' \code{kinship2} package.
 #'
 #' @param x a \code{\link{linkdat}} object.
@@ -45,7 +45,7 @@
 #'   \code{kinship2} package. In particular \code{symbolsize} and \code{cex} can
 #'   be useful.
 #' @author Magnus Dehli Vigeland, Guro Doerum
-#' @seealso \code{\link{plot.pedigree}}, \code{\link{setPlotLabels}}
+#' @seealso \code{plot.pedigree}, \code{\link{setPlotLabels}}
 #'
 #' @examples
 #'

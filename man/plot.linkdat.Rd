@@ -100,7 +100,7 @@ Most of the work is done by the plotting functionality in the 'kinship2'
 package.
 }
 \details{
-\code{plot.linkdat} is in essence a wrapper for \code{plot.pedigree} in the
+\code{plot.linkdat} is in essence a wrapper for `plot.pedigree()` in the
 \code{kinship2} package.
 }
 \examples{
@@ -115,7 +115,7 @@ plot(y, marker=m, id='indiv 1', title='Singleton', available=TRUE)
 
 }
 \seealso{
-\code{\link{plot.pedigree}}, \code{\link{setPlotLabels}}
+\code{plot.pedigree}, \code{\link{setPlotLabels}}
 }
 \author{
 Magnus Dehli Vigeland, Guro Doerum

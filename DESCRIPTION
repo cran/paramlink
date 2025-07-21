@@ -1,13 +1,13 @@
 Package: paramlink
 Title: Parametric Linkage and Other Pedigree Analysis in R
-Version: 1.1-5
+Version: 1.1-6
 Authors@R: c(
     person("Magnus Dehli", "Vigeland", , "m.d.vigeland@medisin.uio.no", role = c("aut", "cre")),
     person("Thore", "Egeland", role = "ctb"),
     person("Guro", "Doerum", role = "ctb")
   )
 Maintainer: Magnus Dehli Vigeland <m.d.vigeland@medisin.uio.no>
-Description: NOTE: 'PARAMLINK' HAS BEEN SUPERSEDED BY THE 'PED SUITE'
+Description: NOTE: 'PARAMLINK' HAS BEEN SUPERSEDED BY THE 'PEDSUITE'
     PACKAGES (<https://magnusdv.github.io/pedsuite/>). 'PARAMLINK' IS
     MAINTAINED ONLY FOR LEGACY PURPOSES AND SHOULD NOT BE USED IN NEW
     PROJECTS. A suite of tools for analysing pedigrees with marker data,
@@ -33,13 +33,13 @@ Suggests: igraph
 Encoding: UTF-8
 Language: en-GB
 LazyData: Yes
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2
 SystemRequirements: For multipoint linkage analysis, 'MERLIN'
         (http://csg.sph.umich.edu/abecasis/merlin/index.html).
 NeedsCompilation: no
-Packaged: 2022-04-15 07:41:31 UTC; magnusdv
+Packaged: 2025-07-21 20:02:48 UTC; magnu
 Author: Magnus Dehli Vigeland [aut, cre],
   Thore Egeland [ctb],
   Guro Doerum [ctb]
 Repository: CRAN
-Date/Publication: 2022-04-15 08:10:02 UTC
+Date/Publication: 2025-07-21 20:21:05 UTC

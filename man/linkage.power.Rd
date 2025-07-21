@@ -84,8 +84,7 @@ stopifnot(round(pow$maxlod, 1) == 1.2)
 
 }
 \references{
-Marker simulation is inspired by the SLINK algorithm:
-  \url{https://www.jurgott.org/linkage/SLINK.htm}.
+Marker simulation is inspired by the SLINK algorithm.
 }
 \seealso{
 \code{\link{linkdat}}, \code{\link{linkageSim}}
